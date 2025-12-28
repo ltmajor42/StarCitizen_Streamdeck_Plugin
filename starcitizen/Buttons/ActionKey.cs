@@ -86,11 +86,9 @@ namespace starcitizen.Buttons
 
             StreamDeckCommon.ForceStop = false;
 
-            if (bindingService.TryGetBinding(settings.Function, out var action))
+            if (InputDispatchService.TryResolveBinding(bindingService, settings.Function, out var binding))
             {
-                Logger.Instance.LogMessage(TracingLevel.INFO, CommandTools.ConvertKeyString(action.Keyboard));
-
-                StreamDeckCommon.SendKeypressDown(CommandTools.ConvertKeyString(action.Keyboard));
+                InputDispatchService.TrySendDown(binding, settings.Function);
             }
 
             if (_clickSound != null)
@@ -119,11 +117,9 @@ namespace starcitizen.Buttons
 
             StreamDeckCommon.ForceStop = false;
 
-            if (bindingService.TryGetBinding(settings.Function, out var action))
+            if (InputDispatchService.TryResolveBinding(bindingService, settings.Function, out var binding))
             {
-                Logger.Instance.LogMessage(TracingLevel.INFO, CommandTools.ConvertKeyString(action.Keyboard));
-
-                StreamDeckCommon.SendKeypressUp(CommandTools.ConvertKeyString(action.Keyboard));
+                InputDispatchService.TrySendUp(binding, settings.Function);
             }
 
         }

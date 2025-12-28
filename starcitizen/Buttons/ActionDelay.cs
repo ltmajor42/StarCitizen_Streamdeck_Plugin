@@ -242,14 +242,7 @@ namespace starcitizen.Buttons
 
             StreamDeckCommon.ForceStop = false;
 
-            if (!bindingService.TryGetBinding(settings.Function, out var action) || string.IsNullOrWhiteSpace(action.Keyboard))
-            {
-                ResetToIdle();
-                return;
-            }
-
-            var keyInfo = CommandTools.ConvertKeyString(action.Keyboard);
-            if (string.IsNullOrWhiteSpace(keyInfo))
+            if (!InputDispatchService.TryResolveBinding(bindingService, settings.Function, out var binding))
             {
                 ResetToIdle();
                 return;
@@ -257,7 +250,11 @@ namespace starcitizen.Buttons
 
             try
             {
-                StreamDeckCommon.SendKeypress(keyInfo, 40);
+                if (!InputDispatchService.TrySendPress(binding, 40, settings.Function))
+                {
+                    ResetToIdle();
+                    return;
+                }
             }
             catch (Exception ex)
             {

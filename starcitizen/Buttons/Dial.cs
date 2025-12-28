@@ -123,10 +123,9 @@ namespace starcitizen.Buttons
 
             var function = payload.IsLongPress ? settings.FunctionTouchLongPress : settings.FunctionTouchPress;
 
-            if (bindingService.TryGetBinding(function, out var action))
+            if (InputDispatchService.TryResolveBinding(bindingService, function, out var binding))
             {
-                var key = CommandTools.ConvertKeyString(action.Keyboard);
-                StreamDeckCommon.SendKeypress(key, GetPressDurationMs());
+                InputDispatchService.TrySendPress(binding, GetPressDurationMs(), function);
             }
         }
 
@@ -140,10 +139,9 @@ namespace starcitizen.Buttons
 
             StreamDeckCommon.ForceStop = false;
 
-            if (bindingService.TryGetBinding(settings.FunctionPress, out var action))
+            if (InputDispatchService.TryResolveBinding(bindingService, settings.FunctionPress, out var binding))
             {
-                var key = CommandTools.ConvertKeyString(action.Keyboard);
-                StreamDeckCommon.SendKeypressDown(key);
+                InputDispatchService.TrySendDown(binding, settings.FunctionPress);
             }
         }
 
@@ -157,10 +155,9 @@ namespace starcitizen.Buttons
 
             StreamDeckCommon.ForceStop = false;
 
-            if (bindingService.TryGetBinding(settings.FunctionPress, out var action))
+            if (InputDispatchService.TryResolveBinding(bindingService, settings.FunctionPress, out var binding))
             {
-                var key = CommandTools.ConvertKeyString(action.Keyboard);
-                StreamDeckCommon.SendKeypressUp(key);
+                InputDispatchService.TrySendUp(binding, settings.FunctionPress);
             }
         }
 
@@ -279,10 +276,9 @@ namespace starcitizen.Buttons
         {
             var function = clockwise ? settings.FunctionCw : settings.FunctionCcw;
 
-            if (bindingService.TryGetBinding(function, out var action))
+            if (InputDispatchService.TryResolveBinding(bindingService, function, out var binding))
             {
-                var key = CommandTools.ConvertKeyString(action.Keyboard);
-                StreamDeckCommon.SendKeypress(key, GetPressDurationMs());
+                InputDispatchService.TrySendPress(binding, GetPressDurationMs(), function);
             }
         }
 

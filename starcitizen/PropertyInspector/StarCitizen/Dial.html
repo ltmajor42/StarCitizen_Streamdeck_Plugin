@@ -15,6 +15,7 @@
     <script src="../sdtools.common.js"></script>
     <script src="../jquery-3.3.1.min.js"></script>
     <script src="../jquery.highlight-within-textarea.js"></script>
+    <script src="../binding-notice.js"></script>
 
     <style>
         .no-results {
@@ -25,6 +26,12 @@
         }
         .hidden {
             display: none !important;
+        }
+        .binding-note {
+            font-size: 11px;
+            color: #e5c07b;
+            margin-top: 4px;
+            line-height: 1.4;
         }
     </style>
 </head>
@@ -97,6 +104,11 @@
     </div>
 
     <div class="sdpi-item">
+        <div class="sdpi-item-label"></div>
+        <div class="sdpi-item-value binding-note hidden" id="bindingNotice"></div>
+    </div>
+
+    <div class="sdpi-item">
         <div class="sdpi-item-label">Touch Delay (ms)</div>
         <input type="number"
                class="sdpi-item-value sdProperty"
@@ -161,6 +173,7 @@
                     const option = document.createElement('option');
                     option.value = opt.value;
                     option.textContent = opt.text;
+                    option.dataset.bindingType = opt.bindingType || '';
                     option.dataset.search = (opt.searchText || opt.text || '').toLowerCase();
 
                     optgroup.appendChild(option);
@@ -212,6 +225,29 @@
         searchResults.textContent = term
             ? `Found ${count} group${count !== 1 ? 's' : ''}`
             : '';
+
+        updateBindingNotice();
+    }
+
+    function updateBindingNotice() {
+        const notice = document.getElementById('bindingNotice');
+        if (!notice) return;
+
+        const selects = document.querySelectorAll('.function-select');
+        const hasJoystick = Array.from(selects).some(sel => {
+            const opt = sel.selectedOptions && sel.selectedOptions[0];
+            return opt && (opt.dataset.bindingType || '').toLowerCase() === 'joystick';
+        });
+
+        if (hasJoystick) {
+            notice.classList.remove('hidden');
+            notice.textContent = joystickSupportStatus === false
+                ? 'One or more dial functions use joystick bindings. No virtual joystick was detected, so those actions may be skipped.'
+                : 'One or more dial functions use joystick bindings. The plugin will emulate those joystick buttons when needed.';
+        } else {
+            notice.classList.add('hidden');
+            notice.textContent = '';
+        }
     }
 
     document.addEventListener('websocketCreate', function () {
@@ -221,6 +257,9 @@
             if (jsonObj.event === 'sendToPropertyInspector'
                 && jsonObj.payload
                 && jsonObj.payload.functionsLoaded) {
+                if (jsonObj.payload.joystickSupport !== undefined) {
+                    scSetJoystickSupportFlag(jsonObj.payload.joystickSupport);
+                }
                 populateDropdowns(jsonObj.payload.functions);
             }
             if (originalOnMessage) {
@@ -240,6 +279,7 @@
             sel.addEventListener('change', function () {
                 document.getElementById('functionSearch').value = '';
                 document.getElementById('searchResults').textContent = '';
+                updateBindingNotice();
             });
         });
     });

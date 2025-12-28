@@ -16,11 +16,13 @@
   <script src="../sdtools.common.js"></script>
   <script src="../jquery-3.3.1.min.js"></script>
   <script src="../jquery.highlight-within-textarea.js"></script>
+  <script src="../binding-notice.js"></script>
 
   <style>
     .note { font-size: 11px; color: #999; line-height: 1.4; }
     .hidden { display: none; }
     .no-results { padding: 10px; color: #999; font-style: italic; text-align: center; }
+    .binding-note { font-size: 11px; color: #e5c07b; line-height: 1.4; margin-top: 4px; }
   </style>
 </head>
 
@@ -46,6 +48,10 @@
             onchange="setSettings()">
       <option value="">Loading Star Citizen functions...</option>
     </select>
+  </div>
+  <div class="sdpi-item">
+    <div class="sdpi-item-label"></div>
+    <div class="sdpi-item-value binding-note hidden" id="bindingNotice"></div>
   </div>
 
   <div class="sdpi-item">
@@ -165,6 +171,7 @@
         const option = document.createElement('option');
         option.value = opt.value;
         option.textContent = opt.text;
+        option.dataset.bindingType = opt.bindingType || '';
         option.dataset.search = opt.searchText || opt.text.toLowerCase();
 
         optgroup.appendChild(option);
@@ -188,6 +195,8 @@
     }
 
     filterOptions();
+    scWireBindingNotice('function', 'bindingNotice');
+    scUpdateBindingNotice(select, document.getElementById('bindingNotice'));
   }
 
   function filterOptions() {
@@ -239,6 +248,9 @@
       if (jsonObj.event === 'sendToPropertyInspector'
           && jsonObj.payload
           && jsonObj.payload.functionsLoaded) {
+        if (jsonObj.payload.joystickSupport !== undefined) {
+          scSetJoystickSupportFlag(jsonObj.payload.joystickSupport);
+        }
         populateDropdown(jsonObj.payload.functions);
       }
       if (originalOnMessage) {
@@ -252,6 +264,13 @@
       .addEventListener('input', function () {
         clearTimeout(this.searchTimeout);
         this.searchTimeout = setTimeout(filterOptions, 150);
+      });
+
+    document.getElementById('function')
+      .addEventListener('change', function () {
+        scUpdateBindingNotice(
+          document.getElementById('function'),
+          document.getElementById('bindingNotice'));
       });
 
     updateClearSoundVisibility();

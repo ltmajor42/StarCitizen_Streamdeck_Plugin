@@ -21,7 +21,8 @@ namespace starcitizen.Core
                 var payload = new JObject
                 {
                     ["functionsLoaded"] = true,
-                    ["functions"] = functionsData
+                    ["functions"] = functionsData,
+                    ["joystickSupport"] = JoystickInputSender.Instance.IsAvailable
                 };
 
                 return connection.SendToPropertyInspectorAsync(payload);
