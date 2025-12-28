@@ -271,27 +271,36 @@ namespace SCJMapper_V2.SC
                                     map.Actions[actionName].KeyboardOverRule = true;
                                 }
 
-                            } else
-                            if (input != null && input.StartsWith("js"))
+                            }
+                            else if (!string.IsNullOrWhiteSpace(input) && input.StartsWith("js", StringComparison.OrdinalIgnoreCase))
                             {
-                                var instance = input.Substring(2, input.IndexOf("_", StringComparison.Ordinal)-2);
+                                var cleanedInput = input.Trim();
+                                var underscoreIndex = cleanedInput.IndexOf("_", StringComparison.Ordinal);
+                                string instance = null;
 
-                                input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
-
-                                if (!string.IsNullOrEmpty(input))
+                                if (underscoreIndex > 2)
                                 {
-                                    map.Actions[actionName].Joystick = input;
+                                    instance = cleanedInput.Substring(2, underscoreIndex - 2);
+                                }
 
-                                    if (joysticks.ContainsKey(instance))
+                                if (!string.IsNullOrEmpty(cleanedInput))
+                                {
+                                    map.Actions[actionName].Joystick = cleanedInput;
+
+                                    if (!string.IsNullOrWhiteSpace(instance))
                                     {
-                                        instance = joysticks[instance];
+                                        if (joysticks.TryGetValue(instance, out var product))
+                                        {
+                                            map.Actions[actionName].JoystickOverRule = product;
+                                        }
+                                        else
+                                        {
+                                            map.Actions[actionName].JoystickOverRule = instance;
+                                        }
                                     }
-
-                                    map.Actions[actionName].JoystickOverRule = instance;
                                 }
                             }
-                            else
-                            if (input != null && input.StartsWith("mo"))
+                            else if (input != null && input.StartsWith("mo"))
                             {
                                 input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
 
@@ -363,18 +372,54 @@ namespace SCJMapper_V2.SC
                 reader.MoveToContent();
                 if (XNode.ReadFrom(reader) is XElement el)
                 {
-                    IEnumerable<XElement> actionProfiles = el.Elements().Where(x => x.Name == "ActionProfiles");
+                    IEnumerable<XElement> actionProfiles = EnumerateActionProfiles(el);
                     foreach (XElement actionProfile in actionProfiles)
                     {
-                        string profileName = (string)actionProfile.Attribute("profileName");
+                        string profileName = (string)actionProfile.Attribute("profileName") ?? (string)actionProfile.Attribute("name");
 
-                        if (profileName == "default")
+                        if (string.IsNullOrWhiteSpace(profileName) || profileName.Equals("default", StringComparison.OrdinalIgnoreCase))
                         {
                             fromXML(actionProfile.ToString());
-                            break;
+                            return;
                         }
                     }
+
+                    // If we didn't find an explicit ActionProfile, attempt to parse the root directly
+                    fromXML(el.ToString());
                 }
+            }
+        }
+
+        private IEnumerable<XElement> EnumerateActionProfiles(XElement root)
+        {
+            if (root == null)
+            {
+                yield break;
+            }
+
+            if (root.Name == "ActionProfile")
+            {
+                yield return root;
+                yield break;
+            }
+
+            if (root.Name == "ActionProfiles")
+            {
+                foreach (var profile in root.Elements().Where(x => x.Name == "ActionProfile"))
+                {
+                    yield return profile;
+                }
+                yield break;
+            }
+
+            foreach (var profile in root.Elements().Where(x => x.Name == "ActionProfiles").SelectMany(x => x.Elements().Where(y => y.Name == "ActionProfile")))
+            {
+                yield return profile;
+            }
+
+            foreach (var profile in root.Elements().Where(x => x.Name == "ActionProfile"))
+            {
+                yield return profile;
             }
         }
 
