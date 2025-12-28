@@ -186,6 +186,33 @@ Visual-only tile (no keybind, no action).
 2. Organizing pages and profiles
 3. Aesthetic/branding tiles
 
+### Dial (Stream Deck+)
+
+
+Dial action for the **Stream Deck+** dials (rotate, press, and touch screen).
+
+**Bindings:**
+1. Dial Clockwise
+2. Dial Counter-Clockwise
+3. Dial Press
+4. Touch screen press
+5. Touch screen long press
+
+**Behavior:**
+1. **Rotate** - Fires the selected clockwise/counter-clockwise action **once per tick** (fast or slow rotation stays responsive).
+2. **Dial Press** - Sends key down on press and key up on release (hold behavior).
+3. **Touch press / long press** - Sends a short keypress pulse.
+
+**Delay (ms):**
+- Controls keypress pulse duration for rotate/touch actions.
+- Recommended: **10–25ms** (increase to **30–50ms** if Star Citizen misses presses).
+
+**Use cases:**
+1. Power/shield/engine triangle adjustments
+2. Increment/decrement style controls (zoom, MFD pages, target cycling)
+3. Any “spin to adjust” binding where missed ticks feel bad
+
+
 ---
 
 ## Reporting issues (please include this)

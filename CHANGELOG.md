@@ -5,6 +5,16 @@
 
 ## Changelog
 
+
+## v2.0.1
+
+### Fixes
+- Improved Stream Deck+ dial rotation responsiveness by sending a discrete keypress (down+up) per tick instead of holding a key with delayed release.
+- Added queue-based tick processing to handle fast/slow rotation reliably without input blocking.
+- Prevented “catch-up” lag when rapidly reversing direction by clearing stale queued ticks.
+- `Delay` now controls keypress duration (ms) with sensible bounds for smoother feel.
+
+
 ## v2.0.0
 
 ### Major Refactor
@@ -17,6 +27,7 @@
 
 ### Fixes
 - Dial action now explicitly targets the Stream Deck+ encoders and uses a dedicated dial icon, so it shows up correctly in the Stream Deck action list.
+
 
 ## v1.1.8
 
