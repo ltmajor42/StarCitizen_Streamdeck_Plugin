@@ -1,0 +1,13 @@
+C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\ICSharpCode.SharpZipLib\bin\Debug\net48\ICSharpCode.SharpZipLib.dll
+C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\ICSharpCode.SharpZipLib\bin\Debug\net48\ICSharpCode.SharpZipLib.pdb
+C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\ICSharpCode.SharpZipLib\bin\Debug\net48\Zstd.Net.dll
+C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\ICSharpCode.SharpZipLib\bin\Debug\net48\Zstd.Net.pdb
+C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\ICSharpCode.SharpZipLib\obj\Debug\net48\ICSharpCode.SharpZipLib.csproj.AssemblyReference.cache
+C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\ICSharpCode.SharpZipLib\obj\Debug\net48\ICSharpCode.SharpZipLib.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\ICSharpCode.SharpZipLib\obj\Debug\net48\ICSharpCode.SharpZipLib.AssemblyInfoInputs.cache
+C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\ICSharpCode.SharpZipLib\obj\Debug\net48\ICSharpCode.SharpZipLib.AssemblyInfo.cs
+C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\ICSharpCode.SharpZipLib\obj\Debug\net48\ICSharpCode.SharpZipLib.csproj.CoreCompileInputs.cache
+C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\ICSharpCode.SharpZipLib\obj\Debug\net48\ICSharpCode.SharpZipLib.sourcelink.json
+C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\ICSharpCode.SharpZipLib\obj\Debug\net48\ICSharpC.0E38FB90.Up2Date
+C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\ICSharpCode.SharpZipLib\obj\Debug\net48\ICSharpCode.SharpZipLib.dll
+C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\ICSharpCode.SharpZipLib\obj\Debug\net48\ICSharpCode.SharpZipLib.pdb
