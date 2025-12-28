@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,minimal-ui,viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+    <title>Star Citizen – Repeat Action</title>
+
+    <link rel="stylesheet" href="../sdpi.css">
+    <link rel="stylesheet" href="../jquery.highlight-within-textarea.css">
+
+    <script src="../sdtools.common.js"></script>
+    <script src="../jquery-3.3.1.min.js"></script>
+    <script src="../jquery.highlight-within-textarea.js"></script>
+
+    <style>
+        .no-results {
+            padding: 10px;
+            color: #999;
+            font-style: italic;
+            text-align: center;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .note {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+
+<body>
+<div class="sdpi-wrapper">
+
+    <!-- SEARCH -->
+    <div class="sdpi-item">
+        <div class="sdpi-item-label">Search</div>
+        <input type="text"
+               class="sdpi-item-value"
+               id="functionSearch"
+               placeholder="Type to search functions..."
+               autocomplete="off">
+        <div class="sdpi-item-value"
+             id="searchResults"
+             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
+    </div>
+
+    <!-- FUNCTION -->
+    <div class="sdpi-item">
+        <div class="sdpi-item-label">Function</div>
+        <select class="sdpi-item-value select sdProperty"
+                id="function"
+                oninput="setSettings()"
+                onchange="setSettings()">
+            <option value="">Loading Star Citizen functions...</option>
+        </select>
+    </div>
+
+    <!-- REPEAT RATE -->
+    <div class="sdpi-item">
+        <div class="sdpi-item-label">Repeat Rate (ms)</div>
+        <input type="number"
+               class="sdpi-item-value sdProperty"
+               id="repeatRate"
+               min="1"
+               oninput="setSettings()"
+               onchange="setSettings()">
+    </div>
+    <div class="sdpi-item">
+        <div class="sdpi-item-label"></div>
+        <div class="sdpi-item-value note">
+            Recommended: 60–80ms (fast), 100ms (default), 120–150ms (precise)
+        </div>
+    </div>
+
+    <div class="sdpi-item no-results hidden" id="noResults">
+        No functions match your search.
+    </div>
+
+    <div class="sdpi-item">
+        <div class="sdpi-item-label"></div>
+        <div class="sdpi-item-value note">
+            Images are managed by Stream Deck (State 0 = idle, State 1 = active). Hold to repeat. Release to stop.
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let allOptions = [];
+    let functionsLoaded = false;
+    let savedFunctionValue = null;
+
+    /* Preserve selected function if payload arrives before functions list */
+    const originalLoadConfiguration = loadConfiguration;
+    loadConfiguration = function (payload) {
+        if (payload && payload.function !== undefined) {
+            savedFunctionValue = payload.function;
+        }
+        originalLoadConfiguration(payload);
+
+        if (functionsLoaded && savedFunctionValue) {
+            const sel = document.getElementById('function');
+            if (sel) sel.value = savedFunctionValue;
+        }
+    };
+
+    function populateDropdown(functions) {
+        const select = document.getElementById('function');
+        select.innerHTML = '';
+        allOptions = [];
+
+        const empty = document.createElement('option');
+        empty.value = '';
+        empty.textContent = '-- Select a function --';
+        select.appendChild(empty);
+
+        functions.forEach(group => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = group.label;
+
+            group.options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.textContent = opt.text;
+                option.dataset.search = opt.searchText || opt.text.toLowerCase();
+
+                optgroup.appendChild(option);
+
+                allOptions.push({
+                    option,
+                    optgroup,
+                    search: option.dataset.search
+                });
+            });
+
+            select.appendChild(optgroup);
+        });
+
+        functionsLoaded = true;
+
+        if (savedFunctionValue) {
+            select.value = savedFunctionValue;
+        }
+
+        filterOptions();
+    }
+
+    function filterOptions() {
+        if (!functionsLoaded) return;
+
+        const term = document.getElementById('functionSearch').value.toLowerCase().trim();
+        const noResults = document.getElementById('noResults');
+        const searchResults = document.getElementById('searchResults');
+
+        let visibleGroups = 0;
+
+        allOptions.forEach(o => {
+            const visible = !term || o.search.includes(term);
+            o.option.style.display = visible ? '' : 'none';
+        });
+
+        document.querySelectorAll('#function optgroup').forEach(group => {
+            const hasVisible = Array.from(group.children)
+                .some(o => o.style.display !== 'none');
+
+            group.style.display = hasVisible ? '' : 'none';
+            if (hasVisible) visibleGroups++;
+        });
+
+        noResults.classList.toggle('hidden', visibleGroups > 0);
+        searchResults.textContent = term
+            ? `Found ${visibleGroups} group${visibleGroups !== 1 ? 's' : ''}`
+            : '';
+    }
+
+    /* Hook into websocket to receive function list */
+    document.addEventListener('websocketCreate', function () {
+        const originalOnMessage = websocket.onmessage;
+
+        websocket.onmessage = function (evt) {
+            const jsonObj = JSON.parse(evt.data);
+
+            if (jsonObj.event === 'sendToPropertyInspector'
+                && jsonObj.payload
+                && jsonObj.payload.functionsLoaded) {
+
+                populateDropdown(jsonObj.payload.functions);
+            }
+
+            if (originalOnMessage) {
+                originalOnMessage.call(this, evt);
+            }
+        };
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('functionSearch')
+            .addEventListener('input', function () {
+                clearTimeout(this.searchTimeout);
+                this.searchTimeout = setTimeout(filterOptions, 150);
+            });
+
+        document.getElementById('function')
+            .addEventListener('change', function () {
+                document.getElementById('functionSearch').value = '';
+                document.getElementById('searchResults').textContent = '';
+            });
+    });
+</script>
+
+</body>
+</html>
