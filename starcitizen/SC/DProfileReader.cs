@@ -51,6 +51,7 @@ namespace SCJMapper_V2.SC
 
             public bool KeyboardOverRule { get; set; }
             public string JoystickOverRule { get; set; }
+            public bool JoystickOverRuleApplied { get; set; }
             public bool MouseOverRule { get; set; }
 
             public ActivationMode ActivationMode { get; set; }
@@ -286,6 +287,7 @@ namespace SCJMapper_V2.SC
                                 if (!string.IsNullOrEmpty(cleanedInput))
                                 {
                                     map.Actions[actionName].Joystick = cleanedInput;
+                                    map.Actions[actionName].JoystickOverRuleApplied = true;
 
                                     if (!string.IsNullOrWhiteSpace(instance))
                                     {
