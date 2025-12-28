@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Configuration;
 using System.Text.RegularExpressions;
 using BarRaider.SdTools;
 using SCJMapper_V2.SC;
@@ -133,6 +134,7 @@ namespace starcitizen.Buttons
         public string KeyboardMacro { get; set; }
         public string RawJoystick { get; set; }
         public JoystickBinding JoystickBinding { get; set; }
+        public bool UsedJoystickFallback { get; set; }
     }
 
     /// <summary>
@@ -141,6 +143,8 @@ namespace starcitizen.Buttons
     /// </summary>
     internal sealed class InputBindingResolver
     {
+        private static readonly string JoystickFallbackKey = (ConfigurationManager.AppSettings["JoystickFallbackKey"] ?? string.Empty).Trim();
+
         public ResolvedBinding Resolve(DProfileReader.Action action, CultureInfo culture = null)
         {
             if (action == null)
@@ -189,7 +193,16 @@ namespace starcitizen.Buttons
             var joystickBinding = BuildJoystickBinding(action);
             if (joystickBinding != null)
             {
-                return joystickBinding;
+                if (JoystickInputSender.Instance.IsAvailable)
+                {
+                    return joystickBinding;
+                }
+
+                var fallback = BuildJoystickFallbackKeyboard(culture);
+                if (fallback != null)
+                {
+                    return fallback;
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(action.Mouse))
@@ -257,6 +270,40 @@ namespace starcitizen.Buttons
                 RawJoystick = action.Joystick,
                 JoystickBinding = parsed,
                 BindingDisplay = parsed.Describe()
+            };
+        }
+
+        private ResolvedBinding BuildJoystickFallbackKeyboard(CultureInfo culture)
+        {
+            if (string.IsNullOrWhiteSpace(JoystickFallbackKey))
+            {
+                return null;
+            }
+
+            var macro = CommandTools.ConvertKeyString(JoystickFallbackKey);
+            if (string.IsNullOrWhiteSpace(macro))
+            {
+                PluginLog.Warn($"JoystickFallbackKey '{JoystickFallbackKey}' could not be converted to a keyboard macro.");
+                return null;
+            }
+
+            var display = macro;
+            if (culture != null)
+            {
+                display = CommandTools.ConvertKeyStringToLocale(JoystickFallbackKey, culture.Name)
+                    .Replace("Dik", "")
+                    .Replace("}{", "+")
+                    .Replace("}", "")
+                    .Replace("{", "");
+            }
+
+            return new ResolvedBinding
+            {
+                BindingType = InputBindingType.Keyboard,
+                KeyboardBinding = JoystickFallbackKey,
+                KeyboardMacro = macro,
+                BindingDisplay = $"{display} (joystick fallback)",
+                UsedJoystickFallback = true
             };
         }
 
