@@ -1,7 +1,0 @@
-C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\InputSimulatorPlus\WindowsInput\bin\Debug\WindowsInput.xml
-C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\InputSimulatorPlus\WindowsInput\bin\Debug\WindowsInput.dll
-C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\InputSimulatorPlus\WindowsInput\bin\Debug\WindowsInput.pdb
-C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\InputSimulatorPlus\WindowsInput\obj\Debug\WindowsInput.csproj.AssemblyReference.cache
-C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\InputSimulatorPlus\WindowsInput\obj\Debug\WindowsInput.csproj.CoreCompileInputs.cache
-C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\InputSimulatorPlus\WindowsInput\obj\Debug\WindowsInput.dll
-C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\InputSimulatorPlus\WindowsInput\obj\Debug\WindowsInput.pdb

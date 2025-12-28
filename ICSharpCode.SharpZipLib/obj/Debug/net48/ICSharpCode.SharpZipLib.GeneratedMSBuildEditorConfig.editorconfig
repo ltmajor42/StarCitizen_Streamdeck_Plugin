@@ -1,8 +1,0 @@
-is_global = true
-build_property.RootNamespace = ICSharpCode.SharpZipLib
-build_property.ProjectDir = C:\Users\PC\Documents\GitHub\StarCitizen_Streamdeck_Plugin\ICSharpCode.SharpZipLib\
-build_property.EnableComHosting = 
-build_property.EnableGeneratedComInterfaceComImportInterop = 
-build_property.CsWinRTUseWindowsUIXamlProjections = false
-build_property.EffectiveAnalysisLevelStyle = 
-build_property.EnableCodeStyleSeverity = 
