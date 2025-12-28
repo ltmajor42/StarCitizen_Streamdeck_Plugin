@@ -62,7 +62,6 @@ namespace starcitizen.Buttons
             binding = new JoystickBinding
             {
                 RawValue = raw?.Trim(),
-                DeviceInstanceName = deviceOverride
             };
 
             if (string.IsNullOrWhiteSpace(raw))
@@ -82,6 +81,20 @@ namespace starcitizen.Buttons
                 }
 
                 cleaned = match.Groups["control"].Value;
+            }
+
+            var deviceLabel = deviceOverride?.Trim();
+
+            if (!string.IsNullOrWhiteSpace(deviceLabel))
+            {
+                if (uint.TryParse(deviceLabel, out var overrideId) && !binding.DeviceId.HasValue)
+                {
+                    binding.DeviceId = overrideId;
+                }
+                else
+                {
+                    binding.DeviceInstanceName = deviceLabel;
+                }
             }
 
             var control = cleaned.ToLowerInvariant();
