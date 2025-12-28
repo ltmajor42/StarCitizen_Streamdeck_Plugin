@@ -135,6 +135,37 @@ namespace starcitizen.Buttons
                 return ResolvedBinding.None;
             }
 
+            var hasJoystickOverride = !string.IsNullOrWhiteSpace(action.JoystickOverRule);
+            var hasKeyboardOverride = action.KeyboardOverRule;
+            var hasMouseOverride = action.MouseOverRule;
+
+            if (hasJoystickOverride)
+            {
+                var joystickOverride = BuildJoystickBinding(action);
+                if (joystickOverride != null)
+                {
+                    return joystickOverride;
+                }
+            }
+
+            if (hasKeyboardOverride)
+            {
+                var keyboardOverride = BuildKeyboardBinding(action, culture);
+                if (keyboardOverride != null)
+                {
+                    return keyboardOverride;
+                }
+            }
+
+            if (hasMouseOverride)
+            {
+                var mouseOverride = BuildMouseBinding(action);
+                if (mouseOverride != null)
+                {
+                    return mouseOverride;
+                }
+            }
+
             var keyboardBinding = BuildKeyboardBinding(action, culture);
             if (keyboardBinding != null)
             {
@@ -149,20 +180,12 @@ namespace starcitizen.Buttons
 
             if (!string.IsNullOrWhiteSpace(action.Mouse))
             {
-                return new ResolvedBinding
-                {
-                    BindingType = InputBindingType.Mouse,
-                    BindingDisplay = action.Mouse
-                };
+                return BuildMouseBinding(action);
             }
 
             if (!string.IsNullOrWhiteSpace(action.Gamepad))
             {
-                return new ResolvedBinding
-                {
-                    BindingType = InputBindingType.Gamepad,
-                    BindingDisplay = action.Gamepad
-                };
+                return BuildGamepadBinding(action);
             }
 
             return ResolvedBinding.None;
@@ -220,6 +243,34 @@ namespace starcitizen.Buttons
                 RawJoystick = action.Joystick,
                 JoystickBinding = parsed,
                 BindingDisplay = parsed.Describe()
+            };
+        }
+
+        private static ResolvedBinding BuildMouseBinding(DProfileReader.Action action)
+        {
+            if (string.IsNullOrWhiteSpace(action.Mouse))
+            {
+                return null;
+            }
+
+            return new ResolvedBinding
+            {
+                BindingType = InputBindingType.Mouse,
+                BindingDisplay = action.Mouse
+            };
+        }
+
+        private static ResolvedBinding BuildGamepadBinding(DProfileReader.Action action)
+        {
+            if (string.IsNullOrWhiteSpace(action.Gamepad))
+            {
+                return null;
+            }
+
+            return new ResolvedBinding
+            {
+                BindingType = InputBindingType.Gamepad,
+                BindingDisplay = action.Gamepad
             };
         }
     }
