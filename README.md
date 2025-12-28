@@ -2,7 +2,8 @@
 
 **Elgato Stream Deck button plugin for Star Citizen**
 
-> 🔗 **Updated fork of [mhwlng/streamdeck-starcitizen](https://github.com/mhwlng/streamdeck-starcitizen)**  
+> 🔗 **Updated fork of [mhwlng/streamdeck-starcitizen](https://github.com/mhwlng/streamdeck-starcitizen)
+> **[Jarex985/streamdeck-starcitizen](https://github.com/Jarex985/streamdeck-starcitizen)** 
 > Maintained by **Ltmajor42**. Original code by **mhwlng** with in-game binding discovery provided by **SCJMapper** assets. This fork adds auto-detection, search, refactors, and stability fixes.
 
 ## What's New in This Fork
@@ -10,7 +11,9 @@
 - **Automatic RSI Launcher Detection** - (Hopefully) No more manual path configuration! The plugin reads your RSI Launcher settings automatically.
 - **Search Functionality** - Quickly find keybindings with the new search box in the Property Inspector.
 - **Simplified Configuration** - Only need to set `SCBasePath` if auto-detection fails (instead of SCData_p4k and SCClientProfilePath).
+- **Stability improvements** - Better behavior under fast tapping / repeated presses
 - **Bug Fixes & Improvements** - Various fixes to improve stability and usability.
+- **Cleaner structure** - Easier to maintain and evolve long-term
 
 ## Ownership, Credits, and Thanks
 
