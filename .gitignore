@@ -24,6 +24,7 @@ x86/
 [Aa][Rr][Mm]64/
 bld/
 [Bb]in/
+!starcitizen/bin/.gitkeep
 [Oo]bj/
 [Ll]og/
 
