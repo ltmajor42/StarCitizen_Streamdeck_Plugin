@@ -298,6 +298,8 @@ Choose a button in the streamdeck software (drag and drop), then choose a Star C
 (that must have a keyboard binding in Star Citizen. **A mouse, gamepad or joystick binding won't work!**) 
 and then choose any picture for that button.
 
+**If you cannot install vJoy but still want joystick-only actions to fire:** set a keyboard fallback in `%appdata%\Elgato\StreamDeck\Plugins\com.mhwlng.starcitizen.sdPlugin\appsettings.config` using `JoystickFallbackKey` (for example `Space`). The plugin will use that keyboard key whenever a selected action only has a joystick binding and no vJoy device is available. This is a compatibility fallback—use a real keyboard bind in-game whenever possible for the most reliable result. 【F:starcitizen/appsettings.config†L27-L33】
+
 Add an image to a button in this way:
 
 ![Button Image](https://i.imgur.com/xkgy7uZ.png)
