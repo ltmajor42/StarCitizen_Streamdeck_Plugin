@@ -1,0 +1,37 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\PC\\Documents\\GitHub\\StarCitizen_Streamdeck_Plugin\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{761FCC88-EAF9-4C7A-BBFD-139D186437A5}|starcitizen\\starcitizen.csproj|c:\\users\\pc\\documents\\github\\starcitizen_streamdeck_plugin\\starcitizen\\manifest.json||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{761FCC88-EAF9-4C7A-BBFD-139D186437A5}|starcitizen\\starcitizen.csproj|solutionrelative:starcitizen\\manifest.json||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "manifest.json",
+              "DocumentMoniker": "C:\\Users\\PC\\Documents\\GitHub\\StarCitizen_Streamdeck_Plugin\\starcitizen\\manifest.json",
+              "RelativeDocumentMoniker": "starcitizen\\manifest.json",
+              "ToolTip": "C:\\Users\\PC\\Documents\\GitHub\\StarCitizen_Streamdeck_Plugin\\starcitizen\\manifest.json",
+              "RelativeToolTip": "starcitizen\\manifest.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-12-28T21:32:53.162Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
