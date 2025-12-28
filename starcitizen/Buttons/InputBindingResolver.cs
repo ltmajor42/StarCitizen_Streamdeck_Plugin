@@ -148,7 +148,8 @@ namespace starcitizen.Buttons
                 return ResolvedBinding.None;
             }
 
-            var hasJoystickOverride = !string.IsNullOrWhiteSpace(action.JoystickOverRule);
+            var hasJoystickOverride = action.JoystickOverRuleApplied ||
+                                      !string.IsNullOrWhiteSpace(action.JoystickOverRule);
             var hasKeyboardOverride = action.KeyboardOverRule;
             var hasMouseOverride = action.MouseOverRule;
 
