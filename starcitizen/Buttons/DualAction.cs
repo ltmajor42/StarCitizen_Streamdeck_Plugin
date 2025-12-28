@@ -90,27 +90,27 @@ namespace starcitizen.Buttons
 
         private void SendDownAction()
         {
-            if (!bindingService.TryGetBinding(settings.DownFunction, out var action))
+            if (!InputDispatchService.TryResolveBinding(bindingService, settings.DownFunction, out var binding))
             {
                 return;
             }
 
-            StreamDeckCommon.SendKeypressDown(CommandTools.ConvertKeyString(action.Keyboard));
+            InputDispatchService.TrySendDown(binding, settings.DownFunction);
         }
 
         private void SendUpAction()
         {
-            if (bindingService.TryGetBinding(settings.DownFunction, out var downAction))
+            if (InputDispatchService.TryResolveBinding(bindingService, settings.DownFunction, out var downBinding))
             {
-                StreamDeckCommon.SendKeypressUp(CommandTools.ConvertKeyString(downAction.Keyboard));
+                InputDispatchService.TrySendUp(downBinding, settings.DownFunction);
             }
 
-            if (!bindingService.TryGetBinding(settings.UpFunction, out var upAction) || settings.UpFunction == settings.DownFunction)
+            if (!InputDispatchService.TryResolveBinding(bindingService, settings.UpFunction, out var upBinding) || settings.UpFunction == settings.DownFunction)
             {
                 return;
             }
 
-            StreamDeckCommon.SendKeypress(CommandTools.ConvertKeyString(upAction.Keyboard), 40);
+            InputDispatchService.TrySendPress(upBinding, 40, settings.UpFunction);
         }
 
         public override void ReceivedSettings(ReceivedSettingsPayload payload)

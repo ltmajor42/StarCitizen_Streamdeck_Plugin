@@ -75,13 +75,7 @@ namespace starcitizen.Buttons
                 ParseRepeatRate(payload.Settings);
             }
 
-            if (!bindingService.TryGetBinding(settings.Function, out var action))
-            {
-                return;
-            }
-
-            var keyInfo = CommandTools.ConvertKeyString(action.Keyboard);
-            if (string.IsNullOrWhiteSpace(keyInfo))
+            if (!InputDispatchService.TryResolveBinding(bindingService, settings.Function, out var binding))
             {
                 return;
             }
@@ -94,7 +88,7 @@ namespace starcitizen.Buttons
             // Switch to "active" state (state 1 image is managed by Stream Deck UI)
             _ = Connection.SetStateAsync(1);
 
-            _ = Task.Run(() => RepeatWhileHeldAsync(keyInfo, currentRepeatRate, repeatToken.Token));
+            _ = Task.Run(() => RepeatWhileHeldAsync(binding, currentRepeatRate, repeatToken.Token));
         }
 
         public override void KeyReleased(KeyPayload payload)
@@ -128,9 +122,9 @@ namespace starcitizen.Buttons
             base.Dispose();
         }
 
-        private async Task RepeatWhileHeldAsync(string keyInfo, int repeatRate, CancellationToken token)
+        private async Task RepeatWhileHeldAsync(ResolvedBinding binding, int repeatRate, CancellationToken token)
         {
-            SendSingleKeypress(keyInfo);
+            SendSingleKeypress(binding);
 
             while (!token.IsCancellationRequested)
             {
@@ -148,15 +142,15 @@ namespace starcitizen.Buttons
                     break;
                 }
 
-                SendSingleKeypress(keyInfo);
+                SendSingleKeypress(binding);
             }
         }
 
-        private void SendSingleKeypress(string keyInfo)
+        private void SendSingleKeypress(ResolvedBinding binding)
         {
             try
             {
-                StreamDeckCommon.SendKeypress(keyInfo, 40);
+                InputDispatchService.TrySendPress(binding, 40, settings.Function);
             }
             catch (Exception ex)
             {

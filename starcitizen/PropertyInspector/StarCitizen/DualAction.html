@@ -15,6 +15,7 @@
     <script src="../sdtools.common.js"></script>
     <script src="../jquery-3.3.1.min.js"></script>
     <script src="../jquery.highlight-within-textarea.js"></script>
+    <script src="../binding-notice.js"></script>
 
     <style>
         .no-results {
@@ -25,6 +26,12 @@
         }
         .hidden {
             display: none !important;
+        }
+        .binding-note {
+            font-size: 11px;
+            color: #e5c07b;
+            line-height: 1.4;
+            margin-top: 4px;
         }
     </style>
 </head>
@@ -55,6 +62,10 @@
             <option value="">Loading Star Citizen functions…</option>
         </select>
     </div>
+    <div class="sdpi-item">
+        <div class="sdpi-item-label"></div>
+        <div class="sdpi-item-value binding-note hidden" id="bindingNoticeDown"></div>
+    </div>
 
     <!-- RELEASE FUNCTION -->
     <div class="sdpi-item">
@@ -70,6 +81,10 @@
             Press action is held down until you release the key. When released,
             the press action is released and the optional release action is tapped.
         </details>
+    </div>
+    <div class="sdpi-item">
+        <div class="sdpi-item-label"></div>
+        <div class="sdpi-item-value binding-note hidden" id="bindingNoticeUp"></div>
     </div>
 
     <!-- CLICK SOUND -->
@@ -158,9 +173,11 @@
                 const downOption = document.createElement('option');
                 downOption.value = opt.value;
                 downOption.textContent = opt.text;
+                downOption.dataset.bindingType = opt.bindingType || '';
                 downOption.dataset.search = opt.searchText || opt.text.toLowerCase();
 
                 const upOption = downOption.cloneNode(true);
+                upOption.dataset.bindingType = opt.bindingType || '';
 
                 downGroup.appendChild(downOption);
                 upGroup.appendChild(upOption);
@@ -185,6 +202,11 @@
 
         if (savedDownValue) downSel.value = savedDownValue;
         if (savedUpValue) upSel.value = savedUpValue;
+
+        scWireBindingNotice('downFunction', 'bindingNoticeDown');
+        scWireBindingNotice('upFunction', 'bindingNoticeUp');
+        scUpdateBindingNotice(downSel, document.getElementById('bindingNoticeDown'));
+        scUpdateBindingNotice(upSel, document.getElementById('bindingNoticeUp'));
     }
 
     function filterOptions() {
@@ -254,6 +276,10 @@
                 && jsonObj.payload
                 && jsonObj.payload.functionsLoaded) {
 
+                if (jsonObj.payload.joystickSupport !== undefined) {
+                    scSetJoystickSupportFlag(jsonObj.payload.joystickSupport);
+                }
+
                 populateDropdown(jsonObj.payload.functions);
             }
 
@@ -276,6 +302,9 @@
                 .addEventListener('change', function () {
                     document.getElementById('functionSearch').value = '';
                     document.getElementById('searchResults').textContent = '';
+                    scUpdateBindingNotice(
+                        document.getElementById(id),
+                        document.getElementById(id === 'downFunction' ? 'bindingNoticeDown' : 'bindingNoticeUp'));
                 });
         });
 

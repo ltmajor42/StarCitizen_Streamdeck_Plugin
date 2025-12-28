@@ -15,6 +15,7 @@
     <script src="../sdtools.common.js"></script>
     <script src="../jquery-3.3.1.min.js"></script>
     <script src="../jquery.highlight-within-textarea.js"></script>
+    <script src="../binding-notice.js"></script>
 
     <style>
         .no-results {
@@ -25,6 +26,12 @@
         }
         .hidden {
             display: none !important;
+        }
+        .binding-note {
+            font-size: 11px;
+            color: #e5c07b;
+            margin-top: 4px;
+            line-height: 1.4;
         }
     </style>
 </head>
@@ -56,6 +63,10 @@
                 Loading Star Citizen functions...
             </option>
         </select>
+    </div>
+    <div class="sdpi-item">
+        <div class="sdpi-item-label"></div>
+        <div class="sdpi-item-value binding-note hidden" id="bindingNotice"></div>
     </div>
 
     <!-- CLICK SOUND -->
@@ -129,6 +140,7 @@
                 const option = document.createElement('option');
                 option.value = opt.value;
                 option.textContent = opt.text;
+                option.dataset.bindingType = opt.bindingType || '';
                 option.dataset.search = opt.searchText || opt.text.toLowerCase();
 
                 optgroup.appendChild(option);
@@ -148,6 +160,9 @@
         if (savedFunctionValue) {
             select.value = savedFunctionValue;
         }
+
+        scWireBindingNotice('function', 'bindingNotice');
+        scUpdateBindingNotice(select, document.getElementById('bindingNotice'));
     }
 
     function filterOptions() {
@@ -203,6 +218,9 @@
             if (jsonObj.event === 'sendToPropertyInspector'
                 && jsonObj.payload
                 && jsonObj.payload.functionsLoaded) {
+                if (jsonObj.payload.joystickSupport !== undefined) {
+                    scSetJoystickSupportFlag(jsonObj.payload.joystickSupport);
+                }
                 populateDropdown(jsonObj.payload.functions);
             }
             if (originalOnMessage) {
@@ -222,6 +240,9 @@
             .addEventListener('change', function () {
                 document.getElementById('functionSearch').value = '';
                 document.getElementById('searchResults').textContent = '';
+                scUpdateBindingNotice(
+                    document.getElementById('function'),
+                    document.getElementById('bindingNotice'));
             });
 
         updateClearSoundVisibility();

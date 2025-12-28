@@ -66,18 +66,9 @@ namespace starcitizen.Buttons
         {
             if (bindingService.Reader == null) return;
 
-            if (bindingService.TryGetBinding(settings.Function, out var action))
+            if (InputDispatchService.TryResolveBinding(bindingService, settings.Function, out var binding))
             {
-                var keyString = CommandTools.ConvertKeyString(action.Keyboard);
-
-                if (!string.IsNullOrEmpty(keyString))
-                {
-                    StreamDeckCommon.SendKeypressDown(keyString);
-                }
-                else
-                {
-                    Logger.Instance.LogMessage(TracingLevel.WARN, $"Momentary action '{settings.Function}' missing keyboard binding; skipping KeyPressed send.");
-                }
+                InputDispatchService.TrySendDown(binding, settings.Function);
             }
 
             PlayClickSound();
@@ -87,18 +78,9 @@ namespace starcitizen.Buttons
         {
             if (bindingService.Reader == null) return;
 
-            if (bindingService.TryGetBinding(settings.Function, out var action))
+            if (InputDispatchService.TryResolveBinding(bindingService, settings.Function, out var binding))
             {
-                var keyString = CommandTools.ConvertKeyString(action.Keyboard);
-
-                if (!string.IsNullOrEmpty(keyString))
-                {
-                    StreamDeckCommon.SendKeypressUp(keyString);
-                }
-                else
-                {
-                    Logger.Instance.LogMessage(TracingLevel.WARN, $"Momentary action '{settings.Function}' missing keyboard binding; skipping KeyReleased send.");
-                }
+                InputDispatchService.TrySendUp(binding, settings.Function);
             }
 
             // 🔑 ALWAYS prefer live payload value

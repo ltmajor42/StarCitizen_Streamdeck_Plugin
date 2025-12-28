@@ -183,10 +183,13 @@
     <Compile Include="Buttons\FunctionListBuilder.cs" />
     <Compile Include="Buttons\DualAction.cs" />
     <Compile Include="Buttons\StateMemory.cs" />
+    <Compile Include="Buttons\InputBindingResolver.cs" />
     <Compile Include="Buttons\StarCitizenDialBase.cs" />
     <Compile Include="Buttons\Dial.cs" />
     <Compile Include="Buttons\Repeataction.cs" />
     <Compile Include="Buttons\Momentary.cs" />
+    <Compile Include="Buttons\InputDispatchService.cs" />
+    <Compile Include="Buttons\JoystickInputSender.cs" />
     <Compile Include="Buttons\StreamDeckCommon.cs" />
     <Compile Include="Buttons\StreamDeckEventArgsExtensions.cs" />
     <Compile Include="Buttons\StarCitizenKeypadBase.cs" />
@@ -320,6 +323,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="PropertyInspector\check.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="PropertyInspector\binding-notice.js">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="PropertyInspector\elg_calendar.svg">

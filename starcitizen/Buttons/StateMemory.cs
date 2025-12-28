@@ -190,15 +190,12 @@ namespace starcitizen.Buttons
                 if (bindingService.Reader == null) return;
                 if (string.IsNullOrWhiteSpace(settings.Function)) return;
 
-                var binding = bindingService.Reader.GetBinding(settings.Function);
-                var keyboard = binding != null ? binding.Keyboard : null;
+                if (!InputDispatchService.TryResolveBinding(bindingService, settings.Function, out var binding))
+                {
+                    return;
+                }
 
-                if (string.IsNullOrWhiteSpace(keyboard)) return;
-
-                var converted = CommandTools.ConvertKeyString(keyboard);
-                if (string.IsNullOrWhiteSpace(converted)) return;
-
-                StreamDeckCommon.SendKeypress(converted, settings.KeypressDelayMs);
+                InputDispatchService.TrySendPress(binding, settings.KeypressDelayMs, settings.Function);
             }
             catch (Exception ex)
             {

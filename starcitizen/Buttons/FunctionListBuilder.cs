@@ -10,6 +10,7 @@ namespace starcitizen.Buttons
     internal static class FunctionListBuilder
     {
         private static readonly object CacheLock = new object();
+        private static readonly InputBindingResolver BindingResolver = new InputBindingResolver();
         private static int cachedVersion = -1;
         private static JArray cachedFunctions;
 
@@ -66,34 +67,13 @@ namespace starcitizen.Buttons
 
                     foreach (var action in group.OrderBy(x => x.MapUICategory).ThenBy(x => x.UILabel))
                     {
-                        string primaryBinding = "";
-                        string bindingType = "";
-
-                        if (!string.IsNullOrWhiteSpace(action.Keyboard))
+                        var resolved = BindingResolver.Resolve(action, culture);
+                        if (resolved.BindingType == InputBindingType.None)
                         {
-                            var keyString = CommandTools.ConvertKeyStringToLocale(action.Keyboard, culture.Name);
-                            primaryBinding = keyString
-                                .Replace("Dik", "")
-                                .Replace("}{", "+")
-                                .Replace("}", "")
-                                .Replace("{", "");
-                            bindingType = "keyboard";
+                            continue;
                         }
-                        else if (!string.IsNullOrWhiteSpace(action.Mouse))
-                        {
-                            primaryBinding = action.Mouse;
-                            bindingType = "mouse";
-                        }
-                        else if (!string.IsNullOrWhiteSpace(action.Joystick))
-                        {
-                            primaryBinding = action.Joystick;
-                            bindingType = "joystick";
-                        }
-                        else if (!string.IsNullOrWhiteSpace(action.Gamepad))
-                        {
-                            primaryBinding = action.Gamepad;
-                            bindingType = "gamepad";
-                        }
+                        string primaryBinding = resolved.BindingDisplay ?? "";
+                        string bindingType = resolved.BindingType.ToString().ToLowerInvariant();
 
                         string bindingDisplay = string.IsNullOrWhiteSpace(primaryBinding) ? "" : $" [{primaryBinding}]";
                         string overruleIndicator = action.KeyboardOverRule || action.MouseOverRule ? " *" : "";
