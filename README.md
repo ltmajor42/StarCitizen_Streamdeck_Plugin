@@ -14,7 +14,8 @@
 
 ## Ownership, Credits, and Thanks
 
-- **Maintainer/Author:** Ltmajor42  
+- **Maintainer/Author:** Ltmajor42
+- **Maintainer/Author:** Jarex985
 - **Upstream inspiration:** [mhwlng/streamdeck-starcitizen](https://github.com/mhwlng/streamdeck-starcitizen)  
 - **Binding loader:** [SCJMapper resources](https://github.com/SCToolsfactory/SCJMapper-V2) power the Star Citizen keybind parsing.
 
