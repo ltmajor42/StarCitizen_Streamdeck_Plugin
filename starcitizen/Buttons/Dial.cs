@@ -1,22 +1,17 @@
-﻿using System;
-using System.IO;
+﻿// File: starcitizen/Buttons/Dial.cs
+
+using System;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Input;
-using WindowsInput.Native;
 using BarRaider.SdTools;
 using BarRaider.SdTools.Events;
 using BarRaider.SdTools.Payloads;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Threading;
-using System.Diagnostics;
 using starcitizen.Core;
-
-// ReSharper disable StringLiteralTypo
 
 namespace starcitizen.Buttons
 {
-
     [PluginActionId("com.mhwlng.starcitizen.dial")]
     public class Dial : StarCitizenDialBase
     {
@@ -24,16 +19,15 @@ namespace starcitizen.Buttons
         {
             public static PluginSettings CreateDefaultSettings()
             {
-                var instance = new PluginSettings
+                return new PluginSettings
                 {
                     FunctionCw = string.Empty,
                     FunctionCcw = string.Empty,
                     FunctionPress = string.Empty,
                     FunctionTouchLongPress = string.Empty,
-                    FunctionTouchPress = string.Empty
+                    FunctionTouchPress = string.Empty,
+                    Delay = string.Empty
                 };
-
-                return instance;
             }
 
             [JsonProperty(PropertyName = "functioncw")]
@@ -55,79 +49,36 @@ namespace starcitizen.Buttons
             public string FunctionTouchLongPress { get; set; }
         }
 
-        PluginSettings settings;
+        private PluginSettings settings;
         private int? _delay = null;
 
-        private bool ccwIsDown;
-        private bool cwIsDown;
-        
-        private int ccwPending;
-        private int cwPending;
-
-        private DateTime? lastDialTime = null;
-
-        private Thread dialWatcherThread = null;
-        private CancellationTokenSource cancellationTokenSource;
         private readonly KeyBindingService bindingService = KeyBindingService.Instance;
+
+        private CancellationTokenSource cancellationTokenSource;
+
+        // Per-tick queue/worker (pulses keypress for each tick)
+        private readonly SemaphoreSlim dialQueueSignal = new SemaphoreSlim(0, int.MaxValue);
+        private Task dialQueueWorkerTask;
+
+        private int cwQueuedTicks;
+        private int ccwQueuedTicks;
 
         public Dial(SDConnection connection, InitialPayload payload) : base(connection, payload)
         {
             if (payload.Settings == null || payload.Settings.Count == 0)
             {
-                //Logger.Instance.LogMessage(TracingLevel.DEBUG, "Repeating Static Constructor #1");
-
                 settings = PluginSettings.CreateDefaultSettings();
                 Connection.SetSettingsAsync(JObject.FromObject(settings)).Wait();
-
             }
             else
             {
-                //Logger.Instance.LogMessage(TracingLevel.DEBUG, "Repeating Static Constructor #2");
-
                 settings = payload.Settings.ToObject<PluginSettings>();
                 HandleFileNames();
             }
 
             cancellationTokenSource = new CancellationTokenSource();
 
-            dialWatcherThread = new Thread(state =>
-            {
-                while (true)
-                {
-                    if (bindingService.Reader == null)
-                    {
-                        StreamDeckCommon.ForceStop = true;
-                        return;
-                    }
-                    else if (cancellationTokenSource.IsCancellationRequested)
-                    {
-                        return;
-                    }
-
-                    var timeDiff = DateTime.Now - (lastDialTime ?? DateTime.Now);
-
-                    if ((ccwIsDown || cwIsDown) && timeDiff.TotalMilliseconds >= 100)
-                    {
-                        //Logger.Instance.LogMessage(TracingLevel.INFO, $"DialRotate Released");
-
-                        ReleaseCcw();
-
-                        ReleaseCw();
-
-                        lastDialTime = DateTime.Now;
-
-                    }
-
-                    Thread.Sleep(100);
-
-                }
-
-            })
-            {
-                Name = "Dial Watcher",
-                IsBackground = true
-            };
-            dialWatcherThread.Start();
+            dialQueueWorkerTask = Task.Run(() => DialQueueWorkerAsync(cancellationTokenSource.Token));
 
             Connection.OnPropertyInspectorDidAppear += Connection_OnPropertyInspectorDidAppear;
             Connection.OnSendToPlugin += Connection_OnSendToPlugin;
@@ -139,19 +90,25 @@ namespace starcitizen.Buttons
         public override void Dispose()
         {
             if (cancellationTokenSource != null)
+            {
                 cancellationTokenSource.Cancel();
 
-            if (dialWatcherThread != null)
-                dialWatcherThread.Join();
+                // Unblock worker if waiting
+                try { dialQueueSignal.Release(); } catch { /* ignored */ }
+
+                try { dialQueueWorkerTask?.Wait(250); } catch { /* ignored */ }
+
+                cancellationTokenSource.Dispose();
+                cancellationTokenSource = null;
+            }
+
+            dialQueueSignal.Dispose();
 
             Connection.OnPropertyInspectorDidAppear -= Connection_OnPropertyInspectorDidAppear;
             Connection.OnSendToPlugin -= Connection_OnSendToPlugin;
             bindingService.KeyBindingsLoaded -= OnKeyBindingsLoaded;
 
             base.Dispose();
-
-            //Logger.Instance.LogMessage(TracingLevel.DEBUG, "Destructor called #1");
-
         }
 
         public override void TouchPress(TouchpadPressPayload payload)
@@ -164,29 +121,15 @@ namespace starcitizen.Buttons
 
             StreamDeckCommon.ForceStop = false;
 
-            if (payload.IsLongPress)
+            var function = payload.IsLongPress ? settings.FunctionTouchLongPress : settings.FunctionTouchPress;
+
+            if (bindingService.TryGetBinding(function, out var action))
             {
-                //Logger.Instance.LogMessage(TracingLevel.INFO, $"TouchPress: LongPress");
-
-                if (bindingService.TryGetBinding(settings.FunctionTouchLongPress, out var action))
-                {
-                    Logger.Instance.LogMessage(TracingLevel.INFO, CommandTools.ConvertKeyString(action.Keyboard));
-
-                    StreamDeckCommon.SendKeypress(CommandTools.ConvertKeyString(action.Keyboard), _delay ?? 40);
-                }
-            }
-            else
-            {
-                //Logger.Instance.LogMessage(TracingLevel.INFO, $"TouchPress: Press");
-
-                if (bindingService.TryGetBinding(settings.FunctionTouchPress, out var action))
-                {
-                    Logger.Instance.LogMessage(TracingLevel.INFO, CommandTools.ConvertKeyString(action.Keyboard));
-
-                    StreamDeckCommon.SendKeypress(CommandTools.ConvertKeyString(action.Keyboard), _delay ?? 40);
-                }
+                var key = CommandTools.ConvertKeyString(action.Keyboard);
+                StreamDeckCommon.SendKeypress(key, GetPressDurationMs());
             }
         }
+
         public override void DialDown(DialPayload payload)
         {
             if (bindingService.Reader == null)
@@ -197,18 +140,15 @@ namespace starcitizen.Buttons
 
             StreamDeckCommon.ForceStop = false;
 
-            //Logger.Instance.LogMessage(TracingLevel.INFO, $"Dial Down");
             if (bindingService.TryGetBinding(settings.FunctionPress, out var action))
             {
-                Logger.Instance.LogMessage(TracingLevel.INFO, CommandTools.ConvertKeyString(action.Keyboard));
-
-                StreamDeckCommon.SendKeypressDown(CommandTools.ConvertKeyString(action.Keyboard));
+                var key = CommandTools.ConvertKeyString(action.Keyboard);
+                StreamDeckCommon.SendKeypressDown(key);
             }
         }
 
         public override void DialUp(DialPayload payload)
         {
-
             if (bindingService.Reader == null)
             {
                 StreamDeckCommon.ForceStop = true;
@@ -217,49 +157,15 @@ namespace starcitizen.Buttons
 
             StreamDeckCommon.ForceStop = false;
 
-            //Logger.Instance.LogMessage(TracingLevel.INFO, $"Dial Up");
             if (bindingService.TryGetBinding(settings.FunctionPress, out var action))
             {
-                Logger.Instance.LogMessage(TracingLevel.INFO, CommandTools.ConvertKeyString(action.Keyboard));
-
-                StreamDeckCommon.SendKeypressUp(CommandTools.ConvertKeyString(action.Keyboard));
+                var key = CommandTools.ConvertKeyString(action.Keyboard);
+                StreamDeckCommon.SendKeypressUp(key);
             }
         }
 
-        private void ReleaseCw()
-        {
-            if (cwIsDown)
-            {
-                if (bindingService.TryGetBinding(settings.FunctionCw, out var action))
-                {
-                    Logger.Instance.LogMessage(TracingLevel.INFO, CommandTools.ConvertKeyString(action.Keyboard));
-
-                    StreamDeckCommon.SendKeypressUp(CommandTools.ConvertKeyString(action.Keyboard));
-                    Thread.Sleep(100);
-                    cwIsDown = false;
-                    cwPending = 0;
-                }
-            }
-        }
-
-        private void ReleaseCcw()
-        {
-            if (ccwIsDown)
-            {
-                if (bindingService.TryGetBinding(settings.FunctionCcw, out var action))
-                {
-                    Logger.Instance.LogMessage(TracingLevel.INFO, CommandTools.ConvertKeyString(action.Keyboard));
-
-                    StreamDeckCommon.SendKeypressUp(CommandTools.ConvertKeyString(action.Keyboard));
-                    Thread.Sleep(100);
-                    ccwIsDown = false;
-                    ccwPending = 0;
-                }
-            }
-        }
         public override void DialRotate(DialRotatePayload payload)
         {
-
             if (bindingService.Reader == null)
             {
                 StreamDeckCommon.ForceStop = true;
@@ -268,57 +174,36 @@ namespace starcitizen.Buttons
 
             StreamDeckCommon.ForceStop = false;
 
-            lastDialTime = DateTime.Now;
-
-            if (payload.Ticks > 0)
+            var ticks = payload.Ticks;
+            if (ticks == 0)
             {
-                ReleaseCcw();
-
-                //Logger.Instance.LogMessage(TracingLevel.INFO, $"DialRotate CW: {payload.Ticks}");
-
-                if (!cwIsDown)
-                {
-                    if (bindingService.TryGetBinding(settings.FunctionCw, out var action))
-                    {
-                        Logger.Instance.LogMessage(TracingLevel.INFO,
-                            CommandTools.ConvertKeyString(action.Keyboard));
-
-                        StreamDeckCommon.SendKeypressDown(CommandTools.ConvertKeyString(action.Keyboard));
-                        cwIsDown = true;
-                        cwPending += payload.Ticks;
-                    }
-                }
-            }
-            else if (payload.Ticks < 0)
-            {
-                ReleaseCw();
-
-                //Logger.Instance.LogMessage(TracingLevel.INFO, $"DialRotate CCW: {payload.Ticks}");
-
-                if (!ccwIsDown)
-                {
-                    if (bindingService.TryGetBinding(settings.FunctionCcw, out var action))
-                    {
-                   
-                        Logger.Instance.LogMessage(TracingLevel.INFO,
-                            CommandTools.ConvertKeyString(action.Keyboard));
-
-                        StreamDeckCommon.SendKeypressDown(CommandTools.ConvertKeyString(action.Keyboard));
-                        ccwIsDown = true;
-                        ccwPending += -payload.Ticks;
-                    }
-                }
+                return;
             }
 
+            // If user reverses direction quickly, dropping stale queued ticks feels much more responsive.
+            if (ticks > 0)
+            {
+                Interlocked.Exchange(ref ccwQueuedTicks, 0);
+                Interlocked.Add(ref cwQueuedTicks, ticks);
+                for (var i = 0; i < ticks; i++)
+                {
+                    dialQueueSignal.Release();
+                }
+            }
+            else
+            {
+                var abs = -ticks;
+                Interlocked.Exchange(ref cwQueuedTicks, 0);
+                Interlocked.Add(ref ccwQueuedTicks, abs);
+                for (var i = 0; i < abs; i++)
+                {
+                    dialQueueSignal.Release();
+                }
+            }
         }
 
-
- 
         public override void ReceivedSettings(ReceivedSettingsPayload payload)
         {
-            //Logger.Instance.LogMessage(TracingLevel.DEBUG, "ReceivedSettings");
-
-            // New in StreamDeck-Tools v2.0:
             BarRaider.SdTools.Tools.AutoPopulateSettings(settings, payload.Settings);
             HandleFileNames();
         }
@@ -329,14 +214,88 @@ namespace starcitizen.Buttons
 
             if (!string.IsNullOrEmpty(settings.Delay))
             {
-                var ok = int.TryParse(settings.Delay, out var delay);
-                if (ok && (delay > 0))
+                if (int.TryParse(settings.Delay, out var delay) && delay > 0)
                 {
                     _delay = delay;
                 }
             }
 
             Connection.SetSettingsAsync(JObject.FromObject(settings)).Wait();
+        }
+
+        private async Task DialQueueWorkerAsync(CancellationToken token)
+        {
+            try
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    await dialQueueSignal.WaitAsync(token).ConfigureAwait(false);
+
+                    // Drain quickly (keeps fast spins feeling snappy)
+                    while (!token.IsCancellationRequested)
+                    {
+                        if (TryDequeueTick(out var clockwise))
+                        {
+                            SendDialTick(clockwise);
+                            continue;
+                        }
+
+                        break;
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // expected on shutdown
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.LogMessage(TracingLevel.ERROR, $"DialQueueWorker crashed: {ex}");
+            }
+        }
+
+        private bool TryDequeueTick(out bool clockwise)
+        {
+            // Prefer the direction with pending ticks; order matters for feel.
+            if (Volatile.Read(ref cwQueuedTicks) > 0)
+            {
+                Interlocked.Decrement(ref cwQueuedTicks);
+                clockwise = true;
+                return true;
+            }
+
+            if (Volatile.Read(ref ccwQueuedTicks) > 0)
+            {
+                Interlocked.Decrement(ref ccwQueuedTicks);
+                clockwise = false;
+                return true;
+            }
+
+            clockwise = true;
+            return false;
+        }
+
+        private void SendDialTick(bool clockwise)
+        {
+            var function = clockwise ? settings.FunctionCw : settings.FunctionCcw;
+
+            if (bindingService.TryGetBinding(function, out var action))
+            {
+                var key = CommandTools.ConvertKeyString(action.Keyboard);
+                StreamDeckCommon.SendKeypress(key, GetPressDurationMs());
+            }
+        }
+
+        private int GetPressDurationMs()
+        {
+            // Default lower than your previous 40ms to improve “fluid” feel.
+            var ms = _delay ?? 20;
+
+            // Too low can be missed by some games; too high feels sluggish.
+            if (ms < 5) ms = 5;
+            if (ms > 200) ms = 200;
+
+            return ms;
         }
 
         private void Connection_OnPropertyInspectorDidAppear(object sender, EventArgs e)
@@ -347,7 +306,6 @@ namespace starcitizen.Buttons
         private void Connection_OnSendToPlugin(object sender, EventArgs e)
         {
             var payload = e.ExtractPayload();
-
             if (payload?["property_inspector"]?.ToString() == "propertyInspectorConnected")
             {
                 UpdatePropertyInspector();
