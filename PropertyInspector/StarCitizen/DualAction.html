@@ -1,0 +1,287 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,minimal-ui,viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+    <title>Star Citizen – Dual Action</title>
+
+    <link rel="stylesheet" href="../sdpi.css">
+    <link rel="stylesheet" href="../jquery.highlight-within-textarea.css">
+
+    <script src="../sdtools.common.js"></script>
+    <script src="../jquery-3.3.1.min.js"></script>
+    <script src="../jquery.highlight-within-textarea.js"></script>
+
+    <style>
+        .no-results {
+            padding: 10px;
+            color: #999;
+            font-style: italic;
+            text-align: center;
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+<div class="sdpi-wrapper">
+
+    <!-- SEARCH -->
+    <div class="sdpi-item">
+        <div class="sdpi-item-label">Search</div>
+        <input type="text"
+               class="sdpi-item-value"
+               id="functionSearch"
+               placeholder="Type to search functions..."
+               autocomplete="off">
+        <div class="sdpi-item-value"
+             id="searchResults"
+             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
+    </div>
+
+    <!-- PRESS FUNCTION -->
+    <div class="sdpi-item">
+        <div class="sdpi-item-label">Press action</div>
+        <select class="sdpi-item-value select sdProperty"
+                id="downFunction"
+                oninput="setSettings()"
+                onchange="setSettings()">
+            <option value="">Loading Star Citizen functions…</option>
+        </select>
+    </div>
+
+    <!-- RELEASE FUNCTION -->
+    <div class="sdpi-item">
+        <div class="sdpi-item-label">Release action</div>
+        <select class="sdpi-item-value select sdProperty"
+                id="upFunction"
+                oninput="setSettings()"
+                onchange="setSettings()">
+            <option value="">Loading Star Citizen functions…</option>
+        </select>
+        <details style="margin-top: 4px; font-size: 11px; color: #999;">
+            <summary>How it works</summary>
+            Press action is held down until you release the key. When released,
+            the press action is released and the optional release action is tapped.
+        </details>
+    </div>
+
+    <!-- CLICK SOUND -->
+    <div class="sdpi-item">
+        <div class="sdpi-item-label">Sound</div>
+        <div class="sdpi-item-group file">
+            <input class="sdpi-item-value sdProperty sdFile"
+                   type="file"
+                   id="clickSound"
+                   accept=".wav"
+                   oninput="setSettings(); updateClearSoundVisibility();"
+                   onchange="setSettings(); updateClearSoundVisibility();">
+            <label class="sdpi-file-info" id="clickSoundFilename">No file…</label>
+            <label class="sdpi-file-label" for="clickSound">Choose file…</label>
+        </div>
+    </div>
+
+    <!-- CLEAR SOUND BUTTON -->
+    <div class="sdpi-item hidden" id="dvClearSound">
+        <div class="sdpi-item-label"></div>
+        <button class="sdpi-item-value" onclick="clearClickSound()">
+            Clear sound
+        </button>
+    </div>
+
+    <div class="sdpi-item no-results hidden" id="noResults">
+        No functions match your search.
+    </div>
+
+</div>
+
+<script>
+    let downOptions = [];
+    let upOptions = [];
+    let optionGroups = [];
+    let functionsLoaded = false;
+    let savedDownValue = null;
+    let savedUpValue = null;
+
+    /* SAFE loadConfiguration — preserve payload */
+    const originalLoadConfiguration = loadConfiguration;
+    loadConfiguration = function (payload) {
+
+        if (payload) {
+            if (payload.downFunction !== undefined) {
+                savedDownValue = payload.downFunction;
+            }
+            if (payload.upFunction !== undefined) {
+                savedUpValue = payload.upFunction;
+            }
+        }
+
+        originalLoadConfiguration(payload);
+
+        if (functionsLoaded) {
+            const downSel = document.getElementById('downFunction');
+            const upSel = document.getElementById('upFunction');
+            if (downSel && savedDownValue) downSel.value = savedDownValue;
+            if (upSel && savedUpValue) upSel.value = savedUpValue;
+        }
+
+        updateClearSoundVisibility();
+    };
+
+    function populateDropdown(functions) {
+        const downSel = document.getElementById('downFunction');
+        const upSel = document.getElementById('upFunction');
+        downSel.innerHTML = '';
+        upSel.innerHTML = '';
+        downOptions = [];
+        upOptions = [];
+        optionGroups = [];
+
+        const empty = document.createElement('option');
+        empty.value = '';
+        empty.textContent = '-- Select a function --';
+        downSel.appendChild(empty.cloneNode(true));
+        upSel.appendChild(empty.cloneNode(true));
+
+        functions.forEach(group => {
+            const downGroup = document.createElement('optgroup');
+            const upGroup = document.createElement('optgroup');
+            downGroup.label = upGroup.label = group.label;
+
+            group.options.forEach(opt => {
+                const downOption = document.createElement('option');
+                downOption.value = opt.value;
+                downOption.textContent = opt.text;
+                downOption.dataset.search = opt.searchText || opt.text.toLowerCase();
+
+                const upOption = downOption.cloneNode(true);
+
+                downGroup.appendChild(downOption);
+                upGroup.appendChild(upOption);
+
+                downOptions.push({
+                    option: downOption,
+                    search: downOption.dataset.search
+                });
+
+                upOptions.push({
+                    option: upOption,
+                    search: upOption.dataset.search
+                });
+            });
+
+            optionGroups.push({ downGroup, upGroup });
+            downSel.appendChild(downGroup);
+            upSel.appendChild(upGroup);
+        });
+
+        functionsLoaded = true;
+
+        if (savedDownValue) downSel.value = savedDownValue;
+        if (savedUpValue) upSel.value = savedUpValue;
+    }
+
+    function filterOptions() {
+        if (!functionsLoaded) return;
+
+        const term = document.getElementById('functionSearch').value.toLowerCase().trim();
+        const noResults = document.getElementById('noResults');
+        const searchResults = document.getElementById('searchResults');
+
+        downOptions.forEach((o, idx) => {
+            const visible = !term || o.search.includes(term);
+            o.option.style.display = visible ? '' : 'none';
+
+            const upOpt = upOptions[idx];
+            if (upOpt) {
+                upOpt.option.style.display = visible ? '' : 'none';
+            }
+        });
+
+        let visibleGroups = 0;
+        optionGroups.forEach(group => {
+            const hasVisible = Array.from(group.downGroup.children)
+                .some(o => o.style.display !== 'none');
+
+            group.downGroup.style.display = hasVisible ? '' : 'none';
+            group.upGroup.style.display = hasVisible ? '' : 'none';
+
+            if (hasVisible) visibleGroups++;
+        });
+
+        noResults.classList.toggle('hidden', visibleGroups > 0);
+        searchResults.textContent = term
+            ? `Found ${visibleGroups} group${visibleGroups !== 1 ? 's' : ''}`
+            : '';
+    }
+
+    /* CLEAR SOUND HANDLER */
+    function clearClickSound() {
+        const input = document.getElementById('clickSound');
+        const label = document.getElementById('clickSoundFilename');
+
+        if (input) input.value = '';
+        if (label) label.textContent = 'No file…';
+
+        setSettings({ clickSound: '' });
+        updateClearSoundVisibility();
+    }
+
+    function updateClearSoundVisibility() {
+        const input = document.getElementById('clickSound');
+        const clearBtn = document.getElementById('dvClearSound');
+
+        if (!input || !clearBtn) return;
+
+        clearBtn.classList.toggle('hidden', !input.value);
+    }
+
+    /* CORRECT BarRaider hook — SAME AS OTHER BUTTONS */
+    document.addEventListener('websocketCreate', function () {
+
+        const originalOnMessage = websocket.onmessage;
+
+        websocket.onmessage = function (evt) {
+            const jsonObj = JSON.parse(evt.data);
+
+            if (jsonObj.event === 'sendToPropertyInspector'
+                && jsonObj.payload
+                && jsonObj.payload.functionsLoaded) {
+
+                populateDropdown(jsonObj.payload.functions);
+            }
+
+            if (originalOnMessage) {
+                originalOnMessage.call(this, evt);
+            }
+        };
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+
+        document.getElementById('functionSearch')
+            .addEventListener('input', function () {
+                clearTimeout(this.searchTimeout);
+                this.searchTimeout = setTimeout(filterOptions, 150);
+            });
+
+        ['downFunction', 'upFunction'].forEach(id => {
+            document.getElementById(id)
+                .addEventListener('change', function () {
+                    document.getElementById('functionSearch').value = '';
+                    document.getElementById('searchResults').textContent = '';
+                });
+        });
+
+        updateClearSoundVisibility();
+    });
+</script>
+
+</body>
+</html>

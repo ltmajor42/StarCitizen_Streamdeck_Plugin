@@ -1,0 +1,171 @@
+{
+  "Actions": [
+    {
+      "Icon": "Images/Static",
+      "Name": "Static Button",
+      "States": [
+        {
+          "Image": "Images/Static",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "Star Citizen Static Button",
+      "UUID": "com.mhwlng.starcitizen.static",
+      "PropertyInspectorPath": "PropertyInspector/StarCitizen/Static.html"
+    },
+    {
+      "Icon": "Images/pluginIcon",
+      "Name": "Dial Button",
+      "Controllers": ["Encoder"],
+      "States": [
+        {
+          "Image": "Images/pluginIcon"
+        }
+      ],
+      "Encoder": {
+        "Icon": "Images/pluginDialIcon",
+        "layout": "./layout2.json"
+      },
+      "SupportedInMultiActions": false,
+      "Tooltip": "Star Citizen Dial Button",
+      "UUID": "com.mhwlng.starcitizen.dial",
+      "PropertyInspectorPath": "PropertyInspector/StarCitizen/Dial.html"
+    },
+    {
+      "Icon": "Images/Momentary0",
+      "Name": "Momentary Button",
+      "States": [
+        {
+          "Image": "Images/Momentary0",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        },
+        {
+          "Image": "Images/Momentary1",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "Star Citizen Momentary Button",
+      "UUID": "com.mhwlng.starcitizen.momentary",
+      "PropertyInspectorPath": "PropertyInspector/StarCitizen/Momentary.html"
+    },
+    {
+      "Icon": "Images/Momentary0",
+      "Name": "Dual Action Button",
+      "States": [
+        {
+          "Image": "Images/Momentary0",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        },
+        {
+          "Image": "Images/Momentary1",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "Star Citizen Dual Action Button",
+      "UUID": "com.mhwlng.starcitizen.dualaction",
+      "PropertyInspectorPath": "PropertyInspector/StarCitizen/DualAction.html"
+    },
+    {
+      "Icon": "Images/Momentary0",
+      "Name": "Increase / Decrease (Hold)",
+      "States": [
+        {
+          "Image": "Images/Momentary0",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        },
+        {
+          "Image": "Images/Momentary1",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "Hold to repeat a Star Citizen function until released",
+      "UUID": "com.mhwlng.starcitizen.holdrepeat",
+      "PropertyInspectorPath": "PropertyInspector/StarCitizen/IncreaseDecreaseHold.html"
+    },
+    {
+      "Icon": "Images/Momentary0",
+      "Name": "Action Delay",
+      "States": [
+        {
+          "Image": "Images/Momentary0",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        },
+        {
+          "Image": "Images/Momentary1",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "Tap to arm, hold to abort, wait to execute a Star Citizen function",
+      "UUID": "com.mhwlng.starcitizen.actiondelay",
+      "PropertyInspectorPath": "PropertyInspector/StarCitizen/ActionDelay.html"
+    },
+    {
+      "Icon": "Images/Cosmetic",
+      "Name": "Cosmetic Key",
+      "States": [
+        {
+          "Image": "Images/Cosmetic",
+          "TitleAlignment": "middle",
+          "FontSize": "16"
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "Tooltip": "A key that does nothing. Use it for images/GIFs/text only.",
+      "UUID": "com.mhwlng.starcitizen.cosmetickey"
+    },
+    {
+      "Icon": "Images/Statememory0",
+      "Name": "State Memory (Soft Sync Toggle)",
+      "States": [
+        {
+          "Image": "Images/Statememory0",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        },
+        {
+          "Image": "Images/Statememory1",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "Star Citizen State Memory (Soft Sync Toggle)",
+      "UUID": "com.mhwlng.starcitizen.statememory",
+      "PropertyInspectorPath": "PropertyInspector/StarCitizen/StateMemory.html"
+    }
+  ],
+  "Author": "mhwlng",
+  "Description": "Star Citizen Buttons",
+  "Name": "Star Citizen",
+  "Icon": "Images/pluginIcon",
+  "URL": "https://github.com/mhwlng/streamdeck-starcitizen",
+  "Version": "1.1.9",
+  "CodePath": "com.mhwlng.starcitizen",
+  "Category": "Star Citizen",
+  "CategoryIcon": "Images/categoryIcon",
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "SDKVersion": 2,
+  "Software": {
+    "MinimumVersion": "6.1"
+  },
+  "Profiles": []
+}
