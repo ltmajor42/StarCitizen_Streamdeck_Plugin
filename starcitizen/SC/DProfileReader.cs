@@ -63,96 +63,141 @@ namespace SCJMapper_V2.SC
             public string UILabel { get; set; }
             public string UICategory { get; set; }
 
-            public Dictionary<string, Action> Actions { get; set; } = new Dictionary<string, Action>();
+            public Dictionary<string, Action> Actions { get; set; } = new Dictionary<string, Action>(StringComparer.OrdinalIgnoreCase);
         };
 
-        private Dictionary<string, ActionMap> maps = new Dictionary<string, ActionMap>();
-        private Dictionary<string, Action> actions = new Dictionary<string, Action>();
-        private Dictionary<string, ActivationMode> activationmodes = new Dictionary<string, ActivationMode>();
+        private Dictionary<string, ActionMap> maps = new Dictionary<string, ActionMap>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, Action> actions = new Dictionary<string, Action>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, ActivationMode> activationmodes = new Dictionary<string, ActivationMode>(StringComparer.OrdinalIgnoreCase);
 
-        private Dictionary<string, string> joysticks = new Dictionary<string, string>();
+        private Dictionary<string, string> joysticks = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        private void ReadAction(XElement action, ActionMap actionMap)
+        private static string NormalizeKeyboardBinding(string keyboard)
         {
-            string name = (string)action.Attribute("name");
-            string uiLabel = (string)action.Attribute("UILabel");
-
-            if (string.IsNullOrEmpty(uiLabel))
-                return;
-
-            string uiDescription = (string)action.Attribute("UIDescription");
-            //if (string.IsNullOrEmpty(uiDescription))
-            //  uiDescription = name;
-
-            uiLabel = SCUiText.Instance.Text(uiLabel, uiLabel);
-            uiDescription = SCUiText.Instance.Text(uiDescription, "");
-
-            string keyboard = (string)action.Attribute("keyboard");
-
-            string mouse = (string)action.Attribute("mouse");
-
-            string joystick = (string)action.Attribute("joystick");
-
-            string gamepad = (string)action.Attribute("gamepad");
-
-            string activationMode = (string)action.Attribute("ActivationMode");
-
-            ActivationMode currentActivationMode = null;
-
-            if (!string.IsNullOrEmpty(activationMode))
-            {
-                currentActivationMode = activationmodes[activationMode];
-
-                string onPress = (string)action.Attribute("onPress");
-                if (!string.IsNullOrEmpty(onPress))
-                {
-                    currentActivationMode.OnPress = onPress;
-                }
-
-                string onHold = (string)action.Attribute("onHold");
-                if (!string.IsNullOrEmpty(onHold))
-                {
-                    currentActivationMode.OnHold = onHold;
-                }
-
-                string onRelease = (string)action.Attribute("onRelease");
-                if (!string.IsNullOrEmpty(onRelease))
-                {
-                    currentActivationMode.OnRelease = onRelease;
-                }
-
-                string always = (string)action.Attribute("always");
-                if (!string.IsNullOrEmpty(always))
-                {
-                    currentActivationMode.Always = always;
-                }
-
-                string noModifiers = (string)action.Attribute("noModifiers");
-                if (!string.IsNullOrEmpty(noModifiers))
-                {
-                    currentActivationMode.NoModifiers = noModifiers;
-                }
-
-                string holdTriggerDelay = (string)action.Attribute("holdTriggerDelay");
-                if (!string.IsNullOrEmpty(holdTriggerDelay))
-                {
-                    currentActivationMode.HoldTriggerDelay = holdTriggerDelay;
-                }
-            }
-
             if (string.IsNullOrWhiteSpace(keyboard))
             {
-                keyboard = null;
-            }
-            else
-            {
-                if (keyboard.StartsWith("HMD_"))
-                {
-                    keyboard = null;
-                }
+                return null;
             }
 
-            var m_currentAction = new Action
+            if (keyboard.StartsWith("HMD_", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            return keyboard;
+        }
+
+        private static ActivationMode CloneActivationMode(ActivationMode source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            return new ActivationMode
+            {
+                Name = source.Name,
+                OnPress = source.OnPress,
+                OnHold = source.OnHold,
+                OnRelease = source.OnRelease,
+                MultiTap = source.MultiTap,
+                MultiTapBlock = source.MultiTapBlock,
+                PressTriggerThreshold = source.PressTriggerThreshold,
+                ReleaseTriggerThreshold = source.ReleaseTriggerThreshold,
+                ReleaseTriggerDelay = source.ReleaseTriggerDelay,
+                Retriggerable = source.Retriggerable,
+                Always = source.Always,
+                NoModifiers = source.NoModifiers,
+                HoldTriggerDelay = source.HoldTriggerDelay
+            };
+        }
+
+        private void ApplyActivationModeOverrides(XElement action, ActivationMode activationMode)
+        {
+            if (activationMode == null)
+            {
+                return;
+            }
+
+            string onPress = (string)action.Attribute("onPress");
+            if (!string.IsNullOrEmpty(onPress))
+            {
+                activationMode.OnPress = onPress;
+            }
+
+            string onHold = (string)action.Attribute("onHold");
+            if (!string.IsNullOrEmpty(onHold))
+            {
+                activationMode.OnHold = onHold;
+            }
+
+            string onRelease = (string)action.Attribute("onRelease");
+            if (!string.IsNullOrEmpty(onRelease))
+            {
+                activationMode.OnRelease = onRelease;
+            }
+
+            string always = (string)action.Attribute("always");
+            if (!string.IsNullOrEmpty(always))
+            {
+                activationMode.Always = always;
+            }
+
+            string noModifiers = (string)action.Attribute("noModifiers");
+            if (!string.IsNullOrEmpty(noModifiers))
+            {
+                activationMode.NoModifiers = noModifiers;
+            }
+
+            string holdTriggerDelay = (string)action.Attribute("holdTriggerDelay");
+            if (!string.IsNullOrEmpty(holdTriggerDelay))
+            {
+                activationMode.HoldTriggerDelay = holdTriggerDelay;
+            }
+        }
+
+        private ActivationMode ResolveActivationMode(XElement action)
+        {
+            string activationMode = (string)action.Attribute("ActivationMode");
+
+            if (string.IsNullOrEmpty(activationMode) || !activationmodes.TryGetValue(activationMode, out var mode))
+            {
+                return null;
+            }
+
+            var clonedMode = CloneActivationMode(mode);
+            ApplyActivationModeOverrides(action, clonedMode);
+
+            return clonedMode;
+        }
+
+        private Action CreateActionFromElement(XElement action, ActionMap actionMap)
+        {
+            string name = (string)action.Attribute("name");
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return null;
+            }
+
+            string uiLabel = (string)action.Attribute("UILabel");
+            if (string.IsNullOrWhiteSpace(uiLabel))
+            {
+                uiLabel = name;
+            }
+
+            string uiDescription = (string)action.Attribute("UIDescription");
+
+            uiLabel = SCUiText.Instance.Text(uiLabel, uiLabel);
+            uiDescription = SCUiText.Instance.Text(uiDescription, uiDescription ?? "");
+
+            string keyboard = NormalizeKeyboardBinding((string)action.Attribute("keyboard"));
+            string mouse = (string)action.Attribute("mouse");
+            string joystick = (string)action.Attribute("joystick");
+            string gamepad = (string)action.Attribute("gamepad");
+
+            var currentActivationMode = ResolveActivationMode(action);
+
+            return new Action
             {
                 MapName = actionMap.Name,
                 MapUICategory = actionMap.UICategory,
@@ -163,13 +208,80 @@ namespace SCJMapper_V2.SC
                 UIDescription = uiDescription,
                 ActivationMode = currentActivationMode,
                 Keyboard = keyboard,
-        
-                Mouse  = mouse,
+
+                Mouse = mouse,
                 Joystick = joystick,
                 Gamepad = gamepad
             };
+        }
 
-            if (!actionMap.Actions.ContainsKey(name))
+        private void ApplyRebind(XElement action, Action currentAction)
+        {
+            if (currentAction == null)
+            {
+                return;
+            }
+
+            XElement rebind = action.Elements().FirstOrDefault(x => x.Name == "rebind");
+            if (rebind == null)
+            {
+                return;
+            }
+
+            string input = (string)rebind.Attribute("input");
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                return;
+            }
+
+            if (input.StartsWith("kb", StringComparison.OrdinalIgnoreCase))
+            {
+                input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
+
+                if (!string.IsNullOrEmpty(input))
+                {
+                    var normalized = NormalizeKeyboardBinding(input);
+                    currentAction.Keyboard = normalized;
+                    currentAction.KeyboardOverRule = !string.IsNullOrEmpty(normalized);
+                }
+            }
+            else if (input.StartsWith("js", StringComparison.OrdinalIgnoreCase))
+            {
+                var instance = input.Substring(2, input.IndexOf("_", StringComparison.Ordinal) - 2);
+
+                input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
+
+                if (!string.IsNullOrEmpty(input))
+                {
+                    currentAction.Joystick = input;
+
+                    if (joysticks.ContainsKey(instance))
+                    {
+                        instance = joysticks[instance];
+                    }
+
+                    currentAction.JoystickOverRule = instance;
+                }
+            }
+            else if (input.StartsWith("mo", StringComparison.OrdinalIgnoreCase))
+            {
+                input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
+
+                if (!string.IsNullOrEmpty(input))
+                {
+                    currentAction.Mouse = input;
+                    currentAction.MouseOverRule = true;
+                }
+            }
+        }
+
+        private void ReadAction(XElement action, ActionMap actionMap)
+        {
+            string name = (string)action.Attribute("name");
+
+            var m_currentAction = CreateActionFromElement(action, actionMap);
+
+            if (!string.IsNullOrWhiteSpace(name) && m_currentAction != null && !actionMap.Actions.ContainsKey(name))
                 actionMap.Actions.Add(name, m_currentAction);
         }
 
@@ -228,7 +340,7 @@ namespace SCJMapper_V2.SC
             if (!maps.ContainsKey(mapName))
             {
                 if (string.IsNullOrEmpty(uiLabel))
-                    return;
+                    uiLabel = mapName;
 
                 if (string.IsNullOrEmpty(uiCategory))
                     uiCategory = mapName;
@@ -255,62 +367,22 @@ namespace SCJMapper_V2.SC
                 {
                     string actionName = (string)action.Attribute("name");
 
-                    if (map.Actions.ContainsKey(actionName))
+                    if (string.IsNullOrWhiteSpace(actionName))
                     {
-                        XElement rebind = action.Elements().FirstOrDefault(x => x.Name == "rebind");
-                        if (rebind != null)
+                        continue;
+                    }
+
+                    if (!map.Actions.TryGetValue(actionName, out var existingAction))
+                    {
+                        existingAction = CreateActionFromElement(action, map);
+
+                        if (existingAction != null)
                         {
-                            string input = (string)rebind.Attribute("input");
-                            if (input != null && input.StartsWith("kb"))
-                            {
-                                input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
-
-                                if (!string.IsNullOrEmpty(input))
-                                {
-                                    map.Actions[actionName].Keyboard = input;
-                                    map.Actions[actionName].KeyboardOverRule = true;
-                                }
-
-                            } else
-                            if (input != null && input.StartsWith("js"))
-                            {
-                                var instance = input.Substring(2, input.IndexOf("_", StringComparison.Ordinal)-2);
-
-                                input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
-
-                                if (!string.IsNullOrEmpty(input))
-                                {
-                                    map.Actions[actionName].Joystick = input;
-
-                                    if (joysticks.ContainsKey(instance))
-                                    {
-                                        instance = joysticks[instance];
-                                    }
-
-                                    map.Actions[actionName].JoystickOverRule = instance;
-                                }
-                            }
-                            else
-                            if (input != null && input.StartsWith("mo"))
-                            {
-                                input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
-
-                                if (!string.IsNullOrEmpty(input))
-                                {
-                                    map.Actions[actionName].Mouse = input;
-                                    map.Actions[actionName].MouseOverRule = true;
-                                }
-                            }
-
+                            map.Actions[actionName] = existingAction;
                         }
                     }
-                    else
-                    {
-                        Logger.Instance.LogMessage(TracingLevel.INFO, actionName + "??????????????????" + mapName);
 
-                        // do something ?????????????
-                    }
-
+                    ApplyRebind(action, existingAction);
                 }
             }
 
