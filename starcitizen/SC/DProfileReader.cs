@@ -63,14 +63,14 @@ namespace SCJMapper_V2.SC
             public string UILabel { get; set; }
             public string UICategory { get; set; }
 
-            public Dictionary<string, Action> Actions { get; set; } = new Dictionary<string, Action>();
+            public Dictionary<string, Action> Actions { get; set; } = new Dictionary<string, Action>(StringComparer.OrdinalIgnoreCase);
         };
 
-        private Dictionary<string, ActionMap> maps = new Dictionary<string, ActionMap>();
-        private Dictionary<string, Action> actions = new Dictionary<string, Action>();
-        private Dictionary<string, ActivationMode> activationmodes = new Dictionary<string, ActivationMode>();
+        private Dictionary<string, ActionMap> maps = new Dictionary<string, ActionMap>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, Action> actions = new Dictionary<string, Action>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, ActivationMode> activationmodes = new Dictionary<string, ActivationMode>(StringComparer.OrdinalIgnoreCase);
 
-        private Dictionary<string, string> joysticks = new Dictionary<string, string>();
+        private Dictionary<string, string> joysticks = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         private static string NormalizeKeyboardBinding(string keyboard)
         {
