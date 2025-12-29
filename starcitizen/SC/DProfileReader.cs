@@ -74,8 +74,6 @@ namespace SCJMapper_V2.SC
 
         private static string NormalizeKeyboardBinding(string keyboard)
         {
-            keyboard = NormalizeBindingValue(keyboard);
-
             if (string.IsNullOrWhiteSpace(keyboard))
             {
                 return null;
@@ -87,49 +85,6 @@ namespace SCJMapper_V2.SC
             }
 
             return keyboard;
-        }
-
-        private static string NormalizeBindingValue(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return null;
-            }
-
-            var trimmed = value.Trim();
-            return trimmed == " " ? null : trimmed;
-        }
-
-        private string ExtractDeviceBinding(XElement action, string attributeName, params string[] elementNames)
-        {
-            var binding = NormalizeBindingValue((string)action.Attribute(attributeName));
-            if (!string.IsNullOrEmpty(binding))
-            {
-                return binding;
-            }
-
-            foreach (var elementName in elementNames)
-            {
-                foreach (var deviceElement in action.Elements().Where(x => x.Name.LocalName.Equals(elementName, StringComparison.OrdinalIgnoreCase)))
-                {
-                    var directInput = NormalizeBindingValue((string)deviceElement.Attribute("input"));
-                    if (!string.IsNullOrEmpty(directInput))
-                    {
-                        return directInput;
-                    }
-
-                    foreach (var inputData in deviceElement.Elements().Where(x => x.Name.LocalName.Equals("inputdata", StringComparison.OrdinalIgnoreCase)))
-                    {
-                        var nestedInput = NormalizeBindingValue((string)inputData.Attribute("input"));
-                        if (!string.IsNullOrEmpty(nestedInput))
-                        {
-                            return nestedInput;
-                        }
-                    }
-                }
-            }
-
-            return null;
         }
 
         private static ActivationMode CloneActivationMode(ActivationMode source)
@@ -229,16 +184,21 @@ namespace SCJMapper_V2.SC
             {
                 uiLabel = name;
             }
+        }
+
+        private ActivationMode ResolveActivationMode(XElement action)
+        {
+            string activationMode = (string)action.Attribute("ActivationMode");
 
             string uiDescription = (string)action.Attribute("UIDescription");
 
             uiLabel = SCUiText.Instance.Text(uiLabel, uiLabel);
             uiDescription = SCUiText.Instance.Text(uiDescription, uiDescription ?? "");
 
-            string keyboard = NormalizeKeyboardBinding(ExtractDeviceBinding(action, "keyboard", "keyboard"));
-            string mouse = NormalizeBindingValue(ExtractDeviceBinding(action, "mouse", "mouse"));
-            string joystick = NormalizeBindingValue(ExtractDeviceBinding(action, "joystick", "joystick"));
-            string gamepad = NormalizeBindingValue(ExtractDeviceBinding(action, "gamepad", "xboxpad", "xiboxpad", "xboxpad3_5"));
+            string keyboard = NormalizeKeyboardBinding((string)action.Attribute("keyboard"));
+            string mouse = (string)action.Attribute("mouse");
+            string joystick = (string)action.Attribute("joystick");
+            string gamepad = (string)action.Attribute("gamepad");
 
             var currentActivationMode = ResolveActivationMode(action);
 
@@ -267,58 +227,55 @@ namespace SCJMapper_V2.SC
                 return;
             }
 
-            var rebinds = action.Elements().Where(x => x.Name == "rebind").ToList();
-            if (!rebinds.Any())
+            XElement rebind = action.Elements().FirstOrDefault(x => x.Name == "rebind");
+            if (rebind == null)
             {
                 return;
             }
 
-            foreach (var rebind in rebinds)
+            string input = (string)rebind.Attribute("input");
+            if (string.IsNullOrWhiteSpace(input))
             {
-                string input = (string)rebind.Attribute("input");
-                if (string.IsNullOrWhiteSpace(input))
+                return;
+            }
+
+            if (input.StartsWith("kb", StringComparison.OrdinalIgnoreCase))
+            {
+                input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
+
+                if (!string.IsNullOrEmpty(input))
                 {
-                    continue;
+                    var normalized = NormalizeKeyboardBinding(input);
+                    currentAction.Keyboard = normalized;
+                    currentAction.KeyboardOverRule = !string.IsNullOrEmpty(normalized);
                 }
+            }
+            else if (input.StartsWith("js", StringComparison.OrdinalIgnoreCase))
+            {
+                var instance = input.Substring(2, input.IndexOf("_", StringComparison.Ordinal) - 2);
 
-                if (input.StartsWith("kb", StringComparison.OrdinalIgnoreCase))
+                input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
+
+                if (!string.IsNullOrEmpty(input))
                 {
-                    input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
+                    currentAction.Joystick = input;
 
-                    if (!string.IsNullOrEmpty(input))
+                    if (joysticks.ContainsKey(instance))
                     {
-                        var normalized = NormalizeKeyboardBinding(input);
-                        currentAction.Keyboard = normalized;
-                        currentAction.KeyboardOverRule = !string.IsNullOrEmpty(normalized);
+                        instance = joysticks[instance];
                     }
+
+                    currentAction.JoystickOverRule = instance;
                 }
-                else if (input.StartsWith("js", StringComparison.OrdinalIgnoreCase))
+            }
+            else if (input.StartsWith("mo", StringComparison.OrdinalIgnoreCase))
+            {
+                input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
+
+                if (!string.IsNullOrEmpty(input))
                 {
-                    var instance = input.Substring(2, input.IndexOf("_", StringComparison.Ordinal) - 2);
-
-                    input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
-
-                    if (!string.IsNullOrEmpty(input))
-                    {
-                        currentAction.Joystick = input;
-
-                        if (joysticks.ContainsKey(instance))
-                        {
-                            instance = joysticks[instance];
-                        }
-
-                        currentAction.JoystickOverRule = instance;
-                    }
-                }
-                else if (input.StartsWith("mo", StringComparison.OrdinalIgnoreCase))
-                {
-                    input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
-
-                    if (!string.IsNullOrEmpty(input))
-                    {
-                        currentAction.Mouse = input;
-                        currentAction.MouseOverRule = true;
-                    }
+                    currentAction.Mouse = input;
+                    currentAction.MouseOverRule = true;
                 }
             }
         }
