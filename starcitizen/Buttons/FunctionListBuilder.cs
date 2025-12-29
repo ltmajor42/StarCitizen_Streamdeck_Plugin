@@ -4,6 +4,7 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using BarRaider.SdTools;
 using starcitizen.Core;
+using SCJMapper_V2.SC;
 
 namespace starcitizen.Buttons
 {
