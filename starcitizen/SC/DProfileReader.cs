@@ -74,8 +74,6 @@ namespace SCJMapper_V2.SC
 
         private static string NormalizeKeyboardBinding(string keyboard)
         {
-            keyboard = NormalizeBindingValue(keyboard);
-
             if (string.IsNullOrWhiteSpace(keyboard))
             {
                 return null;
@@ -87,50 +85,6 @@ namespace SCJMapper_V2.SC
             }
 
             return keyboard;
-        }
-
-        private static string NormalizeBindingValue(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return null;
-            }
-
-            var trimmed = value.Trim();
-            return trimmed == " " ? null : trimmed;
-        }
-
-        private string ExtractDeviceBinding(XElement action, string attributeName, params string[] elementNames)
-        {
-            var binding = NormalizeBindingValue((string)action.Attribute(attributeName));
-            if (!string.IsNullOrEmpty(binding))
-            {
-                return binding;
-            }
-
-            foreach (var elementName in elementNames)
-            {
-                var deviceElement = action.Elements().FirstOrDefault(x => x.Name.LocalName.Equals(elementName, StringComparison.OrdinalIgnoreCase));
-                if (deviceElement == null)
-                {
-                    continue;
-                }
-
-                var directInput = NormalizeBindingValue((string)deviceElement.Attribute("input"));
-                if (!string.IsNullOrEmpty(directInput))
-                {
-                    return directInput;
-                }
-
-                var inputData = deviceElement.Elements().FirstOrDefault(x => x.Name.LocalName.Equals("inputdata", StringComparison.OrdinalIgnoreCase));
-                var nestedInput = NormalizeBindingValue((string)inputData?.Attribute("input"));
-                if (!string.IsNullOrEmpty(nestedInput))
-                {
-                    return nestedInput;
-                }
-            }
-
-            return null;
         }
 
         private static ActivationMode CloneActivationMode(ActivationMode source)
@@ -236,10 +190,10 @@ namespace SCJMapper_V2.SC
             uiLabel = SCUiText.Instance.Text(uiLabel, uiLabel);
             uiDescription = SCUiText.Instance.Text(uiDescription, uiDescription ?? "");
 
-            string keyboard = NormalizeKeyboardBinding(ExtractDeviceBinding(action, "keyboard", "keyboard"));
-            string mouse = NormalizeBindingValue(ExtractDeviceBinding(action, "mouse", "mouse"));
-            string joystick = NormalizeBindingValue(ExtractDeviceBinding(action, "joystick", "joystick"));
-            string gamepad = NormalizeBindingValue(ExtractDeviceBinding(action, "gamepad", "xboxpad", "xiboxpad", "xboxpad3_5"));
+            string keyboard = NormalizeKeyboardBinding((string)action.Attribute("keyboard"));
+            string mouse = (string)action.Attribute("mouse");
+            string joystick = (string)action.Attribute("joystick");
+            string gamepad = (string)action.Attribute("gamepad");
 
             var currentActivationMode = ResolveActivationMode(action);
 
