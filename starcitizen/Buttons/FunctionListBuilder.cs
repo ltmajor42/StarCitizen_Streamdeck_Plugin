@@ -106,25 +106,60 @@ namespace starcitizen.Buttons
                         ["options"] = new JArray()
                     };
 
-                    foreach (var action in group
+                    var orderedGroup = group
                         .OrderByDescending(x => !string.IsNullOrWhiteSpace(x.Keyboard))
                         .ThenBy(x => x.MapUICategory)
-                        .ThenBy(x => x.UILabel))
+                        .ThenBy(x => x.UILabel)
+                        .ToList();
+
+                    var actionWithBindings = orderedGroup
+                        .Select(action =>
+                        {
+                            TryGetPrimaryBinding(action, culture, out var primaryBinding, out var bindingType);
+                            return new
+                            {
+                                Action = action,
+                                PrimaryBinding = primaryBinding,
+                                BindingType = bindingType
+                            };
+                        })
+                        .ToList();
+
+                    var duplicateKeys = actionWithBindings
+                        .GroupBy(x => new { x.Action.UILabel, x.PrimaryBinding, x.BindingType })
+                        .Where(g => g.Count() > 1)
+                        .Select(g => g.Key)
+                        .ToHashSet();
+
+                    foreach (var actionInfo in actionWithBindings)
                     {
-                        TryGetPrimaryBinding(action, culture, out var primaryBinding, out var bindingType);
+                        var action = actionInfo.Action;
+                        var primaryBinding = actionInfo.PrimaryBinding;
+                        var bindingType = actionInfo.BindingType;
 
                         string bindingDisplay = string.IsNullOrWhiteSpace(primaryBinding) ? "" : $" [{primaryBinding}]";
                         string overruleIndicator = action.KeyboardOverRule || action.MouseOverRule ? " *" : "";
+                        string uniqueSuffix = "";
+
+                        if (duplicateKeys.Contains(new { action.UILabel, actionInfo.PrimaryBinding, actionInfo.BindingType }))
+                        {
+                            var actionName = action.Name?.StartsWith($"{action.MapName}-", StringComparison.OrdinalIgnoreCase) == true
+                                ? action.Name.Substring(action.MapName.Length + 1)
+                                : action.Name;
+                            uniqueSuffix = $" ({action.MapName}:{actionName})";
+                        }
 
                         ((JArray)groupObj["options"]).Add(new JObject
                         {
                             ["value"] = action.Name,
-                            ["text"] = $"{action.UILabel}{bindingDisplay}{overruleIndicator}",
+                            ["text"] = $"{action.UILabel}{bindingDisplay}{overruleIndicator}{uniqueSuffix}",
                             ["bindingType"] = bindingType,
                             ["searchText"] =
                                 $"{action.UILabel.ToLower()} " +
                                 $"{action.UIDescription?.ToLower() ?? ""} " +
-                                $"{primaryBinding.ToLower()}"
+                                $"{primaryBinding.ToLower()} " +
+                                $"{action.Name.ToLower()} " +
+                                $"{action.MapName.ToLower()}"
                         });
                     }
 
