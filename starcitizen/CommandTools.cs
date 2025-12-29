@@ -33,7 +33,13 @@ namespace starcitizen
             var builder = new StringBuilder();
             foreach (var key in keys)
             {
-                builder.Append('{').Append(FromSCKeyboardCmd(key)).Append('}');
+                if (!TryGetDirectInputKey(key.Trim(), out var dikKey))
+                {
+                    Logger.Instance.LogMessage(TracingLevel.WARN, $"ConvertKeyString received unknown key '{key}'. Skipping send.");
+                    return string.Empty;
+                }
+
+                builder.Append('{').Append(dikKey).Append('}');
             }
 
             return builder.ToString();
@@ -58,7 +64,11 @@ namespace starcitizen
             var builder = new StringBuilder();
             foreach (var key in keys)
             {
-                var dikKey = FromSCKeyboardCmd(key);
+                if (!TryGetDirectInputKey(key.Trim(), out var dikKey))
+                {
+                    Logger.Instance.LogMessage(TracingLevel.WARN, $"ConvertKeyStringToLocale received unknown key '{key}'. Skipping send.");
+                    return string.Empty;
+                }
 
                 var dikKeyOut = dikKey.ToString();
 
@@ -127,66 +137,66 @@ namespace starcitizen
 
                         // http://kbdlayout.info/kbdsg/shiftstates+scancodes/base
 
-                        switch (dikKey)
-                        {
-                            // FIRST ROW
-                            case DirectInputKeyCode.DikGrave:
-                                dikKeyOut = "Dik§";
-                                break;
-
-                            case DirectInputKeyCode.DikMinus:
-                                dikKeyOut = "Dik'";
-                                break;
-
-                            case DirectInputKeyCode.DikEquals:
-                                dikKeyOut = "Dik^";
-                                break;
-
-                            // SECOND ROW 
-                            case DirectInputKeyCode.DikY:
-                                dikKeyOut = "DikZ";
-                                break;
-
-                            case DirectInputKeyCode.DikLbracket:
-                                dikKeyOut = "DikÜ";
-                                break;
-
-                            case DirectInputKeyCode.DikRbracket:
-                                dikKeyOut = "Dik¨";
-                                break;
-
-                            case DirectInputKeyCode.DikBackslash:
-                                dikKeyOut = "Dik$";
-                                break;
-
-                            // THIRD ROW
-                            case DirectInputKeyCode.DikSemicolon:
-                                dikKeyOut = "DikÖ";
-                                break;
-
-                            case DirectInputKeyCode.DikApostrophe:
-                                dikKeyOut = "DikÄ";
-                                break;
-
-                            // FOURTH ROW
-                            case DirectInputKeyCode.DikZ:
-                                dikKeyOut = "DikY";
-                                break;
-
-                            case DirectInputKeyCode.DikComma:
-                                dikKeyOut = "Dik,";
-                                break;
-
-                            case DirectInputKeyCode.DikPeriod:
-                                dikKeyOut = "Dik.";
-                                break;
-
-                            case DirectInputKeyCode.DikSlash:
-                                dikKeyOut = "Dik-";
-                                break;
-
-                        }
+                switch (dikKey)
+                {
+                    // FIRST ROW
+                    case DirectInputKeyCode.DikGrave:
+                        dikKeyOut = "Dik§";
                         break;
+
+                    case DirectInputKeyCode.DikMinus:
+                        dikKeyOut = "Dik'";
+                        break;
+
+                    case DirectInputKeyCode.DikEquals:
+                        dikKeyOut = "Dik^";
+                        break;
+
+                    // SECOND ROW 
+                    case DirectInputKeyCode.DikY:
+                        dikKeyOut = "DikZ";
+                        break;
+
+                    case DirectInputKeyCode.DikLbracket:
+                        dikKeyOut = "DikÜ";
+                        break;
+
+                    case DirectInputKeyCode.DikRbracket:
+                        dikKeyOut = "Dik¨";
+                        break;
+
+                    case DirectInputKeyCode.DikBackslash:
+                        dikKeyOut = "Dik$";
+                        break;
+
+                    // THIRD ROW
+                    case DirectInputKeyCode.DikSemicolon:
+                        dikKeyOut = "DikÖ";
+                        break;
+
+                    case DirectInputKeyCode.DikApostrophe:
+                        dikKeyOut = "DikÄ";
+                        break;
+
+                    // FOURTH ROW
+                    case DirectInputKeyCode.DikZ:
+                        dikKeyOut = "DikY";
+                        break;
+
+                    case DirectInputKeyCode.DikComma:
+                        dikKeyOut = "Dik,";
+                        break;
+
+                    case DirectInputKeyCode.DikPeriod:
+                        dikKeyOut = "Dik.";
+                        break;
+
+                    case DirectInputKeyCode.DikSlash:
+                        dikKeyOut = "Dik-";
+                        break;
+
+                }
+                break;
 
 
                     case "es-ES":
@@ -670,114 +680,114 @@ namespace starcitizen
             return builder.ToString();
         }
 
-        private static DirectInputKeyCode FromSCKeyboardCmd(string scKey)
+        private static bool TryGetDirectInputKey(string scKey, out DirectInputKeyCode dikKey)
         {
             switch (scKey)
             {
                 // handle modifiers first
-                case "lalt": return DirectInputKeyCode.DikLalt;
-                case "ralt": return DirectInputKeyCode.DikRalt;
-                case "lshift": return DirectInputKeyCode.DikLshift;
-                case "rshift": return DirectInputKeyCode.DikRshift;
-                case "lctrl": return DirectInputKeyCode.DikLcontrol;
-                case "rctrl": return DirectInputKeyCode.DikRcontrol;
+                case "lalt": dikKey = DirectInputKeyCode.DikLalt; return true;
+                case "ralt": dikKey = DirectInputKeyCode.DikRalt; return true;
+                case "lshift": dikKey = DirectInputKeyCode.DikLshift; return true;
+                case "rshift": dikKey = DirectInputKeyCode.DikRshift; return true;
+                case "lctrl": dikKey = DirectInputKeyCode.DikLcontrol; return true;
+                case "rctrl": dikKey = DirectInputKeyCode.DikRcontrol; return true;
 
                 // function keys first 
-                case "f1": return DirectInputKeyCode.DikF1;
-                case "f2": return DirectInputKeyCode.DikF2;
-                case "f3": return DirectInputKeyCode.DikF3;
-                case "f4": return DirectInputKeyCode.DikF4;
-                case "f5": return DirectInputKeyCode.DikF5;
-                case "f6": return DirectInputKeyCode.DikF6;
-                case "f7": return DirectInputKeyCode.DikF7;
-                case "f8": return DirectInputKeyCode.DikF8;
-                case "f9": return DirectInputKeyCode.DikF9;
-                case "f10": return DirectInputKeyCode.DikF10;
-                case "f11": return DirectInputKeyCode.DikF11;
-                case "f12": return DirectInputKeyCode.DikF12;
-                case "f13": return DirectInputKeyCode.DikF13;
-                case "f14": return DirectInputKeyCode.DikF14;
-                case "f15": return DirectInputKeyCode.DikF15;
+                case "f1": dikKey = DirectInputKeyCode.DikF1; return true;
+                case "f2": dikKey = DirectInputKeyCode.DikF2; return true;
+                case "f3": dikKey = DirectInputKeyCode.DikF3; return true;
+                case "f4": dikKey = DirectInputKeyCode.DikF4; return true;
+                case "f5": dikKey = DirectInputKeyCode.DikF5; return true;
+                case "f6": dikKey = DirectInputKeyCode.DikF6; return true;
+                case "f7": dikKey = DirectInputKeyCode.DikF7; return true;
+                case "f8": dikKey = DirectInputKeyCode.DikF8; return true;
+                case "f9": dikKey = DirectInputKeyCode.DikF9; return true;
+                case "f10": dikKey = DirectInputKeyCode.DikF10; return true;
+                case "f11": dikKey = DirectInputKeyCode.DikF11; return true;
+                case "f12": dikKey = DirectInputKeyCode.DikF12; return true;
+                case "f13": dikKey = DirectInputKeyCode.DikF13; return true;
+                case "f14": dikKey = DirectInputKeyCode.DikF14; return true;
+                case "f15": dikKey = DirectInputKeyCode.DikF15; return true;
 
                 // all keys where the DX name does not match the SC name
                 // Numpad
-                case "numlock": return DirectInputKeyCode.DikNumlock;
+                case "numlock": dikKey = DirectInputKeyCode.DikNumlock; return true;
 
-                case "np_divide": return DirectInputKeyCode.DikDivide;
-                case "np_multiply": return DirectInputKeyCode.DikMultiply;
-                case "np_subtract": return DirectInputKeyCode.DikSubtract;
-                case "np_add": return DirectInputKeyCode.DikAdd;
-                case "np_period": return DirectInputKeyCode.DikDecimal;
-                case "np_enter": return DirectInputKeyCode.DikNumpadenter;
-                case "np_0": return DirectInputKeyCode.DikNumpad0;
-                case "np_1": return DirectInputKeyCode.DikNumpad1;
-                case "np_2": return DirectInputKeyCode.DikNumpad2;
-                case "np_3": return DirectInputKeyCode.DikNumpad3;
-                case "np_4": return DirectInputKeyCode.DikNumpad4;
-                case "np_5": return DirectInputKeyCode.DikNumpad5;
-                case "np_6": return DirectInputKeyCode.DikNumpad6;
-                case "np_7": return DirectInputKeyCode.DikNumpad7;
-                case "np_8": return DirectInputKeyCode.DikNumpad8;
-                case "np_9": return DirectInputKeyCode.DikNumpad9;
+                case "np_divide": dikKey = DirectInputKeyCode.DikDivide; return true;
+                case "np_multiply": dikKey = DirectInputKeyCode.DikMultiply; return true;
+                case "np_subtract": dikKey = DirectInputKeyCode.DikSubtract; return true;
+                case "np_add": dikKey = DirectInputKeyCode.DikAdd; return true;
+                case "np_period": dikKey = DirectInputKeyCode.DikDecimal; return true;
+                case "np_enter": dikKey = DirectInputKeyCode.DikNumpadenter; return true;
+                case "np_0": dikKey = DirectInputKeyCode.DikNumpad0; return true;
+                case "np_1": dikKey = DirectInputKeyCode.DikNumpad1; return true;
+                case "np_2": dikKey = DirectInputKeyCode.DikNumpad2; return true;
+                case "np_3": dikKey = DirectInputKeyCode.DikNumpad3; return true;
+                case "np_4": dikKey = DirectInputKeyCode.DikNumpad4; return true;
+                case "np_5": dikKey = DirectInputKeyCode.DikNumpad5; return true;
+                case "np_6": dikKey = DirectInputKeyCode.DikNumpad6; return true;
+                case "np_7": dikKey = DirectInputKeyCode.DikNumpad7; return true;
+                case "np_8": dikKey = DirectInputKeyCode.DikNumpad8; return true;
+                case "np_9": dikKey = DirectInputKeyCode.DikNumpad9; return true;
                 // Digits
-                case "0": return DirectInputKeyCode.Dik0;
-                case "1": return DirectInputKeyCode.Dik1;
-                case "2": return DirectInputKeyCode.Dik2;
-                case "3": return DirectInputKeyCode.Dik3;
-                case "4": return DirectInputKeyCode.Dik4;
-                case "5": return DirectInputKeyCode.Dik5;
-                case "6": return DirectInputKeyCode.Dik6;
-                case "7": return DirectInputKeyCode.Dik7;
-                case "8": return DirectInputKeyCode.Dik8;
-                case "9": return DirectInputKeyCode.Dik9;
+                case "0": dikKey = DirectInputKeyCode.Dik0; return true;
+                case "1": dikKey = DirectInputKeyCode.Dik1; return true;
+                case "2": dikKey = DirectInputKeyCode.Dik2; return true;
+                case "3": dikKey = DirectInputKeyCode.Dik3; return true;
+                case "4": dikKey = DirectInputKeyCode.Dik4; return true;
+                case "5": dikKey = DirectInputKeyCode.Dik5; return true;
+                case "6": dikKey = DirectInputKeyCode.Dik6; return true;
+                case "7": dikKey = DirectInputKeyCode.Dik7; return true;
+                case "8": dikKey = DirectInputKeyCode.Dik8; return true;
+                case "9": dikKey = DirectInputKeyCode.Dik9; return true;
                 // navigation
-                case "insert": return DirectInputKeyCode.DikInsert;
-                case "home": return DirectInputKeyCode.DikHome;
-                case "delete": return DirectInputKeyCode.DikDelete;
-                case "end": return DirectInputKeyCode.DikEnd;
-                case "pgup": return DirectInputKeyCode.DikPageUp;
-                case "pgdown": return DirectInputKeyCode.DikPageDown;
-                case "pgdn": return DirectInputKeyCode.DikPageDown;
-                case "print": return DirectInputKeyCode.DikPrintscreen;
-                case "scrolllock": return DirectInputKeyCode.DikScroll;
-                case "pause": return DirectInputKeyCode.DikPause;
+                case "insert": dikKey = DirectInputKeyCode.DikInsert; return true;
+                case "home": dikKey = DirectInputKeyCode.DikHome; return true;
+                case "delete": dikKey = DirectInputKeyCode.DikDelete; return true;
+                case "end": dikKey = DirectInputKeyCode.DikEnd; return true;
+                case "pgup": dikKey = DirectInputKeyCode.DikPageUp; return true;
+                case "pgdown": dikKey = DirectInputKeyCode.DikPageDown; return true;
+                case "pgdn": dikKey = DirectInputKeyCode.DikPageDown; return true;
+                case "print": dikKey = DirectInputKeyCode.DikPrintscreen; return true;
+                case "scrolllock": dikKey = DirectInputKeyCode.DikScroll; return true;
+                case "pause": dikKey = DirectInputKeyCode.DikPause; return true;
                 // Arrows
-                case "up": return DirectInputKeyCode.DikUp;
-                case "down": return DirectInputKeyCode.DikDown;
-                case "left": return DirectInputKeyCode.DikLeft;
-                case "right": return DirectInputKeyCode.DikRight;
+                case "up": dikKey = DirectInputKeyCode.DikUp; return true;
+                case "down": dikKey = DirectInputKeyCode.DikDown; return true;
+                case "left": dikKey = DirectInputKeyCode.DikLeft; return true;
+                case "right": dikKey = DirectInputKeyCode.DikRight; return true;
                 // non letters
-                case "escape": return DirectInputKeyCode.DikEscape;
-                case "minus": return DirectInputKeyCode.DikMinus;
-                case "equals": return DirectInputKeyCode.DikEquals;
-                case "grave": return DirectInputKeyCode.DikGrave;
-                case "underline": return DirectInputKeyCode.DikUnderline;
-                case "backspace": return DirectInputKeyCode.DikBackspace;
-                case "tab": return DirectInputKeyCode.DikTab;
-                case "lbracket": return DirectInputKeyCode.DikLbracket;
-                case "rbracket": return DirectInputKeyCode.DikRbracket;
-                case "enter": return DirectInputKeyCode.DikReturn;
-                case "capslock": return DirectInputKeyCode.DikCapital;
-                case "colon": return DirectInputKeyCode.DikColon;
-                case "backslash": return DirectInputKeyCode.DikBackslash;
-                case "comma": return DirectInputKeyCode.DikComma;
-                case "period": return DirectInputKeyCode.DikPeriod;
-                case "slash": return DirectInputKeyCode.DikSlash;
-                case "space": return DirectInputKeyCode.DikSpace;
-                case "semicolon": return DirectInputKeyCode.DikSemicolon;
-                case "apostrophe": return DirectInputKeyCode.DikApostrophe;
+                case "escape": dikKey = DirectInputKeyCode.DikEscape; return true;
+                case "minus": dikKey = DirectInputKeyCode.DikMinus; return true;
+                case "equals": dikKey = DirectInputKeyCode.DikEquals; return true;
+                case "grave": dikKey = DirectInputKeyCode.DikGrave; return true;
+                case "underline": dikKey = DirectInputKeyCode.DikUnderline; return true;
+                case "backspace": dikKey = DirectInputKeyCode.DikBackspace; return true;
+                case "tab": dikKey = DirectInputKeyCode.DikTab; return true;
+                case "lbracket": dikKey = DirectInputKeyCode.DikLbracket; return true;
+                case "rbracket": dikKey = DirectInputKeyCode.DikRbracket; return true;
+                case "enter": dikKey = DirectInputKeyCode.DikReturn; return true;
+                case "capslock": dikKey = DirectInputKeyCode.DikCapital; return true;
+                case "colon": dikKey = DirectInputKeyCode.DikColon; return true;
+                case "backslash": dikKey = DirectInputKeyCode.DikBackslash; return true;
+                case "comma": dikKey = DirectInputKeyCode.DikComma; return true;
+                case "period": dikKey = DirectInputKeyCode.DikPeriod; return true;
+                case "slash": dikKey = DirectInputKeyCode.DikSlash; return true;
+                case "space": dikKey = DirectInputKeyCode.DikSpace; return true;
+                case "semicolon": dikKey = DirectInputKeyCode.DikSemicolon; return true;
+                case "apostrophe": dikKey = DirectInputKeyCode.DikApostrophe; return true;
 
                 // all where the lowercase DX name matches the SC name
                 default:
                     var letter = "Dik" + scKey.ToUpperInvariant();
                     if (Enum.TryParse(letter, out DirectInputKeyCode dxKey))
                     {
-                        return dxKey;
+                        dikKey = dxKey;
+                        return true;
                     }
-                    else
-                    {
-                        return DirectInputKeyCode.DikEscape;
-                    }
+
+                    dikKey = default;
+                    return false;
             }
 
         }
