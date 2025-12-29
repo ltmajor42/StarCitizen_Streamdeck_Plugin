@@ -4,6 +4,7 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using BarRaider.SdTools;
 using starcitizen.Core;
+using SCJMapper_V2.SC;
 
 namespace starcitizen.Buttons
 {
@@ -12,6 +13,47 @@ namespace starcitizen.Buttons
         private static readonly object CacheLock = new object();
         private static int cachedVersion = -1;
         private static JArray cachedFunctions;
+
+        private static bool TryGetPrimaryBinding(DProfileReader.Action action, CultureInfo culture, out string binding, out string bindingType)
+        {
+            binding = string.Empty;
+            bindingType = string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(action.Keyboard))
+            {
+                var keyString = CommandTools.ConvertKeyStringToLocale(action.Keyboard, culture.Name);
+                binding = keyString
+                    .Replace("Dik", "")
+                    .Replace("}{", "+")
+                    .Replace("}", "")
+                    .Replace("{", "");
+                bindingType = "keyboard";
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(action.Mouse))
+            {
+                binding = action.Mouse;
+                bindingType = "mouse";
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(action.Joystick))
+            {
+                binding = action.Joystick;
+                bindingType = "joystick";
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(action.Gamepad))
+            {
+                binding = action.Gamepad;
+                bindingType = "gamepad";
+                return true;
+            }
+
+            return false;
+        }
 
         public static JArray BuildFunctionsData(bool includeUnboundActions = true)
         {
@@ -64,36 +106,12 @@ namespace starcitizen.Buttons
                         ["options"] = new JArray()
                     };
 
-                    foreach (var action in group.OrderBy(x => x.MapUICategory).ThenBy(x => x.UILabel))
+                    foreach (var action in group
+                        .OrderByDescending(x => !string.IsNullOrWhiteSpace(x.Keyboard))
+                        .ThenBy(x => x.MapUICategory)
+                        .ThenBy(x => x.UILabel))
                     {
-                        string primaryBinding = "";
-                        string bindingType = "";
-
-                        if (!string.IsNullOrWhiteSpace(action.Keyboard))
-                        {
-                            var keyString = CommandTools.ConvertKeyStringToLocale(action.Keyboard, culture.Name);
-                            primaryBinding = keyString
-                                .Replace("Dik", "")
-                                .Replace("}{", "+")
-                                .Replace("}", "")
-                                .Replace("{", "");
-                            bindingType = "keyboard";
-                        }
-                        else if (!string.IsNullOrWhiteSpace(action.Mouse))
-                        {
-                            primaryBinding = action.Mouse;
-                            bindingType = "mouse";
-                        }
-                        else if (!string.IsNullOrWhiteSpace(action.Joystick))
-                        {
-                            primaryBinding = action.Joystick;
-                            bindingType = "joystick";
-                        }
-                        else if (!string.IsNullOrWhiteSpace(action.Gamepad))
-                        {
-                            primaryBinding = action.Gamepad;
-                            bindingType = "gamepad";
-                        }
+                        TryGetPrimaryBinding(action, culture, out var primaryBinding, out var bindingType);
 
                         string bindingDisplay = string.IsNullOrWhiteSpace(primaryBinding) ? "" : $" [{primaryBinding}]";
                         string overruleIndicator = action.KeyboardOverRule || action.MouseOverRule ? " *" : "";

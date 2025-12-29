@@ -431,17 +431,19 @@ namespace SCJMapper_V2.SC
 
         public Action GetBinding(string key)
         {
+            return TryGetBinding(key, out var action) ? action : null;
+        }
+
+        public bool TryGetBinding(string key, out Action action)
+        {
+            action = null;
+
             if (string.IsNullOrEmpty(key))
             {
-                return null;
+                return false;
             }
 
-            if (actions.ContainsKey(key))
-            {
-                return actions[key];
-            }
-
-            return null;
+            return actions.TryGetValue(key, out action);
         }
 
         public void CreateCsv(bool enableCsvExport)
