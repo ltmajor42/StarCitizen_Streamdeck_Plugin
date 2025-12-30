@@ -90,7 +90,28 @@ namespace SCJMapper_V2.SC
                 try
                 {
                     var PD = new p4kFile.p4kDirectory();
-                    p4kFile.p4kFile p4K = PD.ScanDirectoryFor(SCPath.SCData_p4k, SCDefaultProfile.DefaultProfileName);
+                    // Multiple copies of defaultProfile.xml can exist inside Data.p4k.
+                    // Picking the "first match" is unstable and can lead to missing/incorrect bindings.
+                    var candidates = PD.ScanDirectoryForAllEndsWith(SCPath.SCData_p4k, SCDefaultProfile.DefaultProfileName);
+
+                    p4kFile.p4kFile p4K = null;
+                    if (candidates != null && candidates.Count > 0)
+                    {
+                        foreach (var c in candidates)
+                        {
+                            Logger.Instance.LogMessage(TracingLevel.DEBUG,
+                                $"defaultProfile candidate: {c.Filename} (size={c.FileSize}, date={c.FileModifyDate:s})");
+                        }
+
+                        p4K = candidates
+                            .OrderByDescending(f => IsCanonicalDefaultProfilePath(f.Filename) ? 1 : 0)
+                            .ThenByDescending(f => f.FileSize)
+                            .ThenByDescending(f => f.FileModifyDate)
+                            .FirstOrDefault();
+
+                        Logger.Instance.LogMessage(TracingLevel.INFO,
+                            $"defaultProfile.xml candidates: {candidates.Count}, chosen: {p4K?.Filename ?? "(none)"}");
+                    }
                     if (p4K != null)
                     {
                         byte[] fContent = PD.GetFile(SCPath.SCData_p4k, p4K);
@@ -125,6 +146,17 @@ namespace SCJMapper_V2.SC
                 }
 
             }
+        }
+
+        private static bool IsCanonicalDefaultProfilePath(string filename)
+        {
+            if (string.IsNullOrWhiteSpace(filename)) return false;
+
+            var normalized = filename.Replace('/', '\\').ToLowerInvariant();
+            // Typical location observed inside Data.p4k:
+            // Data\Libs\Config\Profiles\default\defaultProfile.xml
+            return normalized.Contains("\\data\\libs\\config\\profiles\\default\\") &&
+                   normalized.EndsWith("\\" + SCDefaultProfile.DefaultProfileName.ToLowerInvariant());
         }
 
         /// <summary>

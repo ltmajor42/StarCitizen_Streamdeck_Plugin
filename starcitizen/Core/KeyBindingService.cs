@@ -66,7 +66,8 @@ namespace starcitizen.Core
                 return false;
             }
 
-            return reader.TryGetBinding(functionName, out action);
+            action = reader.GetBinding(functionName);
+            return action != null;
         }
 
         public void Dispose()

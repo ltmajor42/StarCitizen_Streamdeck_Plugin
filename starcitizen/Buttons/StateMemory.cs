@@ -190,11 +190,7 @@ namespace starcitizen.Buttons
                 if (bindingService.Reader == null) return;
                 if (string.IsNullOrWhiteSpace(settings.Function)) return;
 
-                if (!bindingService.Reader.TryGetBinding(settings.Function, out var binding))
-                {
-                    return;
-                }
-
+                var binding = bindingService.Reader.GetBinding(settings.Function);
                 var keyboard = binding != null ? binding.Keyboard : null;
 
                 if (string.IsNullOrWhiteSpace(keyboard)) return;

@@ -825,6 +825,50 @@ namespace SCJMapper_V2.SC
         }
 
 
+        private static bool ReadBoolAppSetting(string key, bool defaultValue)
+        {
+            try
+            {
+                if (File.Exists("appSettings.config") &&
+                    ConfigurationManager.GetSection("appSettings") is NameValueCollection appSection)
+                {
+                    var raw = appSection[key];
+                    if (!string.IsNullOrWhiteSpace(raw) && bool.TryParse(raw, out var value))
+                    {
+                        return value;
+                    }
+                }
+            }
+            catch
+            {
+                // ignored
+            }
+
+            return defaultValue;
+        }
+
+
+        /// <summary>
+        /// Optional behavior fix: if actionmaps.xml contains an explicit blank rebind (e.g. kb1_ with nothing after the underscore),
+        /// treat it as an explicit UNBIND instead of ignoring it.
+        /// Default: false (legacy behavior).
+        /// </summary>
+        public static bool TreatBlankRebindAsUnbound => ReadBoolAppSetting("TreatBlankRebindAsUnbound", false);
+
+        /// <summary>
+        /// Optional safety fix: unknown SC key tokens should not silently map to Escape.
+        /// If enabled, unknown tokens are displayed as-is, and sending will skip them.
+        /// Default: false (legacy behavior).
+        /// </summary>
+        public static bool SafeUnknownKeyTokens => ReadBoolAppSetting("SafeUnknownKeyTokens", false);
+
+        /// <summary>
+        /// Optional feature: allow mouse tokens (mouse1/mwheelup/...) to be sent via InputSimulator.
+        /// Default: false (legacy behavior).
+        /// </summary>
+        public static bool EnableMouseOutput => ReadBoolAppSetting("EnableMouseOutput", false);
+
+
 
     }
 }
