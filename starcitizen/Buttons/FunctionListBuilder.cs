@@ -61,13 +61,18 @@ namespace starcitizen.Buttons
                     var duplicateKeys = group
                         .Select(a =>
                         {
-                            var bindingInfo = GetBindingInfo(a.Keyboard, culture.Name);
+                            var keyString = CommandTools.ConvertKeyStringToLocale(a.Keyboard, culture.Name);
+                            var primaryBinding = keyString
+                                .Replace("Dik", "")
+                                .Replace("}{", "+")
+                                .Replace("}", "")
+                                .Replace("{", "");
 
                             return new
                             {
                                 a.UILabel,
-                                bindingInfo.PrimaryBinding,
-                                bindingInfo.BindingType
+                                PrimaryBinding = primaryBinding,
+                                BindingType = "keyboard"
                             };
                         })
                         .GroupBy(x => x)
