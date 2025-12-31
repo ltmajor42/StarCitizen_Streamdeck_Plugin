@@ -118,6 +118,48 @@ namespace SCJMapper_V2.p4kFile
 
 
     /// <summary>
+    /// Scans directory entries and returns a list of matching file descriptors (string.EndsWith is used, case-insensitive).
+    /// This is useful when multiple copies of the same filename exist inside the p4k ("first match wins" would be unstable).
+    /// </summary>
+    /// <param name="p4kFilename">The p4k file</param>
+    /// <param name="filename">The filename to look for</param>
+    public IList<p4kFile> ScanDirectoryForAllEndsWith(string p4kFilename, string filename)
+    {
+      if (!File.Exists(p4kFilename)) return null;
+
+      List<p4kFile> fileList = new List<p4kFile>();
+
+      using (p4kRecReader reader = new p4kRecReader(p4kFilename))
+      {
+        // work from the end of the file
+        reader.GotoLastPage();
+        m_endOfCentralDirRecord = new p4kEndOfCentralDirRecord(reader);
+
+        // position first
+        reader.Seek(m_endOfCentralDirRecord.RecordOffset - p4kRecReader.PageSize);
+        m_z64EndOfCentralDirLocator = new p4kZ64EndOfCentralDirLocator(reader);
+
+        // for the next the position should be found already - seek it
+        reader.Seek(m_z64EndOfCentralDirLocator.Z64EndOfCentralDir);
+        m_z64EndOfCentralDirRecord = new p4kZ64EndOfCentralDirRecord(reader);
+
+        // position first
+        reader.Seek(m_z64EndOfCentralDirRecord.Z64StartOfCentralDir);
+        for (long i = 0; i < m_z64EndOfCentralDirRecord.NumberOfEntries; i++)
+        {
+          p4kDirectoryEntry de = new p4kDirectoryEntry(reader);
+          if (!string.IsNullOrEmpty(filename) && de.Filename.EndsWith(filename, StringComparison.OrdinalIgnoreCase))
+          {
+            fileList.Add(new p4kFile(de));
+          }
+        }
+      }
+
+      return fileList;
+    }
+
+
+    /// <summary>
     /// Scans directory entries and return the a list of matching file descriptors (string.Contains is used)
     /// </summary>
     /// <param name="p4kFilename">The p4k file</param>

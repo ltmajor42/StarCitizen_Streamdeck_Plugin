@@ -270,6 +270,11 @@ namespace SCJMapper_V2.SC
                                     map.Actions[actionName].Keyboard = input;
                                     map.Actions[actionName].KeyboardOverRule = true;
                                 }
+                                else if (SCPath.TreatBlankRebindAsUnbound)
+                                {
+                                    map.Actions[actionName].Keyboard = "";
+                                    map.Actions[actionName].KeyboardOverRule = true;
+                                }
 
                             } else
                             if (input != null && input.StartsWith("js"))
@@ -289,6 +294,11 @@ namespace SCJMapper_V2.SC
 
                                     map.Actions[actionName].JoystickOverRule = instance;
                                 }
+                                else if (SCPath.TreatBlankRebindAsUnbound)
+                                {
+                                    map.Actions[actionName].Joystick = "";
+                                    map.Actions[actionName].JoystickOverRule = instance;
+                                }
                             }
                             else
                             if (input != null && input.StartsWith("mo"))
@@ -298,6 +308,11 @@ namespace SCJMapper_V2.SC
                                 if (!string.IsNullOrEmpty(input))
                                 {
                                     map.Actions[actionName].Mouse = input;
+                                    map.Actions[actionName].MouseOverRule = true;
+                                }
+                                else if (SCPath.TreatBlankRebindAsUnbound)
+                                {
+                                    map.Actions[actionName].Mouse = "";
                                     map.Actions[actionName].MouseOverRule = true;
                                 }
                             }
@@ -431,19 +446,17 @@ namespace SCJMapper_V2.SC
 
         public Action GetBinding(string key)
         {
-            return TryGetBinding(key, out var action) ? action : null;
-        }
-
-        public bool TryGetBinding(string key, out Action action)
-        {
-            action = null;
-
             if (string.IsNullOrEmpty(key))
             {
-                return false;
+                return null;
             }
 
-            return actions.TryGetValue(key, out action);
+            if (actions.ContainsKey(key))
+            {
+                return actions[key];
+            }
+
+            return null;
         }
 
         public void CreateCsv(bool enableCsvExport)
