@@ -279,16 +279,37 @@ namespace starcitizen.Buttons
             return false;
         }
 
-        private static bool IsMouseToken(string token)
+        private static (string PrimaryBinding, string BindingType) GetBindingInfo(string keyboard, string cultureName)
         {
-            if (string.IsNullOrWhiteSpace(token))
+            var keyString = CommandTools.ConvertKeyStringToLocale(keyboard, cultureName);
+            var primaryBinding = keyString
+                .Replace("Dik", "")
+                .Replace("}{", "+")
+                .Replace("}", "")
+                .Replace("{", "");
+
+            var bindingType = ContainsMouseToken(keyboard) ? "mouse" : "keyboard";
+
+            return (primaryBinding, bindingType);
+        }
+
+        private static bool ContainsMouseToken(string binding)
+        {
+            if (string.IsNullOrWhiteSpace(binding))
             {
                 return false;
             }
 
-            var t = token.Trim().ToLowerInvariant();
-            return t == "mouse1" || t == "mouse2" || t == "mouse3" || t == "mouse4" || t == "mouse5" ||
-                   t == "mwheelup" || t == "mwheeldown" || t == "mwheelleft" || t == "mwheelright";
+            var tokens = binding.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var token in tokens)
+            {
+                if (MouseTokenHelper.TryNormalize(token, out _) || MouseTokenHelper.IsMouseLike(token))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string DescribeUnknownTokens(string keyboard)
@@ -302,7 +323,7 @@ namespace starcitizen.Buttons
             var unknowns = tokens
                 .Select(t => t?.Trim())
                 .Where(t => !string.IsNullOrWhiteSpace(t))
-                .Where(t => !IsMouseToken(t))
+                .Where(t => !MouseTokenHelper.IsMouseLike(t))
                 .Where(t => !CommandTools.TryFromSCKeyboardCmd(t, out _))
                 .Distinct()
                 .ToArray();
