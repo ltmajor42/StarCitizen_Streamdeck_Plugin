@@ -91,14 +91,9 @@ namespace starcitizen.Buttons
                         string primaryBinding = "";
                         string bindingType = "";
 
-                        // Keyboard-only (see filter above)
-                        var keyString = CommandTools.ConvertKeyStringToLocale(action.Keyboard, culture.Name);
-                        primaryBinding = keyString
-                            .Replace("Dik", "")
-                            .Replace("}{", "+")
-                            .Replace("}", "")
-                            .Replace("{", "");
-                        bindingType = "keyboard";
+                        var bindingInfo = GetBindingInfo(action.Keyboard, culture.Name);
+                        primaryBinding = bindingInfo.PrimaryBinding;
+                        bindingType = bindingInfo.BindingType;
 
                         string bindingDisplay = string.IsNullOrWhiteSpace(primaryBinding) ? "" : $" [{primaryBinding}]";
                         string overruleIndicator = action.KeyboardOverRule || action.MouseOverRule ? " *" : "";
@@ -225,6 +220,7 @@ namespace starcitizen.Buttons
                 return false;
             }
 
+            var foundValidToken = false;
             foreach (var raw in tokens)
             {
                 var token = raw?.Trim();
@@ -233,20 +229,54 @@ namespace starcitizen.Buttons
                     continue;
                 }
 
-                // Hard exclude mouse tokens in a keyboard field.
-                // The action execution path sends keyboard only; mouse tokens would not execute reliably.
                 if (IsMouseToken(token))
                 {
-                    return false;
+                    foundValidToken = true;
+                    continue;
                 }
 
                 if (!CommandTools.TryFromSCKeyboardCmd(token, out _))
                 {
                     return false;
                 }
+
+                foundValidToken = true;
             }
 
-            return true;
+            return foundValidToken;
+        }
+
+        private static (string PrimaryBinding, string BindingType) GetBindingInfo(string keyboard, string cultureName)
+        {
+            var keyString = CommandTools.ConvertKeyStringToLocale(keyboard, cultureName);
+            var primaryBinding = keyString
+                .Replace("Dik", "")
+                .Replace("}{", "+")
+                .Replace("}", "")
+                .Replace("{", "");
+
+            var bindingType = ContainsMouseToken(primaryBinding) ? "mouse" : "keyboard";
+
+            return (primaryBinding, bindingType);
+        }
+
+        private static bool ContainsMouseToken(string binding)
+        {
+            if (string.IsNullOrWhiteSpace(binding))
+            {
+                return false;
+            }
+
+            var tokens = binding.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var token in tokens)
+            {
+                if (IsMouseToken(token))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool IsMouseToken(string token)
