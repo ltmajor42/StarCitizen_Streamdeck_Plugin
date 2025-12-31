@@ -13,7 +13,7 @@ using starcitizen.Core;
 
 namespace starcitizen.Buttons
 {
-    [PluginActionId("com.mhwlng.starcitizen.actiondelay")]
+    [PluginActionId("com.ltmajor42.starcitizen.actiondelay")]
     public class ActionDelay : StarCitizenKeypadBase
     {
         private enum DelayState

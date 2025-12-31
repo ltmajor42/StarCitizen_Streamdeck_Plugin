@@ -1,7 +1,7 @@
 # Original Project
 
-- This is a fork of the original [streamdeck-starcitizen](https://github.com/mhwlng/streamdeck-starcitizen) by mhwlng.
-- The original project was created by [mhwlng](https://github.com/mhwlng) and is licensed under the MIT License.
+- This is a fork of the original [streamdeck-starcitizen](https://github.com/ltmajor42/streamdeck-starcitizen) by ltmajor42.
+- The original project was created by [ltmajor42](https://github.com/ltmajor42) and is licensed under the MIT License.
 
 ## Changelog
 
@@ -13,6 +13,7 @@
 - Added queue-based tick processing to handle fast/slow rotation reliably without input blocking.
 - Prevented “catch-up” lag when rapidly reversing direction by clearing stale queued ticks.
 - `Delay` now controls keypress duration (ms) with sensible bounds for smoother feel.
+- Unknown or unsupported key tokens now stay marked as unknown (no Escape fallback) and are surfaced in the action dropdown for easier cleanup.
 
 
 ## v2.0.0
@@ -21,7 +22,7 @@
 - Centralized key binding loading, caching, and file watching into `Core/KeyBindingService` with consistent logging via `PluginLog`.
 - Standardized Property Inspector updates through `Core/PropertyInspectorMessenger`, reducing per-action boilerplate.
 - Removed legacy template artifacts (`statictemplate.html`, `dialtemplate.html`, `macrotemplate.html`) to simplify packaging and future maintenance.
-- Updated documentation to credit the original plugin author (mhwlng), SCJMapper resources, and current maintainer (Ltmajor42), plus added guidance for adding new actions and troubleshooting.
+- Updated documentation to credit the original plugin author (ltmajor42), SCJMapper resources, and current maintainer (Ltmajor42), plus added guidance for adding new actions and troubleshooting.
 
 ## v1.2.0
 

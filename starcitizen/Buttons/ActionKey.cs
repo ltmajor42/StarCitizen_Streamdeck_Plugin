@@ -17,7 +17,7 @@ using starcitizen.Core;
 namespace starcitizen.Buttons
 {
 
-    [PluginActionId("com.mhwlng.starcitizen.static")]
+    [PluginActionId("com.ltmajor42.starcitizen.static")]
     public class ActionKey : StarCitizenKeypadBase
     {
         protected class PluginSettings
