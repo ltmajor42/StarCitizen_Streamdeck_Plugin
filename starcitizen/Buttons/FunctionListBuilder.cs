@@ -61,13 +61,18 @@ namespace starcitizen.Buttons
                     var duplicateKeys = group
                         .Select(a =>
                         {
-                            var bindingInfo = GetBindingInfoWithMouseSupport(a.Keyboard, culture.Name);
+                            var keyString = CommandTools.ConvertKeyStringToLocale(a.Keyboard, culture.Name);
+                            var primaryBinding = keyString
+                                .Replace("Dik", "")
+                                .Replace("}{", "+")
+                                .Replace("}", "")
+                                .Replace("{", "");
 
                             return new
                             {
                                 a.UILabel,
-                                bindingInfo.PrimaryBinding,
-                                bindingInfo.BindingType
+                                PrimaryBinding = primaryBinding,
+                                BindingType = "keyboard"
                             };
                         })
                         .GroupBy(x => x)
@@ -86,7 +91,7 @@ namespace starcitizen.Buttons
                         string primaryBinding = "";
                         string bindingType = "";
 
-                        var bindingInfo = GetBindingInfoWithMouseSupport(action.Keyboard, culture.Name);
+                        var bindingInfo = GetBindingInfo(action.Keyboard, culture.Name);
                         primaryBinding = bindingInfo.PrimaryBinding;
                         bindingType = bindingInfo.BindingType;
 
@@ -224,15 +229,7 @@ namespace starcitizen.Buttons
                     continue;
                 }
 
-                if (MouseTokenHelper.TryNormalize(token, out _))
-                {
-                    foundValidToken = true;
-                    continue;
-                }
-
-                // Treat other mouse-like tokens (e.g., Mouse Wheel Up/Down) as valid even if they aren't canonical,
-                // so they surface in the UI instead of being hidden or marked as unknown.
-                if (MouseTokenHelper.IsMouseLike(token))
+                if (IsMouseToken(token))
                 {
                     foundValidToken = true;
                     continue;
@@ -249,7 +246,7 @@ namespace starcitizen.Buttons
             return foundValidToken;
         }
 
-        private static (string PrimaryBinding, string BindingType) GetBindingInfoWithMouseSupport(string keyboard, string cultureName)
+        private static (string PrimaryBinding, string BindingType) GetBindingInfo(string keyboard, string cultureName)
         {
             var keyString = CommandTools.ConvertKeyStringToLocale(keyboard, cultureName);
             var primaryBinding = keyString
@@ -258,12 +255,45 @@ namespace starcitizen.Buttons
                 .Replace("}", "")
                 .Replace("{", "");
 
-            var bindingType = ContainsMouseTokenLoose(keyboard) ? "mouse" : "keyboard";
+            var bindingType = ContainsMouseToken(primaryBinding) ? "mouse" : "keyboard";
 
             return (primaryBinding, bindingType);
         }
 
-        private static bool ContainsMouseTokenLoose(string binding)
+        private static bool ContainsMouseToken(string binding)
+        {
+            if (string.IsNullOrWhiteSpace(binding))
+            {
+                return false;
+            }
+
+            var tokens = binding.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var token in tokens)
+            {
+                if (IsMouseToken(token))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static (string PrimaryBinding, string BindingType) GetBindingInfo(string keyboard, string cultureName)
+        {
+            var keyString = CommandTools.ConvertKeyStringToLocale(keyboard, cultureName);
+            var primaryBinding = keyString
+                .Replace("Dik", "")
+                .Replace("}{", "+")
+                .Replace("}", "")
+                .Replace("{", "");
+
+            var bindingType = ContainsMouseToken(keyboard) ? "mouse" : "keyboard";
+
+            return (primaryBinding, bindingType);
+        }
+
+        private static bool ContainsMouseToken(string binding)
         {
             if (string.IsNullOrWhiteSpace(binding))
             {
