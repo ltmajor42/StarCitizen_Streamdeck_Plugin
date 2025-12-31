@@ -32,14 +32,6 @@ namespace starcitizen.Buttons
 
         private static readonly Regex SubCommandRegex = new Regex(CommandTools.REGEX_SUB_COMMAND, RegexOptions.Compiled);
 
-        private static bool IsMouseToken(string token)
-        {
-            if (string.IsNullOrWhiteSpace(token)) return false;
-            var t = token.Trim().ToLowerInvariant();
-            return t == "mouse1" || t == "mouse2" || t == "mouse3" || t == "mouse4" || t == "mouse5" ||
-                   t == "mwheelup" || t == "mwheeldown" || t == "mwheelleft" || t == "mwheelright";
-        }
-
         private static bool IsModifierKey(DirectInputKeyCode code)
         {
             return code == DirectInputKeyCode.DikLalt || code == DirectInputKeyCode.DikRalt ||
@@ -78,10 +70,10 @@ namespace starcitizen.Buttons
                     var token = match.Value.Replace("{", "").Replace("}", "").Trim();
                     if (string.IsNullOrEmpty(token)) continue;
 
-                    if (IsMouseToken(token))
+                    if (MouseTokenHelper.TryNormalize(token, out var normalizedMouse))
                     {
                         // only one mouse action per macro is expected; if multiple exist, we apply the last.
-                        mouseToken = token.Trim().ToLowerInvariant();
+                        mouseToken = normalizedMouse;
                         continue;
                     }
 
