@@ -9,7 +9,7 @@ using starcitizen.Core;
 
 namespace starcitizen.Buttons
 {
-    [PluginActionId("com.mhwlng.starcitizen.dualaction")]
+    [PluginActionId("com.ltmajor42.starcitizen.dualaction")]
     public class DualAction : StarCitizenKeypadBase
     {
         protected class PluginSettings

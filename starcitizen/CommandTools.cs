@@ -46,15 +46,10 @@ namespace starcitizen
                     {
                         builder.Append('{').Append(NormalizeMouseToken(token)).Append('}');
                     }
-                    else if (SCPath.SafeUnknownKeyTokens)
+                    else
                     {
                         Logger.Instance.LogMessage(TracingLevel.WARN,
                             $"Mouse token '{token}' encountered but EnableMouseOutput=false. Skipping send.");
-                    }
-                    else
-                    {
-                        // Legacy behavior (falls back to Escape)
-                        builder.Append('{').Append(FromSCKeyboardCmd(token)).Append('}');
                     }
 
                     continue;
@@ -64,14 +59,10 @@ namespace starcitizen
                 {
                     builder.Append('{').Append(dxKey).Append('}');
                 }
-                else if (SCPath.SafeUnknownKeyTokens)
-                {
-                    Logger.Instance.LogMessage(TracingLevel.WARN,
-                        $"Unknown key token '{token}' encountered. Skipping send (SafeUnknownKeyTokens=true).");
-                }
                 else
                 {
-                    builder.Append('{').Append(DirectInputKeyCode.DikEscape).Append('}');
+                    Logger.Instance.LogMessage(TracingLevel.WARN,
+                        $"Unknown key token '{token}' encountered. Skipping send.");
                 }
             }
 
@@ -262,14 +253,8 @@ namespace starcitizen
 
                 if (!TryFromSCKeyboardCmd(token, out var dikKey))
                 {
-                    if (SCPath.SafeUnknownKeyTokens)
-                    {
-                        builder.Append('{').Append(token).Append('}');
-                        continue;
-                    }
-
-                    // Legacy fallback
-                    dikKey = DirectInputKeyCode.DikEscape;
+                    builder.Append('{').Append($"unknown:{token}").Append('}');
+                    continue;
                 }
 
                 var dikKeyOut = dikKey.ToString();
@@ -884,6 +869,8 @@ namespace starcitizen
 
         private static DirectInputKeyCode FromSCKeyboardCmd(string scKey)
         {
+            // Legacy helper: map SC tokens to DirectInput codes.
+            // Note: callers still validate tokens; unknown tokens return default and must be handled by the caller.
             switch (scKey)
             {
                 // handle modifiers first
@@ -986,14 +973,10 @@ namespace starcitizen
                     {
                         return dxKey;
                     }
-                    else
-                    {
-                        return DirectInputKeyCode.DikEscape;
-                    }
+
+                    return default;
             }
-
         }
-
 
         internal static string ExtractMacro(string text, int position)
         {

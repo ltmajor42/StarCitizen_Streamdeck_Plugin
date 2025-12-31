@@ -125,6 +125,42 @@ namespace starcitizen.Buttons
                     }
                 }
 
+                // Surface bindings that exist but contain unknown/unsupported keyboard tokens
+                var unknownBindings = bindingService.Reader.GetAllActions().Values
+                    .Where(x => !string.IsNullOrWhiteSpace(x.Keyboard))
+                    .Where(x => !IsExecutableKeyboardBinding(x.Keyboard))
+                    .OrderBy(x => x.MapUILabel)
+                    .GroupBy(x => x.MapUILabel);
+
+                foreach (var group in unknownBindings)
+                {
+                    var groupObj = new JObject
+                    {
+                        ["label"] = $"{group.Key} (unknown tokens)",
+                        ["options"] = new JArray()
+                    };
+
+                    foreach (var action in group.OrderBy(x => x.MapUICategory).ThenBy(x => x.UILabel))
+                    {
+                        var unknownTokens = DescribeUnknownTokens(action.Keyboard);
+                        ((JArray)groupObj["options"]).Add(new JObject
+                        {
+                            ["value"] = action.Name,
+                            ["text"] = $"{action.UILabel} [unknown: {unknownTokens}]",
+                            ["bindingType"] = "unknown",
+                            ["searchText"] =
+                                $"{action.UILabel.ToLower()} " +
+                                $"{action.UIDescription?.ToLower() ?? ""} " +
+                                $"{unknownTokens.ToLower()}"
+                        });
+                    }
+
+                    if (((JArray)groupObj["options"]).Count > 0)
+                    {
+                        result.Add(groupObj);
+                    }
+                }
+
                 lock (CacheLock)
                 {
                     cachedFunctions = (JArray)result.DeepClone();
@@ -190,6 +226,25 @@ namespace starcitizen.Buttons
             var t = token.Trim().ToLowerInvariant();
             return t == "mouse1" || t == "mouse2" || t == "mouse3" || t == "mouse4" || t == "mouse5" ||
                    t == "mwheelup" || t == "mwheeldown" || t == "mwheelleft" || t == "mwheelright";
+        }
+
+        private static string DescribeUnknownTokens(string keyboard)
+        {
+            if (string.IsNullOrWhiteSpace(keyboard))
+            {
+                return "unknown";
+            }
+
+            var tokens = keyboard.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries);
+            var unknowns = tokens
+                .Select(t => t?.Trim())
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Where(t => !IsMouseToken(t))
+                .Where(t => !CommandTools.TryFromSCKeyboardCmd(t, out _))
+                .Distinct()
+                .ToArray();
+
+            return unknowns.Length == 0 ? "unknown" : string.Join(", ", unknowns);
         }
     }
 }

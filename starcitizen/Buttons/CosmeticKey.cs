@@ -3,7 +3,7 @@ using BarRaider.SdTools;
 
 namespace starcitizen.Buttons
 {
-    [PluginActionId("com.mhwlng.starcitizen.cosmetickey")]
+    [PluginActionId("com.ltmajor42.starcitizen.cosmetickey")]
     public class CosmeticKey : KeypadBase
     {
         public CosmeticKey(SDConnection connection, InitialPayload payload) : base(connection, payload) { }

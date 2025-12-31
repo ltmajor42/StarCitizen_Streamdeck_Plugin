@@ -10,7 +10,7 @@ using starcitizen.Core;
 
 namespace starcitizen.Buttons
 {
-    [PluginActionId("com.mhwlng.starcitizen.holdrepeat")]
+    [PluginActionId("com.ltmajor42.starcitizen.holdrepeat")]
     public class Repeataction : StarCitizenKeypadBase
     {
         protected class PluginSettings
