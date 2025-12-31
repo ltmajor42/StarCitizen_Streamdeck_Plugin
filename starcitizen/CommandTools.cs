@@ -40,11 +40,11 @@ namespace starcitizen
                     continue;
                 }
 
-                if (IsMouseToken(token))
+                if (MouseTokenHelper.TryNormalize(token, out var normalizedMouseToken))
                 {
                     if (SCPath.EnableMouseOutput)
                     {
-                        builder.Append('{').Append(NormalizeMouseToken(token)).Append('}');
+                        builder.Append('{').Append(normalizedMouseToken).Append('}');
                     }
                     else
                     {
@@ -69,37 +69,25 @@ namespace starcitizen
             return builder.ToString();
         }
 
-        private static string NormalizeMouseToken(string token)
-        {
-            if (string.IsNullOrWhiteSpace(token)) return string.Empty;
-            return token.Trim().ToLowerInvariant();
-        }
+        private static bool IsMouseToken(string token) => MouseTokenHelper.TryNormalize(token, out _);
 
-        private static bool IsMouseToken(string token)
-        {
-            var t = NormalizeMouseToken(token);
-            return t == "mouse1" || t == "mouse2" || t == "mouse3" || t == "mouse4" || t == "mouse5" ||
-                   t == "mwheelup" || t == "mwheeldown" || t == "mwheelleft" || t == "mwheelright";
-        }
-
-        private static string MouseTokenToDisplay(string token)
-        {
-            var t = NormalizeMouseToken(token);
-
-            switch (t)
-            {
-                case "mouse1": return "Mouse1";
-                case "mouse2": return "Mouse2";
-                case "mouse3": return "Mouse3";
-                case "mouse4": return "Mouse4";
-                case "mouse5": return "Mouse5";
-                case "mwheelup": return "WheelUp";
-                case "mwheeldown": return "WheelDown";
-                case "mwheelleft": return "WheelLeft";
-                case "mwheelright": return "WheelRight";
-                default: return t;
-            }
-        }
+        private static string MouseTokenToDisplay(string token) =>
+            MouseTokenHelper.TryNormalize(token, out var normalized)
+                ? normalized switch
+                {
+                    "mouse1" => "Mouse1",
+                    "mouse2" => "Mouse2",
+                    "mouse3" => "Mouse3",
+                    "mouse4" => "Mouse4",
+                    "mouse5" => "Mouse5",
+                    "mwheelup" => "WheelUp",
+                    "mwheeldown" => "WheelDown",
+                    "mwheelleft" => "WheelLeft",
+                    "mwheelright" => "WheelRight",
+                    "mwheel" => "Wheel",
+                    _ => normalized
+                }
+                : token?.Trim();
 
         // NOTE: Behavior is unchanged. Visibility is internal so UI code can validate bindings
         // and avoid showing non-executable options (e.g., joystick-only or unknown tokens).
