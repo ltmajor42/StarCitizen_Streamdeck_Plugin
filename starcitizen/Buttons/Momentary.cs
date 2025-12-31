@@ -11,7 +11,7 @@ using starcitizen.Core;
 
 namespace starcitizen.Buttons
 {
-    [PluginActionId("com.mhwlng.starcitizen.momentary")]
+    [PluginActionId("com.ltmajor42.starcitizen.momentary")]
     public class Momentary : StarCitizenKeypadBase
     {
         protected class PluginSettings

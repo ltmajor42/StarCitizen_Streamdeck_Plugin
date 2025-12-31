@@ -369,7 +369,67 @@ namespace SCJMapper_V2.SC
 
                     if (string.IsNullOrWhiteSpace(actionName))
                     {
-                        continue;
+                        XElement rebind = action.Elements().FirstOrDefault(x => x.Name == "rebind");
+                        if (rebind != null)
+                        {
+                            string input = (string)rebind.Attribute("input");
+                            if (input != null && input.StartsWith("kb"))
+                            {
+                                input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
+
+                                if (!string.IsNullOrEmpty(input))
+                                {
+                                    map.Actions[actionName].Keyboard = input;
+                                    map.Actions[actionName].KeyboardOverRule = true;
+                                }
+                                else if (SCPath.TreatBlankRebindAsUnbound)
+                                {
+                                    map.Actions[actionName].Keyboard = "";
+                                    map.Actions[actionName].KeyboardOverRule = true;
+                                }
+
+                            } else
+                            if (input != null && input.StartsWith("js"))
+                            {
+                                var instance = input.Substring(2, input.IndexOf("_", StringComparison.Ordinal)-2);
+
+                                input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
+
+                                if (!string.IsNullOrEmpty(input))
+                                {
+                                    map.Actions[actionName].Joystick = input;
+
+                                    if (joysticks.ContainsKey(instance))
+                                    {
+                                        instance = joysticks[instance];
+                                    }
+
+                                    map.Actions[actionName].JoystickOverRule = instance;
+                                }
+                                else if (SCPath.TreatBlankRebindAsUnbound)
+                                {
+                                    map.Actions[actionName].Joystick = "";
+                                    map.Actions[actionName].JoystickOverRule = instance;
+                                }
+                            }
+                            else
+                            if (input != null && input.StartsWith("mo"))
+                            {
+                                input = input.Substring(input.IndexOf("_", StringComparison.Ordinal) + 1).Trim();
+
+                                if (!string.IsNullOrEmpty(input))
+                                {
+                                    map.Actions[actionName].Mouse = input;
+                                    map.Actions[actionName].MouseOverRule = true;
+                                }
+                                else if (SCPath.TreatBlankRebindAsUnbound)
+                                {
+                                    map.Actions[actionName].Mouse = "";
+                                    map.Actions[actionName].MouseOverRule = true;
+                                }
+                            }
+
+                        }
                     }
 
                     if (!map.Actions.TryGetValue(actionName, out var existingAction))
@@ -503,19 +563,17 @@ namespace SCJMapper_V2.SC
 
         public Action GetBinding(string key)
         {
-            return TryGetBinding(key, out var action) ? action : null;
-        }
-
-        public bool TryGetBinding(string key, out Action action)
-        {
-            action = null;
-
             if (string.IsNullOrEmpty(key))
             {
-                return false;
+                return null;
             }
 
-            return actions.TryGetValue(key, out action);
+            if (actions.ContainsKey(key))
+            {
+                return actions[key];
+            }
+
+            return null;
         }
 
         public void CreateCsv(bool enableCsvExport)

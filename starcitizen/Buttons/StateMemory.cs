@@ -1,5 +1,5 @@
 ﻿// File: Buttons/StateMemory.cs
-// UUID: com.mhwlng.starcitizen.statememory
+// UUID: com.ltmajor42.starcitizen.statememory
 using System;
 using System.IO;
 using System.Threading;
@@ -13,7 +13,7 @@ using starcitizen.Core;
 
 namespace starcitizen.Buttons
 {
-    [PluginActionId("com.mhwlng.starcitizen.statememory")]
+    [PluginActionId("com.ltmajor42.starcitizen.statememory")]
     public class StateMemory : StarCitizenKeypadBase
     {
         protected class PluginSettings
@@ -190,11 +190,7 @@ namespace starcitizen.Buttons
                 if (bindingService.Reader == null) return;
                 if (string.IsNullOrWhiteSpace(settings.Function)) return;
 
-                if (!bindingService.Reader.TryGetBinding(settings.Function, out var binding))
-                {
-                    return;
-                }
-
+                var binding = bindingService.Reader.GetBinding(settings.Function);
                 var keyboard = binding != null ? binding.Keyboard : null;
 
                 if (string.IsNullOrWhiteSpace(keyboard)) return;

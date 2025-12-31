@@ -13,7 +13,7 @@
       ],
       "SupportedInMultiActions": true,
       "Tooltip": "Star Citizen Action Key",
-      "UUID": "com.mhwlng.starcitizen.static",
+      "UUID": "com.ltmajor42.starcitizen.static",
       "PropertyInspectorPath": "PropertyInspector/StarCitizen/ActionKey.html"
     },
     {
@@ -31,7 +31,7 @@
       },
       "SupportedInMultiActions": false,
       "Tooltip": "Star Citizen Dial Button",
-      "UUID": "com.mhwlng.starcitizen.dial",
+      "UUID": "com.ltmajor42.starcitizen.dial",
       "PropertyInspectorPath": "PropertyInspector/StarCitizen/Dial.html"
     },
     {
@@ -52,7 +52,7 @@
       ],
       "SupportedInMultiActions": true,
       "Tooltip": "Star Citizen Momentary Button",
-      "UUID": "com.mhwlng.starcitizen.momentary",
+      "UUID": "com.ltmajor42.starcitizen.momentary",
       "PropertyInspectorPath": "PropertyInspector/StarCitizen/Momentary.html"
     },
     {
@@ -73,7 +73,7 @@
       ],
       "SupportedInMultiActions": true,
       "Tooltip": "Star Citizen Dual Action Button",
-      "UUID": "com.mhwlng.starcitizen.dualaction",
+      "UUID": "com.ltmajor42.starcitizen.dualaction",
       "PropertyInspectorPath": "PropertyInspector/StarCitizen/DualAction.html"
     },
     {
@@ -94,7 +94,7 @@
       ],
       "SupportedInMultiActions": true,
       "Tooltip": "Hold to repeat a Star Citizen function until released",
-      "UUID": "com.mhwlng.starcitizen.holdrepeat",
+      "UUID": "com.ltmajor42.starcitizen.holdrepeat",
       "PropertyInspectorPath": "PropertyInspector/StarCitizen/Repeataction.html"
     },
     {
@@ -115,7 +115,7 @@
       ],
       "SupportedInMultiActions": true,
       "Tooltip": "Tap to arm, hold to abort, wait to execute a Star Citizen function",
-      "UUID": "com.mhwlng.starcitizen.actiondelay",
+      "UUID": "com.ltmajor42.starcitizen.actiondelay",
       "PropertyInspectorPath": "PropertyInspector/StarCitizen/ActionDelay.html"
     },
     {
@@ -131,7 +131,7 @@
       ],
       "SupportedInMultiActions": false,
       "Tooltip": "A key that does nothing. Use it for images/GIFs/text only.",
-      "UUID": "com.mhwlng.starcitizen.cosmetickey"
+      "UUID": "com.ltmajor42.starcitizen.cosmetickey"
     },
     {
       "Icon": "Images/Statememory0",
@@ -151,7 +151,7 @@
       ],
       "SupportedInMultiActions": true,
       "Tooltip": "Star Citizen State Memory (Soft Sync Toggle)",
-      "UUID": "com.mhwlng.starcitizen.statememory",
+      "UUID": "com.ltmajor42.starcitizen.statememory",
       "PropertyInspectorPath": "PropertyInspector/StarCitizen/StateMemory.html"
     }
   ],
@@ -159,9 +159,9 @@
   "Description": "Star Citizen Buttons",
   "Name": "Star Citizen",
   "Icon": "Images/pluginIcon",
-  "URL": "https://github.com/mhwlng/streamdeck-starcitizen",
+  "URL": "https://github.com/ltmajor42/streamdeck-starcitizen",
   "Version": "2.0",
-  "CodePath": "com.mhwlng.starcitizen",
+  "CodePath": "com.ltmajor42.starcitizen",
   "Category": "Star Citizen",
   "CategoryIcon": "Images/categoryIcon",
   "OS": [

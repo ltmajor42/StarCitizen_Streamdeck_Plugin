@@ -12,7 +12,7 @@ using starcitizen.Core;
 
 namespace starcitizen.Buttons
 {
-    [PluginActionId("com.mhwlng.starcitizen.dial")]
+    [PluginActionId("com.ltmajor42.starcitizen.dial")]
     public class Dial : StarCitizenDialBase
     {
         protected class PluginSettings
