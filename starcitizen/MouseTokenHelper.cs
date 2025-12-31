@@ -64,8 +64,8 @@ namespace starcitizen
                 return false;
             }
 
-            return cleaned.Contains("mouse", StringComparison.OrdinalIgnoreCase) ||
-                   cleaned.Contains("wheel", StringComparison.OrdinalIgnoreCase);
+            return cleaned.IndexOf("mouse", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   cleaned.IndexOf("wheel", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static string NormalizeForLookup(string token)
