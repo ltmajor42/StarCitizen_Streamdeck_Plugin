@@ -255,10 +255,13 @@ namespace starcitizen.Buttons
                 .Replace("}", "")
                 .Replace("{", "");
 
-            var bindingType = ContainsMouseToken(primaryBinding) ? "mouse" : "keyboard";
+            var bindingType = ContainsMouseToken(keyboard) ? "mouse" : "keyboard";
 
             return (primaryBinding, bindingType);
         }
+
+        private static bool IsMouseToken(string token) =>
+            MouseTokenHelper.TryNormalize(token, out _) || MouseTokenHelper.IsMouseLike(token);
 
         private static bool ContainsMouseToken(string binding)
         {
@@ -271,39 +274,6 @@ namespace starcitizen.Buttons
             foreach (var token in tokens)
             {
                 if (IsMouseToken(token))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static (string PrimaryBinding, string BindingType) GetBindingInfo(string keyboard, string cultureName)
-        {
-            var keyString = CommandTools.ConvertKeyStringToLocale(keyboard, cultureName);
-            var primaryBinding = keyString
-                .Replace("Dik", "")
-                .Replace("}{", "+")
-                .Replace("}", "")
-                .Replace("{", "");
-
-            var bindingType = ContainsMouseToken(keyboard) ? "mouse" : "keyboard";
-
-            return (primaryBinding, bindingType);
-        }
-
-        private static bool ContainsMouseToken(string binding)
-        {
-            if (string.IsNullOrWhiteSpace(binding))
-            {
-                return false;
-            }
-
-            var tokens = binding.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (var token in tokens)
-            {
-                if (MouseTokenHelper.TryNormalize(token, out _) || MouseTokenHelper.IsMouseLike(token))
                 {
                     return true;
                 }
