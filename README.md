@@ -32,6 +32,7 @@ The plugin logs useful startup and detection details in:
 ---
 
 ## What’s improved in V2
+![SC button (144 x 144 px) (250 x 250 px)](https://github.com/user-attachments/assets/10f003da-72ed-487f-bb39-b9a88d88abfa)
 
 **This release includes a major internal refactor:**
 
