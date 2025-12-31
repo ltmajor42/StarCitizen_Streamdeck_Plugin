@@ -110,7 +110,9 @@ namespace starcitizen
             }
         }
 
-        private static bool TryFromSCKeyboardCmd(string scKey, out DirectInputKeyCode dxKey)
+        // NOTE: Behavior is unchanged. Visibility is internal so UI code can validate bindings
+        // and avoid showing non-executable options (e.g., joystick-only or unknown tokens).
+        internal static bool TryFromSCKeyboardCmd(string scKey, out DirectInputKeyCode dxKey)
         {
             dxKey = default;
 

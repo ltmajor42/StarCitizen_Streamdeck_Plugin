@@ -47,12 +47,12 @@ namespace starcitizen.Buttons
                     culture = new CultureInfo("en-US");
                 }
 
+                // IMPORTANT: this plugin action execution sends ONLY the Star Citizen *keyboard* binding.
+                // Showing joystick/gamepad-only binds in the dropdown is misleading because they won't execute.
+                // Also, we filter out bindings containing unknown tokens (those would otherwise fallback to Escape).
                 var actions = bindingService.Reader.GetAllActions().Values
-                    .Where(x =>
-                        !string.IsNullOrWhiteSpace(x.Keyboard) ||
-                        !string.IsNullOrWhiteSpace(x.Mouse) ||
-                        !string.IsNullOrWhiteSpace(x.Joystick) ||
-                        !string.IsNullOrWhiteSpace(x.Gamepad))
+                    .Where(x => !string.IsNullOrWhiteSpace(x.Keyboard))
+                    .Where(x => IsExecutableKeyboardBinding(x.Keyboard))
                     .OrderBy(x => x.MapUILabel)
                     .GroupBy(x => x.MapUILabel);
 
@@ -69,31 +69,14 @@ namespace starcitizen.Buttons
                         string primaryBinding = "";
                         string bindingType = "";
 
-                        if (!string.IsNullOrWhiteSpace(action.Keyboard))
-                        {
-                            var keyString = CommandTools.ConvertKeyStringToLocale(action.Keyboard, culture.Name);
-                            primaryBinding = keyString
-                                .Replace("Dik", "")
-                                .Replace("}{", "+")
-                                .Replace("}", "")
-                                .Replace("{", "");
-                            bindingType = "keyboard";
-                        }
-                        else if (!string.IsNullOrWhiteSpace(action.Mouse))
-                        {
-                            primaryBinding = action.Mouse;
-                            bindingType = "mouse";
-                        }
-                        else if (!string.IsNullOrWhiteSpace(action.Joystick))
-                        {
-                            primaryBinding = action.Joystick;
-                            bindingType = "joystick";
-                        }
-                        else if (!string.IsNullOrWhiteSpace(action.Gamepad))
-                        {
-                            primaryBinding = action.Gamepad;
-                            bindingType = "gamepad";
-                        }
+                        // Keyboard-only (see filter above)
+                        var keyString = CommandTools.ConvertKeyStringToLocale(action.Keyboard, culture.Name);
+                        primaryBinding = keyString
+                            .Replace("Dik", "")
+                            .Replace("}{", "+")
+                            .Replace("}", "")
+                            .Replace("{", "");
+                        bindingType = "keyboard";
 
                         string bindingDisplay = string.IsNullOrWhiteSpace(primaryBinding) ? "" : $" [{primaryBinding}]";
                         string overruleIndicator = action.KeyboardOverRule || action.MouseOverRule ? " *" : "";
@@ -154,6 +137,59 @@ namespace starcitizen.Buttons
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Returns true only if ALL tokens in a keyboard binding are recognized keyboard tokens.
+        /// This prevents unknown tokens (which would otherwise fallback to Escape) from showing in the PI.
+        /// </summary>
+        private static bool IsExecutableKeyboardBinding(string keyboard)
+        {
+            if (string.IsNullOrWhiteSpace(keyboard))
+            {
+                return false;
+            }
+
+            var tokens = keyboard.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries);
+            if (tokens.Length == 0)
+            {
+                return false;
+            }
+
+            foreach (var raw in tokens)
+            {
+                var token = raw?.Trim();
+                if (string.IsNullOrWhiteSpace(token))
+                {
+                    continue;
+                }
+
+                // Hard exclude mouse tokens in a keyboard field.
+                // The action execution path sends keyboard only; mouse tokens would not execute reliably.
+                if (IsMouseToken(token))
+                {
+                    return false;
+                }
+
+                if (!CommandTools.TryFromSCKeyboardCmd(token, out _))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool IsMouseToken(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return false;
+            }
+
+            var t = token.Trim().ToLowerInvariant();
+            return t == "mouse1" || t == "mouse2" || t == "mouse3" || t == "mouse4" || t == "mouse5" ||
+                   t == "mwheelup" || t == "mwheeldown" || t == "mwheelleft" || t == "mwheelright";
         }
     }
 }
