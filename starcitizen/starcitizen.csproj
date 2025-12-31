@@ -7,7 +7,7 @@
     <ProjectGuid>{761FCC88-EAF9-4C7A-BBFD-139D186437A5}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>starcitizen</RootNamespace>
-    <AssemblyName>com.mhwlng.starcitizen</AssemblyName>
+    <AssemblyName>com.ltmajor42.starcitizen</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -30,14 +30,14 @@
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
     <TargetFrameworkProfile />
-    <LangVersion>7.3</LangVersion>
+    <LangVersion>8.0</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\com.mhwlng.starcitizen.sdPlugin\</OutputPath>
+    <OutputPath>bin\Debug\com.ltmajor42.starcitizen.sdPlugin\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -46,7 +46,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <DebugType>none</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\com.mhwlng.starcitizen.sdPlugin\</OutputPath>
+    <OutputPath>bin\Release\com.ltmajor42.starcitizen.sdPlugin\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>

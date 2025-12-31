@@ -858,9 +858,9 @@ namespace SCJMapper_V2.SC
         /// <summary>
         /// Optional safety fix: unknown SC key tokens should not silently map to Escape.
         /// If enabled, unknown tokens are displayed as-is, and sending will skip them.
-        /// Default: false (legacy behavior).
+        /// Default: true (safer to avoid unintended Escape fallbacks).
         /// </summary>
-        public static bool SafeUnknownKeyTokens => ReadBoolAppSetting("SafeUnknownKeyTokens", false);
+        public static bool SafeUnknownKeyTokens => ReadBoolAppSetting("SafeUnknownKeyTokens", true);
 
         /// <summary>
         /// Optional feature: allow mouse tokens (mouse1/mwheelup/...) to be sent via InputSimulator.

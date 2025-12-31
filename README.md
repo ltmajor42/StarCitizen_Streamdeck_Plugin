@@ -2,8 +2,8 @@
 
 **Elgato Stream Deck button plugin for Star Citizen**
 
-> 🔗 **Updated fork of [mhwlng/streamdeck-starcitizen](https://github.com/mhwlng/streamdeck-starcitizen)**  
-> Maintained by **Ltmajor42**. Original code by **mhwlng** with in-game binding discovery provided by **SCJMapper** assets. This fork adds auto-detection, search, refactors, and stability fixes.
+> 🔗 **Updated fork of [ltmajor42/streamdeck-starcitizen](https://github.com/ltmajor42/streamdeck-starcitizen)**  
+> Maintained by **Ltmajor42**. Original code by **ltmajor42** with in-game binding discovery provided by **SCJMapper** assets. This fork adds auto-detection, search, refactors, and stability fixes.
 
 ## What's New in This Fork
 
@@ -16,7 +16,7 @@
 
 - **Maintainer/Author:** Ltmajor42
 - **Maintainer/Author:** Jarex985
-- **Upstream inspiration:** [mhwlng/streamdeck-starcitizen](https://github.com/mhwlng/streamdeck-starcitizen)  
+- **Upstream inspiration:** [ltmajor42/streamdeck-starcitizen](https://github.com/ltmajor42/streamdeck-starcitizen)  
 - **Binding loader:** [SCJMapper resources](https://github.com/SCToolsfactory/SCJMapper-V2) power the Star Citizen keybind parsing.
 
 ## V2 Full Release
@@ -27,7 +27,7 @@ When the plugin starts, it reads Star Citizen bindings and text resources so it 
 
 The plugin logs useful startup and detection details in:
 
-`%appdata%\Elgato\StreamDeck\Plugins\com.mhwlng.starcitizen.sdPlugin\pluginlog.log`
+`%appdata%\Elgato\StreamDeck\Plugins\com.ltmajor42.starcitizen.sdPlugin\pluginlog.log`
 
 ---
 
@@ -47,6 +47,7 @@ The plugin logs useful startup and detection details in:
 - **Shared Property Inspector messaging** – `Core/PropertyInspectorMessenger` sends the current function list to any action without copy/paste code.
 - **Single logging entry point** – `Core/PluginLog` wraps `BarRaider.SdTools.Logger` to keep troubleshooting messages consistent in `pluginlog.log`.
 - **Lean surface** – Legacy template generators have been removed; Property Inspectors live directly under `PropertyInspector/StarCitizen/`.
+- **Unknown bindings stay unknown** – Unsupported key tokens are labeled as unknown in the dropdown and will not fall back to Escape.
 
 ### Adding a new action (quick guide)
 
@@ -58,7 +59,7 @@ The plugin logs useful startup and detection details in:
 
 ### Troubleshooting
 
-- Live log path: `%appdata%\\Elgato\\StreamDeck\\Plugins\\com.mhwlng.starcitizen.sdPlugin\\pluginlog.log`
+- Live log path: `%appdata%\\Elgato\\StreamDeck\\Plugins\\com.ltmajor42.starcitizen.sdPlugin\\pluginlog.log`
 - Ensure the **RSI Launcher** is installed and has launched at least once so bindings can be read.
 - If functions are missing, close and reopen the Stream Deck app to trigger a fresh `actionmaps.xml` load, or delete stale profiles inside `%appdata%\\Elgato\\StreamDeck\\Plugins\\...`.
 
@@ -225,7 +226,7 @@ If something is wrong or inconsistent, open an Issue and include:
 3. Exact steps to reproduce (what you pressed, how fast, expected vs actual)
 4. The log file:
 
-`%appdata%\Elgato\StreamDeck\Plugins\com.mhwlng.starcitizen.sdPlugin\pluginlog.log`
+`%appdata%\Elgato\StreamDeck\Plugins\com.ltmajor42.starcitizen.sdPlugin\pluginlog.log`
 
 If the report includes clear steps + the log, I can reproduce it and fix it much faster.
 
@@ -315,11 +316,11 @@ and extracts `defaultProfile.xml` and also english text resources. This could ta
 3. **Steam integration** - Detects Steam installations
 4. **Manual configuration** - User can specify paths in config file
 
-The plugin logs its path detection process in `%appdata%\Elgato\StreamDeck\Plugins\com.mhwlng.starcitizen.sdPlugin\pluginlog.log`.
+The plugin logs its path detection process in `%appdata%\Elgato\StreamDeck\Plugins\com.ltmajor42.starcitizen.sdPlugin\pluginlog.log`.
 
 ## Manual Configuration
 
-If automatic detection fails, edit `%appdata%\Elgato\StreamDeck\Plugins\com.mhwlng.starcitizen.sdPlugin\appsettings.config`:
+If automatic detection fails, edit `%appdata%\Elgato\StreamDeck\Plugins\com.ltmajor42.starcitizen.sdPlugin\appsettings.config`:
 
 ```xml
 <?xml version="1.0" encoding="utf-8" ?>
@@ -353,15 +354,15 @@ that didn't have any corresponding keyboard bindings in `defaultProfile.xml`.
 
 If nothing happens, when pressing streamdeck buttons: you could try to start streamdeck.exe as administrator.
 
-The plugin installer is here: https://github.com/mhwlng/streamdeck-starcitizen/releases
+The plugin installer is here: https://github.com/ltmajor42/streamdeck-starcitizen/releases
 
-To install the plugin, double click the file `com.mhwlng.starcitizen.streamDeckPlugin` which should install the plugin.
+To install the plugin, double click the file `com.ltmajor42.starcitizen.streamDeckPlugin` which should install the plugin.
 
 (This only works, if the plugin not already installed. Otherwise you will need to uninstall or remove the plugin first.)
 
 This .streamDeckPlugin file is a zip file and the contents are simply copied to :
 
-`%appdata%\Elgato\StreamDeck\Plugins\com.mhwlng.starcitizen.sdPlugin`
+`%appdata%\Elgato\StreamDeck\Plugins\com.ltmajor42.starcitizen.sdPlugin`
 
 To update to a new version :
 
@@ -369,11 +370,11 @@ Stop the Stream Deck application:
 
 `c:\Program Files\Elgato\StreamDeck\StreamDeck.exe`
 
-Then delete the `%appdata%\Elgato\StreamDeck\Plugins\com.mhwlng.starcitizen.sdPlugin` directory. (make a backup copy first)
+Then delete the `%appdata%\Elgato\StreamDeck\Plugins\com.ltmajor42.starcitizen.sdPlugin` directory. (make a backup copy first)
 
 Then start the streamdeck software again.
 
-Then double click the file `com.mhwlng.starcitizen.streamDeckPlugin` as usual.
+Then double click the file `com.ltmajor42.starcitizen.streamDeckPlugin` as usual.
 
 MAKE SURE that you save any images, profiles etc. that you put in these directories yourself, BEFORE deleting the directory.
 And put them back after the installation.
@@ -387,7 +388,7 @@ The button configurations are not stored in the plugin directory.
 
 After uninstalling and re-installing the plugin, all the button definition should still be there.
 
-The com.mhwlng.starcitizen.sdPlugin directory contains a pluginlog.log file, which may be useful for troubleshooting.
+The com.ltmajor42.starcitizen.sdPlugin directory contains a pluginlog.log file, which may be useful for troubleshooting.
 
 Thanks to :
 

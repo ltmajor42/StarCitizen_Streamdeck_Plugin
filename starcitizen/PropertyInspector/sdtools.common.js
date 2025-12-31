@@ -182,7 +182,7 @@ function openWebsite() {
         const json = {
             'event': 'openUrl',
             'payload': {
-                'url': 'https://mhwlng.github.io'
+                'url': 'https://ltmajor42.github.io'
             }
         };
         websocket.send(JSON.stringify(json));
