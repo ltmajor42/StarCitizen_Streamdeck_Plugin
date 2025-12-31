@@ -58,6 +58,23 @@ namespace starcitizen.Buttons
 
                 foreach (var group in actions)
                 {
+                    var duplicateKeys = group
+                        .Select(a =>
+                        {
+                            var bindingInfo = GetBindingInfo(a.Keyboard, culture.Name);
+
+                            return new
+                            {
+                                a.UILabel,
+                                bindingInfo.PrimaryBinding,
+                                bindingInfo.BindingType
+                            };
+                        })
+                        .GroupBy(x => x)
+                        .Where(g => g.Count() > 1)
+                        .Select(g => g.Key)
+                        .ToHashSet();
+
                     var groupObj = new JObject
                     {
                         ["label"] = group.Key,
@@ -69,20 +86,15 @@ namespace starcitizen.Buttons
                         string primaryBinding = "";
                         string bindingType = "";
 
-                        // Keyboard-only (see filter above)
-                        var keyString = CommandTools.ConvertKeyStringToLocale(action.Keyboard, culture.Name);
-                        primaryBinding = keyString
-                            .Replace("Dik", "")
-                            .Replace("}{", "+")
-                            .Replace("}", "")
-                            .Replace("{", "");
-                        bindingType = "keyboard";
+                        var bindingInfo = GetBindingInfo(action.Keyboard, culture.Name);
+                        primaryBinding = bindingInfo.PrimaryBinding;
+                        bindingType = bindingInfo.BindingType;
 
                         string bindingDisplay = string.IsNullOrWhiteSpace(primaryBinding) ? "" : $" [{primaryBinding}]";
                         string overruleIndicator = action.KeyboardOverRule || action.MouseOverRule ? " *" : "";
                         string uniqueSuffix = "";
 
-                        if (duplicateKeys.Contains(new { action.UILabel, actionInfo.PrimaryBinding, actionInfo.BindingType }))
+                        if (duplicateKeys.Contains(new { action.UILabel, PrimaryBinding = primaryBinding, BindingType = bindingType }))
                         {
                             var actionName = action.Name?.StartsWith($"{action.MapName}-", StringComparison.OrdinalIgnoreCase) == true
                                 ? action.Name.Substring(action.MapName.Length + 1)
@@ -203,6 +215,7 @@ namespace starcitizen.Buttons
                 return false;
             }
 
+            var foundValidToken = false;
             foreach (var raw in tokens)
             {
                 var token = raw?.Trim();
@@ -211,32 +224,62 @@ namespace starcitizen.Buttons
                     continue;
                 }
 
-                // Hard exclude mouse tokens in a keyboard field.
-                // The action execution path sends keyboard only; mouse tokens would not execute reliably.
-                if (IsMouseToken(token))
+                if (MouseTokenHelper.TryNormalize(token, out _))
                 {
-                    return false;
+                    foundValidToken = true;
+                    continue;
+                }
+
+                // Treat other mouse-like tokens (e.g., Mouse Wheel Up/Down) as valid even if they aren't canonical,
+                // so they surface in the UI instead of being hidden or marked as unknown.
+                if (MouseTokenHelper.IsMouseLike(token))
+                {
+                    foundValidToken = true;
+                    continue;
                 }
 
                 if (!CommandTools.TryFromSCKeyboardCmd(token, out _))
                 {
                     return false;
                 }
+
+                foundValidToken = true;
             }
 
-            return true;
+            return foundValidToken;
         }
 
-        private static bool IsMouseToken(string token)
+        private static (string PrimaryBinding, string BindingType) GetBindingInfo(string keyboard, string cultureName)
         {
-            if (string.IsNullOrWhiteSpace(token))
+            var keyString = CommandTools.ConvertKeyStringToLocale(keyboard, cultureName);
+            var primaryBinding = keyString
+                .Replace("Dik", "")
+                .Replace("}{", "+")
+                .Replace("}", "")
+                .Replace("{", "");
+
+            var bindingType = ContainsMouseToken(keyboard) ? "mouse" : "keyboard";
+
+            return (primaryBinding, bindingType);
+        }
+
+        private static bool ContainsMouseToken(string binding)
+        {
+            if (string.IsNullOrWhiteSpace(binding))
             {
                 return false;
             }
 
-            var t = token.Trim().ToLowerInvariant();
-            return t == "mouse1" || t == "mouse2" || t == "mouse3" || t == "mouse4" || t == "mouse5" ||
-                   t == "mwheelup" || t == "mwheeldown" || t == "mwheelleft" || t == "mwheelright";
+            var tokens = binding.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var token in tokens)
+            {
+                if (MouseTokenHelper.TryNormalize(token, out _) || MouseTokenHelper.IsMouseLike(token))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string DescribeUnknownTokens(string keyboard)
@@ -250,7 +293,7 @@ namespace starcitizen.Buttons
             var unknowns = tokens
                 .Select(t => t?.Trim())
                 .Where(t => !string.IsNullOrWhiteSpace(t))
-                .Where(t => !IsMouseToken(t))
+                .Where(t => !MouseTokenHelper.IsMouseLike(t))
                 .Where(t => !CommandTools.TryFromSCKeyboardCmd(t, out _))
                 .Distinct()
                 .ToArray();
