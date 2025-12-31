@@ -80,16 +80,27 @@ namespace starcitizen.Buttons
 
                         string bindingDisplay = string.IsNullOrWhiteSpace(primaryBinding) ? "" : $" [{primaryBinding}]";
                         string overruleIndicator = action.KeyboardOverRule || action.MouseOverRule ? " *" : "";
+                        string uniqueSuffix = "";
+
+                        if (duplicateKeys.Contains(new { action.UILabel, actionInfo.PrimaryBinding, actionInfo.BindingType }))
+                        {
+                            var actionName = action.Name?.StartsWith($"{action.MapName}-", StringComparison.OrdinalIgnoreCase) == true
+                                ? action.Name.Substring(action.MapName.Length + 1)
+                                : action.Name;
+                            uniqueSuffix = $" ({action.MapName}:{actionName})";
+                        }
 
                         ((JArray)groupObj["options"]).Add(new JObject
                         {
                             ["value"] = action.Name,
-                            ["text"] = $"{action.UILabel}{bindingDisplay}{overruleIndicator}",
+                            ["text"] = $"{action.UILabel}{bindingDisplay}{overruleIndicator}{uniqueSuffix}",
                             ["bindingType"] = bindingType,
                             ["searchText"] =
                                 $"{action.UILabel.ToLower()} " +
                                 $"{action.UIDescription?.ToLower() ?? ""} " +
-                                $"{primaryBinding.ToLower()}"
+                                $"{primaryBinding.ToLower()} " +
+                                $"{action.Name.ToLower()} " +
+                                $"{action.MapName.ToLower()}"
                         });
                     }
 
