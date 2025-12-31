@@ -58,6 +58,28 @@ namespace starcitizen.Buttons
 
                 foreach (var group in actions)
                 {
+                    var duplicateKeys = group
+                        .Select(a =>
+                        {
+                            var keyString = CommandTools.ConvertKeyStringToLocale(a.Keyboard, culture.Name);
+                            var primaryBinding = keyString
+                                .Replace("Dik", "")
+                                .Replace("}{", "+")
+                                .Replace("}", "")
+                                .Replace("{", "");
+
+                            return new
+                            {
+                                a.UILabel,
+                                PrimaryBinding = primaryBinding,
+                                BindingType = "keyboard"
+                            };
+                        })
+                        .GroupBy(x => x)
+                        .Where(g => g.Count() > 1)
+                        .Select(g => g.Key)
+                        .ToHashSet();
+
                     var groupObj = new JObject
                     {
                         ["label"] = group.Key,
@@ -82,7 +104,7 @@ namespace starcitizen.Buttons
                         string overruleIndicator = action.KeyboardOverRule || action.MouseOverRule ? " *" : "";
                         string uniqueSuffix = "";
 
-                        if (duplicateKeys.Contains(new { action.UILabel, actionInfo.PrimaryBinding, actionInfo.BindingType }))
+                        if (duplicateKeys.Contains(new { action.UILabel, PrimaryBinding = primaryBinding, BindingType = bindingType }))
                         {
                             var actionName = action.Name?.StartsWith($"{action.MapName}-", StringComparison.OrdinalIgnoreCase) == true
                                 ? action.Name.Substring(action.MapName.Length + 1)
