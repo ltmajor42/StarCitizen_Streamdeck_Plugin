@@ -204,7 +204,7 @@ namespace starcitizen.Buttons
         }
 
         /// <summary>
-        /// Returns true only if ALL tokens in a keyboard binding are recognized keyboard tokens.
+        /// Returns true only if ALL tokens in a keyboard binding are recognized keyboard tokens or mouse tokens.
         /// This prevents unknown tokens (which would otherwise fallback to Escape) from showing in the PI.
         /// </summary>
         private static bool IsExecutableKeyboardBinding(string keyboard)
