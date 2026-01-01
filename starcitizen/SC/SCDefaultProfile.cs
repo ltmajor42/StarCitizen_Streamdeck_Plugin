@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Threading;
 using BarRaider.SdTools;
 using SCJMapper_V2.CryXMLlib;
 
@@ -56,11 +57,31 @@ namespace SCJMapper_V2.SC
 
             Logger.Instance.LogMessage(TracingLevel.INFO, mFile);
 
-            if (File.Exists(mFile))
+            if (!File.Exists(mFile))
             {
-                using (var sr = new StreamReader(mFile))
+                return "";
+            }
+
+            const int maxAttempts = 3;
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                try
                 {
-                    return sr.ReadToEnd();
+                    using (var stream = new FileStream(mFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (var reader = new StreamReader(stream))
+                    {
+                        return reader.ReadToEnd();
+                    }
+                }
+                catch (IOException ex) when (attempt < maxAttempts)
+                {
+                    Logger.Instance.LogMessage(TracingLevel.WARN, $"actionmaps.xml busy (attempt {attempt}): {ex.Message}");
+                    Thread.Sleep(100);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance.LogMessage(TracingLevel.ERROR, $"Failed reading actionmaps.xml: {ex}");
+                    break;
                 }
             }
 

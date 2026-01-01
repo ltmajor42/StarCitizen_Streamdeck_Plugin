@@ -502,15 +502,22 @@ namespace starcitizen.Buttons
             try
             {
                 var payload = e.ExtractPayload();
+                if (payload != null && payload.TryGetValue("piEvent", out var piEvent) &&
+                    piEvent?.ToString() == "refreshKeybinds")
+                {
+                    bindingService.QueueReload();
+                    return;
+                }
+
                 if (payload != null && payload.ContainsKey("property_inspector") &&
                     payload["property_inspector"]?.ToString() == "propertyInspectorConnected")
                 {
                     UpdatePropertyInspector();
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // ignore malformed payloads
+                Logger.Instance.LogMessage(TracingLevel.WARN, $"Error processing PI payload: {ex.Message}");
             }
         }
 

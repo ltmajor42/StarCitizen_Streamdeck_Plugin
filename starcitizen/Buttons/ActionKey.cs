@@ -150,9 +150,23 @@ namespace starcitizen.Buttons
         private void Connection_OnSendToPlugin(object sender, EventArgs e)
         {
             // Check if the Property Inspector is sending a log message
+            JObject payload = null;
             try
             {
-                var payload = e.ExtractPayload();
+                payload = e.ExtractPayload();
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.LogMessage(TracingLevel.ERROR, $"Error processing PI payload: {ex.Message}");
+            }
+
+            if (payload != null)
+            {
+                if (payload.TryGetValue("piEvent", out var piEvent) && piEvent?.ToString() == "refreshKeybinds")
+                {
+                    bindingService.QueueReload();
+                    return;
+                }
 
                 if (payload != null && payload.ContainsKey("jslog"))
                 {
@@ -161,16 +175,11 @@ namespace starcitizen.Buttons
                     return; // Handled, exit early
                 }
             }
-            catch (Exception ex)
-            {
-                Logger.Instance.LogMessage(TracingLevel.ERROR, $"Error processing jslog: {ex.Message}");
-            }
 
             // Check if the Property Inspector is sending a connection message
             string propertyInspectorStatus = null;
             try
             {
-                var payload = e.ExtractPayload();
 
                 if (payload != null && payload.ContainsKey("property_inspector"))
                 {
