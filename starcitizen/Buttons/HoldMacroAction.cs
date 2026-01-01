@@ -46,6 +46,7 @@ namespace starcitizen.Buttons
         private CancellationTokenSource autoReleaseToken;
         private CancellationTokenSource repeatToken;
         private string activeKeyInfo;
+        private bool activeKeyHasMouseToken;
         private bool isKeyDown;
 
         public HoldMacroAction(SDConnection connection, InitialPayload payload) : base(connection, payload)
@@ -98,6 +99,7 @@ namespace starcitizen.Buttons
 
             isKeyDown = true;
             activeKeyInfo = keyInfo;
+            activeKeyHasMouseToken = ContainsMouseToken(keyInfo);
 
             Logger.Instance.LogMessage(TracingLevel.INFO, $"HoldMacroAction pressed: sending DOWN for '{settings.Function}' (holdUntilRelease={settings.HoldUntilRelease}, duration={settings.HoldDurationMs}ms)");
 
