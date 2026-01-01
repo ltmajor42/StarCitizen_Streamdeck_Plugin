@@ -1,15 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
-using System.Threading;
 using BarRaider.SdTools;
-using SCJMapper_V2.CryXMLlib;
 
 namespace SCJMapper_V2.SC
 {
-
     /// <summary>
     /// Finds and returns the DefaultProfile from SC GameData.pak
     /// it is located in GameData.pak \Libs\Config
@@ -22,7 +16,6 @@ namespace SCJMapper_V2.SC
         /// Returns a list of files found that match 'defaultProfile*.xml'
         /// 20151220BM: return only the single defaultProfile name
         /// </summary>
-        /// <returns>A list of filenames - can be empty</returns>
         static public string DefaultProfileName
         {
             get { return "defaultProfile.xml"; }
@@ -30,15 +23,15 @@ namespace SCJMapper_V2.SC
 
         /// <summary>
         /// Returns the sought default profile as string from various locations
-        /// SC Alpha 2.2: Have to find the new one in E:\G\StarCitizen\StarCitizen\Public\Data\DataXML.pak (contains the binary XML now)
+        /// SC Alpha 2.2: Have to find the new one in ...\DataXML.pak (contains the binary XML now)
         /// </summary>
-        /// <returns>A string containing the file contents</returns>
         static public string DefaultProfile()
         {
-            //Logger.Instance.LogMessage(TracingLevel.DEBUG,"DefaultProfile - Entry");
-
             string retVal = m_defProfileCached;
-            if (!string.IsNullOrEmpty(retVal)) return retVal; // Return cached defaultProfile
+            if (!string.IsNullOrEmpty(retVal))
+            {
+                return retVal; // Return cached defaultProfile
+            }
 
             retVal = SCFiles.Instance.DefaultProfile;
             if (!string.IsNullOrEmpty(retVal))
@@ -47,29 +40,45 @@ namespace SCJMapper_V2.SC
                 return retVal; // EXIT
             }
 
-
             return retVal; // EXIT
         }
 
+        /// <summary>
+        /// Reads the user's live keybind override file (actionmaps.xml) from the SC client profile path.
+        /// Important: must allow FileShare.ReadWrite because the game may write it while we read it.
+        /// </summary>
         public static string ActionMaps()
         {
-            string mFile = Path.Combine(SCPath.SCClientProfilePath, "actionmaps.xml");
+            var profilePath = SCPath.SCClientProfilePath;
+            if (string.IsNullOrWhiteSpace(profilePath))
+            {
+                Logger.Instance.LogMessage(TracingLevel.WARN, "SCClientProfilePath is empty/null.");
+                return "";
+            }
 
+            string mFile = Path.Combine(profilePath, "actionmaps.xml");
             Logger.Instance.LogMessage(TracingLevel.INFO, mFile);
 
-            if (!File.Exists(mFile))
+            // ✅ FIX: The old code checked "!File.Exists" (inverted) and then tried to open the file.
+            if (File.Exists(mFile))
             {
-                using (var stream = new FileStream(mFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                using (var reader = new StreamReader(stream))
+                try
                 {
-                    return reader.ReadToEnd();
+                    using (var stream = new FileStream(mFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (var reader = new StreamReader(stream))
+                    {
+                        return reader.ReadToEnd();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance.LogMessage(TracingLevel.ERROR, $"Failed reading actionmaps.xml: {ex}");
+                    return "";
                 }
             }
 
+            Logger.Instance.LogMessage(TracingLevel.WARN, "actionmaps.xml not found.");
             return "";
-
         }
-
-
     }
 }
