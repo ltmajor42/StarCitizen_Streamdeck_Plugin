@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using WindowsInput;
 using WindowsInput.Native;
 using BarRaider.SdTools;
-using SCJMapper_V2.SC;
+using starcitizen.SC;
 
 namespace starcitizen.Buttons
 {

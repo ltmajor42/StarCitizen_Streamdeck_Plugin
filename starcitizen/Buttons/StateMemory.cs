@@ -8,7 +8,7 @@ using BarRaider.SdTools.Events;
 using BarRaider.SdTools.Wrappers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SCJMapper_V2.SC;
+using starcitizen.SC;
 using starcitizen.Core;
 
 namespace starcitizen.Buttons

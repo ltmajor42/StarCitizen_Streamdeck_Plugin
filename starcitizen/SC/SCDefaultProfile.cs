@@ -3,7 +3,7 @@ using System.IO;
 using System.Threading;
 using BarRaider.SdTools;
 
-namespace SCJMapper_V2.SC
+namespace starcitizen.SC
 {
     /// <summary>
     /// Finds and returns the DefaultProfile from SC GameData.pak

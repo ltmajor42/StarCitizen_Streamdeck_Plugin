@@ -4,7 +4,7 @@ using System.IO;
 using System.Threading;
 using BarRaider.SdTools;
 using p4ktest.SC;
-using SCJMapper_V2.SC;
+using starcitizen.SC;
 
 namespace starcitizen.Core
 {

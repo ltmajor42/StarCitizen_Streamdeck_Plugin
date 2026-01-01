@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ICSharpCode.SharpZipLib\ICSharpCode.SharpZipLib.csproj" />
+    <ProjectReference Include="..\Zstd.Net\Zstd.Net.csproj" />
     <ProjectReference Include="..\InputSimulatorPlus\WindowsInput\WindowsInput.csproj" />
   </ItemGroup>
 
