@@ -67,7 +67,7 @@ The plugin logs useful startup and detection details in:
 
 ### Lean Surface
 - Legacy template generators removed.
-- Property Inspectors live directly under: `PropertyInspector/StarCitizen/`
+- Property Inspectors live directly under: `starcitizen/PropertyInspector/StarCitizen/`
 
 ## Adding a New Action (Quick Guide)
 1. **Create the action class**
