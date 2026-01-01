@@ -109,6 +109,8 @@
     let functionsLoaded = false;
     let savedFunctionValue = null;
     let functionsRequested = false;
+    let requestRetryTimer = null;
+    const REQUEST_RETRY_INTERVAL_MS = 1000;
 
     /* Preserve selected function if payload arrives before functions list */
     const originalLoadConfiguration = loadConfiguration;
@@ -129,15 +131,27 @@
         }
     };
 
-    function requestFunctions() {
-        if (functionsLoaded || functionsRequested) {
-            return;
-        }
+    function requestFunctions(force = false) {
+        if (functionsLoaded) return;
+        if (!force && functionsRequested) return;
 
         if (websocket && websocket.readyState === 1) {
             functionsRequested = true;
             sendValueToPlugin(true, 'requestFunctions');
+            scheduleRequestRetry();
+        } else {
+            scheduleRequestRetry();
         }
+    }
+
+    function scheduleRequestRetry() {
+        if (functionsLoaded) return;
+
+        clearTimeout(requestRetryTimer);
+        requestRetryTimer = setTimeout(() => {
+            functionsRequested = false; // allow the next retry to fire
+            requestFunctions();
+        }, REQUEST_RETRY_INTERVAL_MS);
     }
 
     function populateDropdown(functions) {
@@ -173,6 +187,9 @@
         });
 
         functionsLoaded = true;
+        functionsRequested = false;
+        clearTimeout(requestRetryTimer);
+        requestRetryTimer = null;
 
         if (savedFunctionValue) {
             select.value = savedFunctionValue;
@@ -234,6 +251,7 @@
                 && jsonObj.payload.functionsLoaded) {
 
                 clearTimeout(requestRetryTimer);
+                requestRetryTimer = null;
                 functionsLoaded = true;
                 populateDropdown(jsonObj.payload.functions);
             }
