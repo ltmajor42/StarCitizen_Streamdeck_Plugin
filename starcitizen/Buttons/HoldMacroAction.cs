@@ -103,14 +103,7 @@ namespace starcitizen.Buttons
 
             Logger.Instance.LogMessage(TracingLevel.INFO, $"HoldMacroAction pressed: sending DOWN for '{settings.Function}' (holdUntilRelease={settings.HoldUntilRelease}, duration={settings.HoldDurationMs}ms)");
 
-            if (activeKeyHasMouseToken)
-            {
-                StreamDeckCommon.SendKeypress(keyInfo, 0);
-            }
-            else
-            {
-                StreamDeckCommon.SendKeypressDown(keyInfo);
-            }
+            StreamDeckCommon.SendKeypressDown(keyInfo);
             StartRepeat(keyInfo);
             _ = Connection.SetStateAsync(1);
 
@@ -234,7 +227,7 @@ namespace starcitizen.Buttons
 
         private void StartRepeat(string keyInfo)
         {
-            if (string.IsNullOrWhiteSpace(keyInfo))
+            if (string.IsNullOrWhiteSpace(keyInfo) || ContainsMouseToken(keyInfo))
             {
                 return;
             }
@@ -252,14 +245,7 @@ namespace starcitizen.Buttons
 
                     while (!token.IsCancellationRequested && isKeyDown)
                     {
-                        if (activeKeyHasMouseToken)
-                        {
-                            StreamDeckCommon.SendKeypress(keyInfo, 0);
-                        }
-                        else
-                        {
-                            StreamDeckCommon.SendKeypressDown(keyInfo);
-                        }
+                        StreamDeckCommon.SendKeypressDown(keyInfo);
                         await Task.Delay(RepeatIntervalMs, token);
                     }
                 }
