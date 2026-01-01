@@ -108,6 +108,7 @@
     let allOptions = [];
     let functionsLoaded = false;
     let savedFunctionValue = null;
+    let functionsRequested = false;
 
     /* Preserve selected function if payload arrives before functions list */
     const originalLoadConfiguration = loadConfiguration;
@@ -115,6 +116,11 @@
         if (payload && payload.function !== undefined) {
             savedFunctionValue = payload.function;
         }
+
+        if (payload && payload.functionsLoaded && Array.isArray(payload.functions)) {
+            populateDropdown(payload.functions);
+        }
+
         originalLoadConfiguration(payload);
 
         if (functionsLoaded && savedFunctionValue) {
@@ -122,6 +128,17 @@
             if (sel) sel.value = savedFunctionValue;
         }
     };
+
+    function requestFunctions() {
+        if (functionsLoaded || functionsRequested) {
+            return;
+        }
+
+        if (websocket && websocket.readyState === 1) {
+            functionsRequested = true;
+            sendValueToPlugin(true, 'requestFunctions');
+        }
+    }
 
     function populateDropdown(functions) {
         const select = document.getElementById('function');
@@ -195,6 +212,15 @@
     /* Hook into websocket to receive function list */
     document.addEventListener('websocketCreate', function () {
         const originalOnMessage = websocket.onmessage;
+        const originalOnOpen = websocket.onopen;
+
+        websocket.onopen = function (evt) {
+            if (originalOnOpen) {
+                originalOnOpen.call(this, evt);
+            }
+
+            requestFunctions();
+        };
 
         websocket.onmessage = function (evt) {
             const jsonObj = JSON.parse(evt.data);
