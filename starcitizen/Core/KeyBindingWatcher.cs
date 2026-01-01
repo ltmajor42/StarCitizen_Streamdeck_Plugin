@@ -13,9 +13,28 @@ namespace starcitizen.Core
         private readonly Timer pollTimer;
         private readonly object debounceLock = new object();
         private readonly string targetFilePath;
-        private DateTime? lastWriteTimeUtc;
+        private FileSignature lastSignature;
         private const int DebounceDelayMs = 200;
         private const int PollIntervalMs = 1500;
+
+        private class FileSignature
+        {
+            public DateTime? WriteTimeUtc { get; set; }
+            public long? Length { get; set; }
+            public string Hash { get; set; }
+
+            public bool Equals(FileSignature other)
+            {
+                if (other == null)
+                {
+                    return false;
+                }
+
+                return WriteTimeUtc == other.WriteTimeUtc &&
+                       Length == other.Length &&
+                       string.Equals(Hash, other.Hash, StringComparison.Ordinal);
+            }
+        }
 
         public KeyBindingWatcher(string path, string fileName)
         {
@@ -23,7 +42,7 @@ namespace starcitizen.Core
             NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.CreationTime | NotifyFilters.Size;
             Path = path;
             targetFilePath = System.IO.Path.Combine(path, fileName);
-            lastWriteTimeUtc = GetFileWriteTimeUtc();
+            lastSignature = GetFileSignature();
             debounceTimer = new Timer(_ => RaiseUpdate(), null, Timeout.Infinite, Timeout.Infinite);
             pollTimer = new Timer(_ => PollForChanges(), null, Timeout.Infinite, Timeout.Infinite);
         }
@@ -95,23 +114,30 @@ namespace starcitizen.Core
 
         private void RaiseUpdate()
         {
-            KeyBindingUpdated?.Invoke(this, EventArgs.Empty);
+            try
+            {
+                KeyBindingUpdated?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception e)
+            {
+                Logger.Instance.LogMessage(TracingLevel.WARN, $"Key binding update handler failed: {e.Message}");
+            }
         }
 
         private void PollForChanges()
         {
             try
             {
-                var currentWriteTime = GetFileWriteTimeUtc();
+                var currentSignature = GetFileSignature();
 
                 lock (debounceLock)
                 {
-                    if (currentWriteTime == lastWriteTimeUtc)
+                    if (currentSignature.Equals(lastSignature))
                     {
                         return;
                     }
 
-                    lastWriteTimeUtc = currentWriteTime;
+                    lastSignature = currentSignature;
                     debounceTimer.Change(DebounceDelayMs, Timeout.Infinite);
                 }
             }
@@ -127,7 +153,7 @@ namespace starcitizen.Core
             {
                 lock (debounceLock)
                 {
-                    lastWriteTimeUtc = GetFileWriteTimeUtc();
+                    lastSignature = GetFileSignature();
                 }
             }
             catch (Exception e)
@@ -136,16 +162,44 @@ namespace starcitizen.Core
             }
         }
 
-        private DateTime? GetFileWriteTimeUtc()
+        private FileSignature GetFileSignature()
         {
-            var info = new FileInfo(targetFilePath);
-            if (!info.Exists)
+            try
             {
-                return null;
-            }
+                var info = new FileInfo(targetFilePath);
+                if (!info.Exists)
+                {
+                    return new FileSignature();
+                }
 
-            info.Refresh();
-            return info.LastWriteTimeUtc;
+                info.Refresh();
+
+                string hash = null;
+                try
+                {
+                    using (var stream = new FileStream(targetFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (var sha = System.Security.Cryptography.SHA256.Create())
+                    {
+                        hash = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", string.Empty);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"Could not hash key binding file: {ex.Message}");
+                }
+
+                return new FileSignature
+                {
+                    WriteTimeUtc = info.LastWriteTimeUtc,
+                    Length = info.Length,
+                    Hash = hash
+                };
+            }
+            catch (Exception e)
+            {
+                Logger.Instance.LogMessage(TracingLevel.WARN, $"Could not read key binding file info: {e.Message}");
+                return lastSignature ?? new FileSignature();
+            }
         }
 
         protected override void Dispose(bool disposing)
