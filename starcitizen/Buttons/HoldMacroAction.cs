@@ -225,7 +225,7 @@ namespace starcitizen.Buttons
 
         private void StartRepeat(string keyInfo)
         {
-            if (string.IsNullOrWhiteSpace(keyInfo))
+            if (string.IsNullOrWhiteSpace(keyInfo) || ContainsMouseToken(keyInfo))
             {
                 return;
             }
@@ -272,6 +272,22 @@ namespace starcitizen.Buttons
 
             repeatToken.Dispose();
             repeatToken = null;
+        }
+
+        private bool ContainsMouseToken(string keyInfo)
+        {
+            var matches = Regex.Matches(keyInfo, CommandTools.REGEX_SUB_COMMAND);
+
+            foreach (Match match in matches)
+            {
+                var token = match.Value.Replace("{", string.Empty).Replace("}", string.Empty);
+                if (MouseTokenHelper.TryNormalize(token, out _))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void ClampHoldDuration()
