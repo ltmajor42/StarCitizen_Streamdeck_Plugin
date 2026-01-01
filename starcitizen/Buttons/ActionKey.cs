@@ -162,12 +162,6 @@ namespace starcitizen.Buttons
 
             if (payload != null)
             {
-                if (payload.TryGetValue("piEvent", out var piEvent) && piEvent?.ToString() == "refreshKeybinds")
-                {
-                    bindingService.QueueReload();
-                    return;
-                }
-
                 if (payload != null && payload.ContainsKey("jslog"))
                 {
                     var logMessage = payload["jslog"]?.ToString();

@@ -207,13 +207,6 @@ namespace starcitizen.Buttons
             {
                 var payload = e.ExtractPayload();
 
-                if (payload != null && payload.TryGetValue("piEvent", out var piEvent) &&
-                    piEvent?.ToString() == "refreshKeybinds")
-                {
-                    bindingService.QueueReload();
-                    return;
-                }
-
                 if (payload != null && payload["property_inspector"] != null &&
                     payload["property_inspector"].ToString() == "propertyInspectorConnected")
                 {

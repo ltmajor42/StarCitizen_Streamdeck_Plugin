@@ -22,7 +22,6 @@
     .hidden { display: none; }
     .no-results { padding: 10px; color: #999; font-style: italic; text-align: center; }
     .search-row { display: flex; gap: 6px; align-items: center; }
-    .refresh-button { min-width: 48px; padding: 6px 10px; }
   </style>
 </head>
 
@@ -38,12 +37,6 @@
              placeholder="Type to search functions..."
              autocomplete="off"
              style="flex: 1;">
-      <button class="sdpi-item-value refresh-button"
-              type="button"
-              onclick="refreshKeybinds(this)"
-              title="Reload Star Citizen keybinds">
-        ⟳
-      </button>
     </div>
     <div class="sdpi-item-value" id="searchResults"
          style="font-size: 11px; color: #999; margin-top: 4px;"></div>
@@ -241,21 +234,6 @@
 
     setSettings({ clickSound: '' });
     updateClearSoundVisibility();
-  }
-
-  function refreshKeybinds(button) {
-    if (!button || button.disabled) return;
-
-    const originalText = button.textContent;
-    button.disabled = true;
-    button.textContent = 'Refreshing…';
-
-    sendValueToPlugin('refreshKeybinds', 'piEvent');
-
-    setTimeout(() => {
-      button.disabled = false;
-      button.textContent = originalText;
-    }, 800);
   }
 
   document.addEventListener('websocketCreate', function () {

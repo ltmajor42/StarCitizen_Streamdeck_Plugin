@@ -83,8 +83,6 @@ namespace starcitizen.Core
 
         private void LoadBindings()
         {
-            StopWatcher();
-
             try
             {
                 PluginLog.Info("Loading Star Citizen key bindings...");
@@ -123,7 +121,7 @@ namespace starcitizen.Core
             }
             finally
             {
-                // Always restart watcher so refresh keeps working
+                // Ensure watcher stays active for automatic updates
                 MonitorProfileDirectory();
             }
         }
@@ -156,7 +154,7 @@ namespace starcitizen.Core
             return false;
         }
 
-        private void MonitorProfileDirectory()
+        private void MonitorProfileDirectory(bool forceRestart = false)
         {
             var profilePath = SCPath.SCClientProfilePath;
             if (string.IsNullOrEmpty(profilePath) || !Directory.Exists(profilePath))
@@ -165,31 +163,44 @@ namespace starcitizen.Core
                 return;
             }
 
-            PluginLog.Info($"Monitoring key binding file at: {profilePath}\\actionmaps.xml");
-            watcher = new KeyBindingWatcher(profilePath, "actionmaps.xml");
-            watcher.KeyBindingUpdated += (sender, args) => QueueReload();
-            watcher.StartWatching();
+            lock (syncLock)
+            {
+                if (!forceRestart && watcher != null)
+                {
+                    if (!watcher.EnableRaisingEvents)
+                    {
+                        watcher.StartWatching();
+                    }
+
+                    return;
+                }
+
+                StopWatcherInternal();
+
+                PluginLog.Info($"Monitoring key binding file at: {profilePath}\\actionmaps.xml");
+                watcher = new KeyBindingWatcher(profilePath, "actionmaps.xml");
+                watcher.KeyBindingUpdated += Watcher_KeyBindingUpdated;
+                watcher.Error += Watcher_OnError;
+                watcher.StartWatching();
+            }
+        }
+
+        private void Watcher_KeyBindingUpdated(object sender, EventArgs e)
+        {
+            QueueReload();
+        }
+
+        private void Watcher_OnError(object sender, ErrorEventArgs e)
+        {
+            PluginLog.Warn($"Key binding watcher encountered an error: {e.GetException()?.Message ?? "unknown"}. Restarting watcher.");
+            MonitorProfileDirectory(forceRestart: true);
         }
 
         private void StopWatcher()
         {
-            if (watcher == null)
+            lock (syncLock)
             {
-                return;
-            }
-
-            try
-            {
-                watcher.StopWatching();
-            }
-            catch (Exception ex)
-            {
-                PluginLog.Error($"Error while stopping watcher: {ex.Message}");
-            }
-            finally
-            {
-                watcher.Dispose();
-                watcher = null;
+                StopWatcherInternal();
             }
         }
 
@@ -209,6 +220,30 @@ namespace starcitizen.Core
             }
 
             return false;
+        }
+
+        private void StopWatcherInternal()
+        {
+            if (watcher == null)
+            {
+                return;
+            }
+
+            try
+            {
+                watcher.KeyBindingUpdated -= Watcher_KeyBindingUpdated;
+                watcher.Error -= Watcher_OnError;
+                watcher.StopWatching();
+            }
+            catch (Exception ex)
+            {
+                PluginLog.Error($"Error while stopping watcher: {ex.Message}");
+            }
+            finally
+            {
+                watcher.Dispose();
+                watcher = null;
+            }
         }
     }
 }
