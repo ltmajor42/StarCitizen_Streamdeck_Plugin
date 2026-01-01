@@ -58,9 +58,10 @@ namespace SCJMapper_V2.SC
 
             if (File.Exists(mFile))
             {
-                using (var sr = new StreamReader(mFile))
+                using (var stream = new FileStream(mFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var reader = new StreamReader(stream))
                 {
-                    return sr.ReadToEnd();
+                    return reader.ReadToEnd();
                 }
             }
 
