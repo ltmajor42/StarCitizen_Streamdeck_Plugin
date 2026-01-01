@@ -75,24 +75,24 @@
   </div>
 
   <div class="sdpi-item">
-    <div class="sdpi-item-label">Blink rate (ms)</div>
-    <input type="number"
-           class="sdpi-item-value sdProperty"
-           id="blinkRateMs"
-           min="100"
-           max="1000"
-           step="10"
-           oninput="setSettings()"
-           onchange="setSettings()">
-  </div>
-
-  <div class="sdpi-item">
     <div class="sdpi-item-label">Confirm state (ms)</div>
     <input type="number"
            class="sdpi-item-value sdProperty"
            id="confirmationDurationMs"
            min="100"
            max="3000"
+           step="10"
+           oninput="setSettings()"
+           onchange="setSettings()">
+  </div>
+
+  <div class="sdpi-item">
+    <div class="sdpi-item-label">Blink rate (ms)</div>
+    <input type="number"
+           class="sdpi-item-value sdProperty"
+           id="blinkRateMs"
+           min="100"
+           max="1000"
            step="10"
            oninput="setSettings()"
            onchange="setSettings()">
@@ -266,6 +266,12 @@
       .addEventListener('input', function () {
         clearTimeout(this.searchTimeout);
         this.searchTimeout = setTimeout(filterOptions, 150);
+      });
+
+    document.getElementById('function')
+      .addEventListener('change', function () {
+        document.getElementById('functionSearch').value = '';
+        document.getElementById('searchResults').textContent = '';
       });
 
     updateClearSoundVisibility();
