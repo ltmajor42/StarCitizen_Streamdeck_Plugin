@@ -4,12 +4,14 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
 namespace SCJMapper_V2.p4kFile
 {
   /// <summary>
   /// General File descriptor - knows about locations and can extract files
   /// </summary>
+  [SupportedOSPlatform("windows")]
   public class p4kFile
   {
     // File Properties 

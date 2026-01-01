@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 
 namespace starcitizen
 {
+    [SupportedOSPlatform("windows")]
     class AudioPlaybackEngine : IDisposable
     {
         private readonly IWavePlayer outputDevice;

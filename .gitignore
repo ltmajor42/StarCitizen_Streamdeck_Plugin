@@ -346,4 +346,3 @@ dist/
 
 # Local build and update scripts (not for repo)
 CreatePlugin.ps1
-check_updates.ps1

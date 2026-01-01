@@ -2,6 +2,7 @@ using System;
 using System.Configuration;
 using System.IO;
 using System.Threading;
+using System.Runtime.Versioning;
 using BarRaider.SdTools;
 using p4ktest.SC;
 using starcitizen.SC;
@@ -13,6 +14,7 @@ namespace starcitizen.Core
     /// caching, and watching the profile for changes. All actions read bindings
     /// from this service instead of touching the loader directly.
     /// </summary>
+    [SupportedOSPlatform("windows")]
     public sealed class KeyBindingService : IDisposable
     {
         private readonly FifoExecution loadQueue = new FifoExecution();

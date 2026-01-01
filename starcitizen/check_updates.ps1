@@ -1,0 +1,1 @@
+# Placeholder update check script
