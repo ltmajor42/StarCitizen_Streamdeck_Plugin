@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 using BarRaider.SdTools;
 
 namespace SCJMapper_V2.SC
@@ -49,35 +50,77 @@ namespace SCJMapper_V2.SC
         /// </summary>
         public static string ActionMaps()
         {
-            var profilePath = SCPath.SCClientProfilePath;
-            if (string.IsNullOrWhiteSpace(profilePath))
+            return ActionMaps(out _);
+        }
+
+        public static string ActionMaps(out string resolvedPath)
+        {
+            resolvedPath = SCPath.ResolveActionMapsPath();
+            if (string.IsNullOrWhiteSpace(resolvedPath))
             {
-                Logger.Instance.LogMessage(TracingLevel.WARN, "SCClientProfilePath is empty/null.");
+                Logger.Instance.LogMessage(TracingLevel.WARN, "Could not resolve actionmaps.xml path.");
                 return "";
             }
 
-            string mFile = Path.Combine(profilePath, "actionmaps.xml");
-            Logger.Instance.LogMessage(TracingLevel.INFO, mFile);
-
-            if (File.Exists(mFile))
+            Logger.Instance.LogMessage(TracingLevel.INFO, $"Attempting to read actionmaps.xml at: {resolvedPath}");
+            var content = ReadActionMapsWithStabilization(resolvedPath);
+            if (content != null)
             {
-                try
-                {
-                    using (var stream = new FileStream(mFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                    using (var reader = new StreamReader(stream))
-                    {
-                        return reader.ReadToEnd();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Instance.LogMessage(TracingLevel.ERROR, $"Failed reading actionmaps.xml: {ex}");
-                    return "";
-                }
+                return content;
             }
 
             Logger.Instance.LogMessage(TracingLevel.WARN, "actionmaps.xml not found.");
             return "";
+        }
+
+        /// <summary>
+        /// Read the actionmaps file only after it appears stable (size/write time unchanged across reads).
+        /// This reduces flaky parses when the game is still flushing the file.
+        /// </summary>
+        private static string ReadActionMapsWithStabilization(string path, int maxAttempts = 5, int stabilizationDelayMs = 150)
+        {
+            if (!File.Exists(path))
+            {
+                return null;
+            }
+
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                try
+                {
+                    var firstInfo = new FileInfo(path);
+                    var firstWrite = firstInfo.LastWriteTimeUtc;
+                    var firstLength = firstInfo.Length;
+
+                    string content;
+                    using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (var reader = new StreamReader(stream))
+                    {
+                        content = reader.ReadToEnd();
+                    }
+
+                    Thread.Sleep(stabilizationDelayMs);
+
+                    var secondInfo = new FileInfo(path);
+                    var secondWrite = secondInfo.LastWriteTimeUtc;
+                    var secondLength = secondInfo.Length;
+
+                    if (firstWrite == secondWrite && firstLength == secondLength)
+                    {
+                        Logger.Instance.LogMessage(TracingLevel.INFO, $"actionmaps.xml stabilized on attempt {attempt}: {path}");
+                        return content;
+                    }
+
+                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"actionmaps.xml changed between reads (attempt {attempt}/{maxAttempts}), retrying...");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"actionmaps.xml read failed (attempt {attempt}/{maxAttempts}): {ex.Message}");
+                }
+            }
+
+            Logger.Instance.LogMessage(TracingLevel.WARN, $"actionmaps.xml never stabilized after {maxAttempts} attempts.");
+            return null;
         }
     }
 }

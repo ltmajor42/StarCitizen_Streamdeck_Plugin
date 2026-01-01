@@ -128,14 +128,15 @@ namespace starcitizen.Core
             }
         }
 
-        private static bool TryApplyActionMapsWithRetry(DProfileReader reader, int maxAttempts = 6, int baseDelayMs = 120)
+        private static bool TryApplyActionMapsWithRetry(DProfileReader reader, int maxAttempts = 8, int baseDelayMs = 180)
         {
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
-                var actionmaps = SCDefaultProfile.ActionMaps();
+                var actionmaps = SCDefaultProfile.ActionMaps(out var actionmapsPath);
                 if (string.IsNullOrEmpty(actionmaps))
                 {
                     // No actionmaps.xml (or empty) => nothing to apply
+                    PluginLog.Warn($"actionmaps.xml missing or empty at '{actionmapsPath ?? "(unknown)"}'. Keeping previous bindings.");
                     return true;
                 }
 
