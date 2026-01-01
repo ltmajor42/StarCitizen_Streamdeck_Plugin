@@ -2,27 +2,37 @@
 
 **Elgato Stream Deck button plugin for Star Citizen**
 
-> 🔗 **Updated fork of [ltmajor42/streamdeck-starcitizen](https://github.com/ltmajor42/streamdeck-starcitizen)**  
-> Maintained by **Ltmajor42**. Original code by **ltmajor42** with in-game binding discovery provided by **SCJMapper** assets. This fork adds auto-detection, search, refactors, and stability fixes.
+> 🔗 **Updated fork of [mhwlng/streamdeck-starcitizen](https://github.com/mhwlng/streamdeck-starcitizen)**  
+> Maintained by **Ltmajor42**. Original code by **mhwlng** with in-game binding discovery provided by **SCJMapper** assets. This fork adds auto-detection, search, refactors, and stability fixes.
 
 ## What's New in This Fork
 
-- **Automatic RSI Launcher Detection** - (Hopefully) No more manual path configuration! The plugin reads your RSI Launcher settings automatically.
-- **Search Functionality** - Quickly find keybindings with the new search box in the Property Inspector.
-- **Simplified Configuration** - Only need to set `SCBasePath` if auto-detection fails (instead of SCData_p4k and SCClientProfilePath).
-- **Bug Fixes & Improvements** - Various fixes to improve stability and usability.
+### Real-Time Keybind Sync (In-Game Refresh)
+- Live refresh of bindings from Star Citizen while the game is running.
+- Watches `actionmaps.xml` so changes made in-game reflect quickly in Stream Deck.
+- Improves “setup correctness” by keeping Stream Deck and Star Citizen aligned.
+
+### Mouse Input Macros
+- Supports mouse click / movement simulation for advanced macros.
+- Enables combined keyboard + mouse sequences for complex workflows.
+
+### Hold Macros
+- Supports holding keys / sustained inputs (where applicable).
+- Better support for actions that need continuous input behavior.
+
+### Major Code Optimization + .NET 8 Upgrade
+- Large internal refactor and modernization to **.NET 8**.
+- Improved performance, reduced overhead, and cleaner long-term maintainability.
 
 ## Ownership, Credits, and Thanks
+- **Maintainer:** Ltmajor42  
+- **Collaborator:** Jarex985 — https://github.com/Jarex985/streamdeck-starcitizen  
+- **Upstream inspiration:** https://github.com/mhwlng/streamdeck-starcitizen  
+- **Binding loader / parsing resources:** SCJMapper-V2 — https://github.com/SCToolsfactory/SCJMapper-V2  
+- **P4K extraction tooling:** unp4k — https://github.com/dolkensp/unp4k  
+- **Input simulation library:** InputSimulator — https://github.com/ishaaniMittal/inputsimulator  
 
-- **Maintainer:** Ltmajor42
-- **Maintainer:** Jarex985 [streamdeck-starcitizen](https://github.com/Jarex985/streamdeck-starcitizen)
-- **Upstream inspiration:** [mhwlng/streamdeck-starcitizen](https://github.com/mhwlng/streamdeck-starcitizen)
-- **Binding loader / parsing resources:** [SCJMapper-V2](https://github.com/SCToolsfactory/SCJMapper-V2) resources used for Star Citizen keybind parsing.
-- **P4K extraction tooling:** [unp4k](https://github.com/dolkensp/unp4k) (used for extracting/working with Star Citizen `.p4k` archives, where applicable).
-- **Input simulation library:** [InputSimulator](https://github.com/ishaaniMittal/inputsimulator) (used for keyboard/mouse input simulation, where applicable).
-
-
-### Additional thanks
+## Additional thanks
 - Thanks to all upstream authors and contributors of the above projects for making this plugin possible.
 
 ## V2 Full Release
@@ -40,36 +50,61 @@ The plugin logs useful startup and detection details in:
 ## What’s improved in V2
 ![SC button (144 x 144 px) (250 x 250 px)](https://github.com/user-attachments/assets/10f003da-72ed-487f-bb39-b9a88d88abfa)
 
-**This release includes a major internal refactor:**
 
-1. **Stability improvements** - Better behavior under fast tapping / repeated presses
-2. **Cleaner structure** - Easier to maintain and evolve long-term
-3. **Improved Property Inspector experience** - Faster function selection and more consistent UI
-4. **More consistent action behavior** - Actions now follow clearer rules across buttons
+## Architecture Highlights (v2)
 
-### Architecture highlights (v2)
+## Centralized Key Binding Service
+- **`Core/KeyBindingService`** loads bindings, watches `actionmaps.xml`, and caches results so actions can refresh safely.
+- Implements Star Citizen’s **delta/merge logic**:
+  - Base layer: `defaultProfile.xml` (inside `Data.p4k`)
+  - Override layer: `actionmaps.xml` (live user changes)
 
-- **Centralized key binding service** – `Core/KeyBindingService` loads bindings, watches `actionmaps.xml`, and caches versioned results so actions can refresh safely.
-- **Shared Property Inspector messaging** – `Core/PropertyInspectorMessenger` sends the current function list to any action without copy/paste code.
-- **Single logging entry point** – `Core/PluginLog` wraps `BarRaider.SdTools.Logger` to keep troubleshooting messages consistent in `pluginlog.log`.
-- **Lean surface** – Legacy template generators have been removed; Property Inspectors live directly under `PropertyInspector/StarCitizen/`.
-- **Unknown bindings stay unknown** – Unsupported key tokens are labeled as unknown in the dropdown and will not fall back to Escape.
+### Shared Property Inspector Messaging
+- **`Core/PropertyInspectorMessenger`** broadcasts the current function list to any action (no copy/paste code).
 
-### Adding a new action (quick guide)
+### Single Logging Entry Point
+- **`Core/PluginLog`** wraps `BarRaider.SdTools.Logger` for consistent troubleshooting in `pluginlog.log`.
 
-1. **Create the action class** – Derive from `StarCitizenKeypadBase` or `StarCitizenDialBase` and keep a private `KeyBindingService bindingService = KeyBindingService.Instance;`.
-2. **Wire key binding lookups** – Use `bindingService.TryGetBinding(settings.Function, out var action)` before sending any keypress.
-3. **Send PI data** – Subscribe to `bindingService.KeyBindingsLoaded`, `Connection.OnPropertyInspectorDidAppear`, and `OnSendToPlugin`, then call `PropertyInspectorMessenger.SendFunctionsAsync(Connection)` to populate dropdowns.
-4. **Log consistently** – Use `PluginLog.Info/Warn/Error/Fatal` for any runtime issues; they land in `pluginlog.log` for easy troubleshooting.
-5. **Keep settings minimal** – Prefer simple `PluginSettings` classes with `Tools.AutoPopulateSettings` to minimize boilerplate.
+### Lean Surface
+- Legacy template generators removed.
+- Property Inspectors live directly under: `PropertyInspector/StarCitizen/`
 
-### Troubleshooting
+## Adding a New Action (Quick Guide)
+1. **Create the action class**
+   - Derive from `StarCitizenKeypadBase` or `StarCitizenDialBase`
+   - Keep a private instance:
+     - `private readonly KeyBindingService bindingService = KeyBindingService.Instance;`
 
-- Live log path: `%appdata%\\Elgato\\StreamDeck\\Plugins\\com.ltmajor42.starcitizen.sdPlugin\\pluginlog.log`
+2. **Wire key binding lookups**
+   - Use `bindingService.TryGetBinding(settings.Function, out var action)` before sending any input.
+
+3. **Send Property Inspector data**
+   - Subscribe to:
+     - `bindingService.KeyBindingsLoaded`
+     - `Connection.OnPropertyInspectorDidAppear`
+     - `OnSendToPlugin`
+   - Call `PropertyInspectorMessenger.SendFunctionsAsync(Connection)` to populate dropdowns.
+
+4. **Log consistently**
+   - Use `PluginLog.Info/Warn/Error/Fatal` (outputs to `pluginlog.log`).
+
+5. **Keep settings minimal**
+   - Prefer simple `PluginSettings` classes with `Tools.AutoPopulateSettings` to minimize boilerplate.
+
+## Troubleshooting
+- **Live log path:**
+  `%appdata%\Elgato\StreamDeck\Plugins\com.ltmajor42.starcitizen.sdPlugin\pluginlog.log`
+
 - Ensure the **RSI Launcher** is installed and has launched at least once so bindings can be read.
-- If functions are missing, close and reopen the Stream Deck app to trigger a fresh `actionmaps.xml` load, or delete stale profiles inside `%appdata%\\Elgato\\StreamDeck\\Plugins\\...`.
 
----
+- If functions are missing:
+  - Close and reopen Stream Deck to trigger a fresh `actionmaps.xml` load
+  - Or delete stale profiles inside:
+    `%appdata%\Elgato\StreamDeck\Plugins\...`
+
+- Running Stream Deck as **Administrator** may be required for reliable input simulation + reading game folders.
+ 
+ ---
 
 ## Buttons (Actions) — What they do
 
