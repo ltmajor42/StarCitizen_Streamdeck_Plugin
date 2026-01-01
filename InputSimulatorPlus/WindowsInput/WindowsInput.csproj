@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net48;net9.0-windows</TargetFrameworks>
+    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
     <AssemblyName>WindowsInput</AssemblyName>
     <RootNamespace>WindowsInput</RootNamespace>
     <Platforms>AnyCPU</Platforms>
