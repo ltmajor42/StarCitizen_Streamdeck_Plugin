@@ -16,151 +16,153 @@
     <script src="../jquery-3.3.1.min.js"></script>
     <script src="../jquery.highlight-within-textarea.js"></script>
 
-    <style>
-        .no-results { padding: 10px; color: #999; font-style: italic; text-align: center; }
-        .hidden { display: none !important; }
-        .hint { font-size: 11px; color: #999; line-height: 1.25; margin-top: 4px; }
-        .compact { margin-top: 0; }
-        .inline-row { display: flex; align-items: center; gap: 10px; }
-        .small-btn { padding: 4px 8px; height: 26px; }
-    .search-row {
-        display: flex;
-        gap: 6px;
-        align-items: stretch;
-        min-height: 23px;
-    }
-    .search-row input.sdpi-item-value {
-        flex: 1;
-        height: 100%;
-        min-height: 23px;
-        box-sizing: border-box;
-    }
-    </style>
 </head>
 
-<body>
-<div class="sdpi-wrapper">
+<body class="pi-theme">
+<div class="sdpi-wrapper pi-shell">
 
-    <!-- SEARCH -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Search</div>
-        <div class="sdpi-item-value search-row">
-            <input type="text"
-                   class="sdpi-item-value"
-                   id="functionSearch"
-                   placeholder="Type to search functions."
-                   autocomplete="off">
+    <div class="pi-header">
+        <div>
+            <p class="pi-eyebrow">Star Citizen</p>
+            <h1 class="pi-title">State Memory</h1>
+            <p class="pi-subtitle">Toggle memory while keeping soft sync and audio cues in one place.</p>
         </div>
-        <div class="sdpi-item-value"
-             id="searchResults"
-             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
+        <div class="pi-badge">Property Inspector</div>
     </div>
 
-    <!-- FUNCTION -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Function</div>
-        <select class="sdpi-item-value select sdProperty"
-                id="function"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions…</option>
-        </select>
-    </div>
+    <div class="pi-grid">
+        <div class="pi-card">
+            <div class="pi-card-header">
+                <h2 class="pi-card-title">Function</h2>
+                <p class="pi-card-subtitle">Search and choose the function to pair with memory.</p>
+            </div>
+            <div class="pi-card-body">
+                <div class="pi-stack">
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Search</div>
+                        <div class="sdpi-item-value search-row">
+                            <input type="text"
+                                   class="sdpi-item-value"
+                                   id="functionSearch"
+                                   placeholder="Type to search functions."
+                                   autocomplete="off">
+                        </div>
+                        <div class="sdpi-item-value pi-helper"
+                             id="searchResults"></div>
+                    </div>
 
-    <!-- MEMORY (compact) -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Memory</div>
-        <div class="sdpi-item-value">
-            <div class="inline-row">
-                <input type="checkbox"
-                       class="sdProperty"
-                       id="stateOn"
-                       onchange="setSettings()">
-                <div class="hint compact">
-                    Short press: sends key + flips memory.<br>
-                    Long press: flips memory only (no key sent).
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Function</div>
+                        <select class="sdpi-item-value select sdProperty"
+                                id="function"
+                                oninput="setSettings()"
+                                onchange="setSettings()">
+                            <option value="">Loading Star Citizen functions…</option>
+                        </select>
+                    </div>
+
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Memory</div>
+                        <div class="sdpi-item-value">
+                            <div class="inline-row">
+                                <input type="checkbox"
+                                       class="sdProperty"
+                                       id="stateOn"
+                                       onchange="setSettings()">
+                                <div class="hint compact">
+                                    Short press: sends key + flips memory.<br>
+                                    Long press: flips memory only (no key sent).
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Soft Sync</div>
+                        <input type="checkbox"
+                               class="sdpi-item-value sdProperty"
+                               id="softSyncLongPress"
+                               onchange="setSettings()">
+                    </div>
+
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Long press (ms)</div>
+                        <input type="number"
+                               class="sdpi-item-value sdProperty"
+                               id="longPressMs"
+                               min="0"
+                               oninput="setSettings()"
+                               onchange="setSettings()">
+                    </div>
+
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Keypress delay (ms)</div>
+                        <input type="number"
+                               class="sdpi-item-value sdProperty"
+                               id="keypressDelayMs"
+                               min="0"
+                               oninput="setSettings()"
+                               onchange="setSettings()">
+                    </div>
+
+                    <div class="sdpi-item no-results hidden" id="noResults">
+                        No functions match your search.
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- SOFT SYNC -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Soft Sync</div>
-        <input type="checkbox"
-               class="sdpi-item-value sdProperty"
-               id="softSyncLongPress"
-               onchange="setSettings()">
-    </div>
-
-    <!-- LONG PRESS MS -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Long press (ms)</div>
-        <input type="number"
-               class="sdpi-item-value sdProperty"
-               id="longPressMs"
-               min="0"
-               oninput="setSettings()"
-               onchange="setSettings()">
-    </div>
-
-    <!-- KEYPRESS DELAY -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Keypress delay (ms)</div>
-        <input type="number"
-               class="sdpi-item-value sdProperty"
-               id="keypressDelayMs"
-               min="0"
-               oninput="setSettings()"
-               onchange="setSettings()">
-    </div>
-
-    <!-- SOUND: SHORT PRESS -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Sound (short)</div>
-        <div class="sdpi-item-value">
-            <div class="sdpi-item-group file">
-                <input class="sdpi-item-value sdProperty sdFile"
-                       type="file"
-                       id="shortPressSound"
-                       accept=".wav"
-                       oninput="setSettings(); updateClearButtons();"
-                       onchange="setSettings(); updateClearButtons();">
-                <label class="sdpi-file-info" id="shortPressSoundFilename">No file…</label>
-                <label class="sdpi-file-label" for="shortPressSound">Choose file…</label>
+        <div class="pi-card">
+            <div class="pi-card-header">
+                <h2 class="pi-card-title">Feedback</h2>
+                <p class="pi-card-subtitle">Provide separate sounds for short and long presses.</p>
             </div>
-            <button class="sdpi-item-value small-btn hidden"
-                    id="btnClearShort"
-                    onclick="clearSound('shortPressSound')">
-                Clear
-            </button>
-        </div>
-    </div>
+            <div class="pi-card-body">
+                <div class="pi-stack">
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Sound (short)</div>
+                        <div class="sdpi-item-value">
+                            <div class="sdpi-item-group file">
+                                <input class="sdpi-item-value sdProperty sdFile"
+                                       type="file"
+                                       id="shortPressSound"
+                                       accept=".wav"
+                                       oninput="setSettings(); updateClearButtons();"
+                                       onchange="setSettings(); updateClearButtons();">
+                                <label class="sdpi-file-info" id="shortPressSoundFilename">No file…</label>
+                                <label class="sdpi-file-label" for="shortPressSound">Choose file…</label>
+                            </div>
+                            <button class="sdpi-item-value small-btn hidden"
+                                    id="btnClearShort"
+                                    onclick="clearSound('shortPressSound')">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
 
-    <!-- SOUND: LONG PRESS -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Sound (long)</div>
-        <div class="sdpi-item-value">
-            <div class="sdpi-item-group file">
-                <input class="sdpi-item-value sdProperty sdFile"
-                       type="file"
-                       id="longPressSound"
-                       accept=".wav"
-                       oninput="setSettings(); updateClearButtons();"
-                       onchange="setSettings(); updateClearButtons();">
-                <label class="sdpi-file-info" id="longPressSoundFilename">No file…</label>
-                <label class="sdpi-file-label" for="longPressSound">Choose file…</label>
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Sound (long)</div>
+                        <div class="sdpi-item-value">
+                            <div class="sdpi-item-group file">
+                                <input class="sdpi-item-value sdProperty sdFile"
+                                       type="file"
+                                       id="longPressSound"
+                                       accept=".wav"
+                                       oninput="setSettings(); updateClearButtons();"
+                                       onchange="setSettings(); updateClearButtons();">
+                                <label class="sdpi-file-info" id="longPressSoundFilename">No file…</label>
+                                <label class="sdpi-file-label" for="longPressSound">Choose file…</label>
+                            </div>
+                            <button class="sdpi-item-value small-btn hidden"
+                                    id="btnClearLong"
+                                    onclick="clearSound('longPressSound')">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <button class="sdpi-item-value small-btn hidden"
-                    id="btnClearLong"
-                    onclick="clearSound('longPressSound')">
-                Clear
-            </button>
         </div>
-    </div>
-
-    <div class="sdpi-item no-results hidden" id="noResults">
-        No functions match your search.
     </div>
 </div>
 

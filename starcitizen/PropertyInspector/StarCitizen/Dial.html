@@ -16,112 +16,107 @@
     <script src="../jquery-3.3.1.min.js"></script>
     <script src="../jquery.highlight-within-textarea.js"></script>
 
-    <style>
-        .no-results {
-            padding: 10px;
-            color: #999;
-            font-style: italic;
-            text-align: center;
-        }
-        .hidden {
-            display: none !important;
-        }
-    .search-row {
-        display: flex;
-        gap: 6px;
-        align-items: stretch;
-        min-height: 23px;
-    }
-    .search-row input.sdpi-item-value {
-        flex: 1;
-        height: 100%;
-        min-height: 23px;
-        box-sizing: border-box;
-    }
-    </style>
 </head>
 
-<body>
-<div class="sdpi-wrapper">
+<body class="pi-theme">
+<div class="sdpi-wrapper pi-shell">
 
-    <!-- SEARCH -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Search</div>
-        <div class="sdpi-item-value search-row">
-            <input type="text"
-                   class="sdpi-item-value"
-                   id="functionSearch"
-                   placeholder="Type to search functions..."
-                   autocomplete="off">
+    <div class="pi-header">
+        <div>
+            <p class="pi-eyebrow">Star Citizen</p>
+            <h1 class="pi-title">Dial</h1>
+            <p class="pi-subtitle">Map dial, press, and touch interactions to Star Citizen functions.</p>
         </div>
-        <div class="sdpi-item-value"
-             id="searchResults"
-             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
+        <div class="pi-badge">Property Inspector</div>
     </div>
 
-    <!-- FUNCTION PICKERS -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Dial CW</div>
-        <select class="sdpi-item-value select sdProperty function-select"
-                id="functioncw"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions...</option>
-        </select>
-    </div>
+    <div class="pi-grid">
+        <div class="pi-card">
+            <div class="pi-card-header">
+                <h2 class="pi-card-title">Dial actions</h2>
+                <p class="pi-card-subtitle">Assign functions for every dial gesture.</p>
+            </div>
+            <div class="pi-card-body">
+                <div class="pi-stack">
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Search</div>
+                        <div class="sdpi-item-value search-row">
+                            <input type="text"
+                                   class="sdpi-item-value"
+                                   id="functionSearch"
+                                   placeholder="Type to search functions..."
+                                   autocomplete="off">
+                        </div>
+                        <div class="sdpi-item-value pi-helper"
+                             id="searchResults"></div>
+                    </div>
 
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Dial CCW</div>
-        <select class="sdpi-item-value select sdProperty function-select"
-                id="functionccw"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions...</option>
-        </select>
-    </div>
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Dial CW</div>
+                        <select class="sdpi-item-value select sdProperty function-select"
+                                id="functioncw"
+                                oninput="setSettings()"
+                                onchange="setSettings()">
+                            <option value="">Loading Star Citizen functions...</option>
+                        </select>
+                    </div>
 
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Dial Press</div>
-        <select class="sdpi-item-value select sdProperty function-select"
-                id="functionpress"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions...</option>
-        </select>
-    </div>
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Dial CCW</div>
+                        <select class="sdpi-item-value select sdProperty function-select"
+                                id="functionccw"
+                                oninput="setSettings()"
+                                onchange="setSettings()">
+                            <option value="">Loading Star Citizen functions...</option>
+                        </select>
+                    </div>
 
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Touch Press</div>
-        <select class="sdpi-item-value select sdProperty function-select"
-                id="functiontouchpress"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions...</option>
-        </select>
-    </div>
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Dial Press</div>
+                        <select class="sdpi-item-value select sdProperty function-select"
+                                id="functionpress"
+                                oninput="setSettings()"
+                                onchange="setSettings()">
+                            <option value="">Loading Star Citizen functions...</option>
+                        </select>
+                    </div>
 
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Touch Longpress</div>
-        <select class="sdpi-item-value select sdProperty function-select"
-                id="functiontouchlongpress"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions...</option>
-        </select>
-    </div>
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Touch Press</div>
+                        <select class="sdpi-item-value select sdProperty function-select"
+                                id="functiontouchpress"
+                                oninput="setSettings()"
+                                onchange="setSettings()">
+                            <option value="">Loading Star Citizen functions...</option>
+                        </select>
+                    </div>
 
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Touch Delay (ms)</div>
-        <input type="number"
-               class="sdpi-item-value sdProperty"
-               id="delay"
-               min="0"
-               oninput="setSettings()"
-               onchange="setSettings()">
-    </div>
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Touch Longpress</div>
+                        <select class="sdpi-item-value select sdProperty function-select"
+                                id="functiontouchlongpress"
+                                oninput="setSettings()"
+                                onchange="setSettings()">
+                            <option value="">Loading Star Citizen functions...</option>
+                        </select>
+                    </div>
 
-    <div class="sdpi-item no-results hidden" id="noResults">
-        No functions match your search.
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Touch Delay (ms)</div>
+                        <input type="number"
+                               class="sdpi-item-value sdProperty"
+                               id="delay"
+                               min="0"
+                               oninput="setSettings()"
+                               onchange="setSettings()">
+                    </div>
+
+                    <div class="sdpi-item no-results hidden" id="noResults">
+                        No functions match your search.
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
 </div>

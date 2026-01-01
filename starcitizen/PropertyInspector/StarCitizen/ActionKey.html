@@ -16,89 +16,92 @@
     <script src="../jquery-3.3.1.min.js"></script>
     <script src="../jquery.highlight-within-textarea.js"></script>
 
-    <style>
-        .no-results {
-            padding: 10px;
-            color: #999;
-            font-style: italic;
-            text-align: center;
-        }
-        .hidden {
-            display: none !important;
-        }
-    .search-row {
-        display: flex;
-        gap: 6px;
-        align-items: stretch;
-        min-height: 23px;
-    }
-    .search-row input.sdpi-item-value {
-        flex: 1;
-        height: 100%;
-        min-height: 23px;
-        box-sizing: border-box;
-    }
-    </style>
 </head>
 
-<body>
-<div class="sdpi-wrapper">
+<body class="pi-theme">
+<div class="sdpi-wrapper pi-shell">
 
-    <!-- SEARCH -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Search</div>
-        <div class="sdpi-item-value search-row">
-            <input type="text"
-                   class="sdpi-item-value"
-                   id="functionSearch"
-                   placeholder="Type to search functions..."
-                   autocomplete="off">
+    <div class="pi-header">
+        <div>
+            <p class="pi-eyebrow">Star Citizen</p>
+            <h1 class="pi-title">Action Key</h1>
+            <p class="pi-subtitle">Assign a single function with optional click feedback.</p>
         </div>
-        <div class="sdpi-item-value"
-             id="searchResults"
-             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
+        <div class="pi-badge">Property Inspector</div>
     </div>
 
-    <!-- FUNCTION -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Function</div>
-        <select class="sdpi-item-value select sdProperty"
-                id="function"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">
-                Loading Star Citizen functions...
-            </option>
-        </select>
-    </div>
+    <div class="pi-grid">
+        <div class="pi-card">
+            <div class="pi-card-header">
+                <h2 class="pi-card-title">Function picker</h2>
+                <p class="pi-card-subtitle">Search and assign a Star Citizen function.</p>
+            </div>
+            <div class="pi-card-body">
+                <div class="pi-stack">
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Search</div>
+                        <div class="sdpi-item-value search-row">
+                            <input type="text"
+                                   class="sdpi-item-value"
+                                   id="functionSearch"
+                                   placeholder="Type to search functions..."
+                                   autocomplete="off">
+                        </div>
+                        <div class="sdpi-item-value pi-helper"
+                             id="searchResults"></div>
+                    </div>
 
-    <!-- CLICK SOUND -->
-    <div class="sdpi-item" id="dvClickSound">
-        <div class="sdpi-item-label">Sound</div>
-        <div class="sdpi-item-group file">
-            <input class="sdpi-item-value sdProperty sdFile"
-                   type="file"
-                   id="clickSound"
-                   accept=".wav"
-                   oninput="setSettings(); updateClearSoundVisibility();"
-                   onchange="setSettings(); updateClearSoundVisibility();">
-            <label class="sdpi-file-info"
-                   id="clickSoundFilename">No file...</label>
-            <label class="sdpi-file-label"
-                   for="clickSound">Choose file...</label>
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Function</div>
+                        <select class="sdpi-item-value select sdProperty"
+                                id="function"
+                                oninput="setSettings()"
+                                onchange="setSettings()">
+                            <option value="">
+                                Loading Star Citizen functions...
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="sdpi-item no-results hidden" id="noResults">
+                        No functions match your search.
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- CLEAR SOUND -->
-    <div class="sdpi-item hidden" id="dvClearSound">
-        <div class="sdpi-item-label"></div>
-        <button class="sdpi-item-value" onclick="clearClickSound()">
-            Clear sound
-        </button>
-    </div>
+        <div class="pi-card">
+            <div class="pi-card-header">
+                <h2 class="pi-card-title">Feedback</h2>
+                <p class="pi-card-subtitle">Add a confirmation sound for this action.</p>
+            </div>
+            <div class="pi-card-body">
+                <div class="pi-stack">
+                    <div class="sdpi-item" id="dvClickSound">
+                        <div class="sdpi-item-label">Sound</div>
+                        <div class="sdpi-item-group file">
+                            <input class="sdpi-item-value sdProperty sdFile"
+                                   type="file"
+                                   id="clickSound"
+                                   accept=".wav"
+                                   oninput="setSettings(); updateClearSoundVisibility();"
+                                   onchange="setSettings(); updateClearSoundVisibility();">
+                            <label class="sdpi-file-info"
+                                   id="clickSoundFilename">No file...</label>
+                            <label class="sdpi-file-label"
+                                   for="clickSound">Choose file...</label>
+                        </div>
+                    </div>
 
-    <div class="sdpi-item no-results hidden" id="noResults">
-        No functions match your search.
+                    <div class="sdpi-item hidden" id="dvClearSound">
+                        <div class="sdpi-item-label"></div>
+                        <button class="sdpi-item-value" onclick="clearClickSound()">
+                            Clear sound
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
 </div>
