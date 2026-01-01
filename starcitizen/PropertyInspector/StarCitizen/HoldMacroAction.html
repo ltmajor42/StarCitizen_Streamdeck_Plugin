@@ -109,13 +109,16 @@
     let functionsLoaded = false;
     let savedFunctionValue = null;
     let functionsRequested = false;
-    let requestRetryTimer = null;
 
     /* Preserve selected function if payload arrives before functions list */
     const originalLoadConfiguration = loadConfiguration;
     loadConfiguration = function (payload) {
         if (payload && payload.function !== undefined) {
             savedFunctionValue = payload.function;
+        }
+
+        if (payload && payload.functionsLoaded && Array.isArray(payload.functions)) {
+            populateDropdown(payload.functions);
         }
 
         originalLoadConfiguration(payload);
@@ -135,14 +138,6 @@
             functionsRequested = true;
             sendValueToPlugin(true, 'requestFunctions');
         }
-    }
-
-    function scheduleRequestRetry() {
-        clearTimeout(requestRetryTimer);
-        requestRetryTimer = setTimeout(() => {
-            functionsRequested = false;
-            requestFunctions();
-        }, 750);
     }
 
     function populateDropdown(functions) {
@@ -217,6 +212,17 @@
     /* Hook into websocket to receive function list */
     document.addEventListener('websocketCreate', function () {
         const originalOnMessage = websocket.onmessage;
+        const originalOnOpen = websocket.onopen;
+
+        websocket.onopen = function (evt) {
+            if (originalOnOpen) {
+                originalOnOpen.call(this, evt);
+            }
+
+            requestFunctions();
+        };
+
+        requestFunctions();
 
         requestFunctions();
 
