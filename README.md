@@ -184,9 +184,8 @@ Press-and-hold behavior without rapid-fire repeats.
 **Behavior:**
 
 1. Press sends the selected function’s **key/mouse down** immediately.
-2. While held, the plugin keeps sending periodic **key-down pulses** so desktop apps see a true “key held” (e.g., letters repeat in a text editor).
-3. Choose between **Hold until release** (default) or a fixed **Hold duration (ms)** that auto-releases after the timer.
-4. Supports both keyboard and mouse tokens using the existing macro handling.
+2. Choose between **Hold until release** (default) or a fixed **Hold duration (ms)** that auto-releases after the timer.
+3. Supports both keyboard and mouse tokens using the existing macro handling.
 
 **Tips:**
 

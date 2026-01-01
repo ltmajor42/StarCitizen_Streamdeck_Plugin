@@ -36,13 +36,10 @@ namespace starcitizen.Buttons
         }
 
         private const int MaxHoldDurationMs = 60000;
-        private const int InitialRepeatDelayMs = 250; // approximate OS typematic start
-        private const int HoldPulseIntervalMs = 40;   // fast enough to feel like a held key
 
         private PluginSettings settings;
         private readonly KeyBindingService bindingService = KeyBindingService.Instance;
         private CancellationTokenSource autoReleaseToken;
-        private CancellationTokenSource holdPulseToken;
         private string activeKeyInfo;
         private bool isKeyDown;
 
@@ -100,7 +97,6 @@ namespace starcitizen.Buttons
             Logger.Instance.LogMessage(TracingLevel.INFO, $"HoldMacroAction pressed: sending DOWN for '{settings.Function}' (holdUntilRelease={settings.HoldUntilRelease}, duration={settings.HoldDurationMs}ms)");
 
             StreamDeckCommon.SendKeypressDown(keyInfo);
-            StartHoldPulses(keyInfo);
             _ = Connection.SetStateAsync(1);
 
             if (!settings.HoldUntilRelease)
@@ -121,7 +117,6 @@ namespace starcitizen.Buttons
             }
 
             CancelAutoRelease(true);
-            StopHoldPulses();
 
             if (!string.IsNullOrWhiteSpace(activeKeyInfo))
             {
@@ -147,7 +142,6 @@ namespace starcitizen.Buttons
         public override void Dispose()
         {
             CancelAutoRelease(false);
-            StopHoldPulses();
             Connection.OnPropertyInspectorDidAppear -= Connection_OnPropertyInspectorDidAppear;
             Connection.OnSendToPlugin -= Connection_OnSendToPlugin;
             bindingService.KeyBindingsLoaded -= OnKeyBindingsLoaded;
@@ -186,58 +180,12 @@ namespace starcitizen.Buttons
                 }
                 finally
                 {
-                    StopHoldPulses();
                     isKeyDown = false;
                     activeKeyInfo = null;
                     _ = Connection.SetStateAsync(0);
                     DisposeAutoReleaseToken();
                 }
             }, token);
-        }
-
-        private void StartHoldPulses(string keyInfo)
-        {
-            StopHoldPulses();
-            holdPulseToken = new CancellationTokenSource();
-            var token = holdPulseToken.Token;
-
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await Task.Delay(InitialRepeatDelayMs, token);
-
-                    while (!token.IsCancellationRequested && isKeyDown)
-                    {
-                        StreamDeckCommon.SendKeypressDown(keyInfo);
-                        await Task.Delay(HoldPulseIntervalMs, token);
-                    }
-                }
-                catch (TaskCanceledException)
-                {
-                    // expected on release
-                }
-                catch (Exception ex)
-                {
-                    Logger.Instance.LogMessage(TracingLevel.ERROR, $"HoldMacroAction: error during hold pulses: {ex}");
-                }
-            }, token);
-        }
-
-        private void StopHoldPulses()
-        {
-            if (holdPulseToken == null)
-            {
-                return;
-            }
-
-            if (!holdPulseToken.IsCancellationRequested)
-            {
-                holdPulseToken.Cancel();
-            }
-
-            holdPulseToken.Dispose();
-            holdPulseToken = null;
         }
 
         private void CancelAutoRelease(bool logCancellation)
