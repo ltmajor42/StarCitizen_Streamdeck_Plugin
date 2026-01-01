@@ -222,6 +222,8 @@
             requestFunctions();
         };
 
+        requestFunctions();
+
         websocket.onmessage = function (evt) {
             const jsonObj = JSON.parse(evt.data);
 
@@ -229,7 +231,12 @@
                 && jsonObj.payload
                 && jsonObj.payload.functionsLoaded) {
 
+                clearTimeout(requestRetryTimer);
+                functionsLoaded = true;
                 populateDropdown(jsonObj.payload.functions);
+            }
+            else {
+                scheduleRequestRetry();
             }
 
             if (originalOnMessage) {
@@ -250,6 +257,8 @@
                 document.getElementById('functionSearch').value = '';
                 document.getElementById('searchResults').textContent = '';
             });
+
+        scheduleRequestRetry();
     });
 </script>
 
