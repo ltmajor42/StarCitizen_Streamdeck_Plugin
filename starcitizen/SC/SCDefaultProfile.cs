@@ -88,6 +88,7 @@ namespace SCJMapper_V2.SC
                     {
                         content = reader.ReadToEnd();
                     }
+                    lastReadContent = content;
 
                     Thread.Sleep(stabilizationDelayMs);
 
@@ -112,7 +113,13 @@ namespace SCJMapper_V2.SC
             }
 
             Logger.Instance.LogMessage(TracingLevel.WARN, $"actionmaps.xml never stabilized after {maxAttempts} attempts.");
-            return null;
+            if (lastReadContent != null)
+            {
+                Logger.Instance.LogMessage(TracingLevel.WARN, "Returning last actionmaps.xml read even though file was still changing.");
+                return lastReadContent;
+            }
+
+            return "";
         }
     }
 }
