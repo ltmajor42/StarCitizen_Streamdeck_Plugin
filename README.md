@@ -195,11 +195,6 @@ Press-and-hold behavior without rapid-fire repeats.
 2. Choose between **Hold until release** (default) or a fixed **Hold duration (ms)** that auto-releases after the timer.
 3. Supports both keyboard and mouse tokens using the existing macro handling.
 
-**Tips:**
-
-- For reliable input injection, keep Star Citizen focused and run the Stream Deck app with admin rights when required by your OS settings.
-- If you enable the duration option, a safety cap limits holds to 60 seconds to avoid accidental “infinite” holds.
-
 **Use cases:**
 
 1. Charge-up/activate workflows where you only want a single held input
