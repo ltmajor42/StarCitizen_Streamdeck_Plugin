@@ -65,9 +65,8 @@ namespace SCJMapper_V2.SC
             Logger.Instance.LogMessage(TracingLevel.INFO, resolvedPath);
 
             var path = resolvedPath;
-            const int maxAttempts = 10;
-            const int stabilizationDelayMs = 180;
-            string lastReadContent = null;
+            const int maxAttempts = 5;
+            const int stabilizationDelayMs = 120;
 
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
@@ -75,9 +74,8 @@ namespace SCJMapper_V2.SC
                 {
                     if (!File.Exists(path))
                     {
-                        Logger.Instance.LogMessage(TracingLevel.DEBUG, $"actionmaps.xml not found (attempt {attempt}/{maxAttempts}) at {path}");
-                        Thread.Sleep(stabilizationDelayMs);
-                        continue;
+                        Logger.Instance.LogMessage(TracingLevel.WARN, $"actionmaps.xml missing at {path}");
+                        return "";
                     }
 
                     var firstInfo = new FileInfo(path);
@@ -94,7 +92,7 @@ namespace SCJMapper_V2.SC
 
                     Thread.Sleep(stabilizationDelayMs);
 
-                    var secondInfo = new FileInfo(path);
+                    var secondInfo = new FileInfo(resolvedPath);
                     var secondWrite = secondInfo.LastWriteTimeUtc;
                     var secondLength = secondInfo.Length;
 
