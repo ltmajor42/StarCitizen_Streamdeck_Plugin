@@ -23,6 +23,8 @@
         .compact { margin-top: 0; }
         .inline-row { display: flex; align-items: center; gap: 10px; }
         .small-btn { padding: 4px 8px; height: 26px; }
+        .search-row { display: flex; gap: 6px; align-items: center; }
+        .refresh-button { min-width: 48px; padding: 6px 10px; }
     </style>
 </head>
 
@@ -32,11 +34,20 @@
     <!-- SEARCH -->
     <div class="sdpi-item">
         <div class="sdpi-item-label">Search</div>
-        <input type="text"
-               class="sdpi-item-value"
-               id="functionSearch"
-               placeholder="Type to search functions."
-               autocomplete="off">
+        <div class="sdpi-item-value search-row">
+            <input type="text"
+                   class="sdpi-item-value"
+                   id="functionSearch"
+                   placeholder="Type to search functions."
+                   autocomplete="off"
+                   style="flex: 1;">
+            <button class="sdpi-item-value refresh-button"
+                    type="button"
+                    onclick="refreshKeybinds(this)"
+                    title="Reload Star Citizen keybinds">
+                ⟳
+            </button>
+        </div>
         <div class="sdpi-item-value"
              id="searchResults"
              style="font-size: 11px; color: #999; margin-top: 4px;"></div>
@@ -247,6 +258,21 @@
         searchResults.textContent = term
             ? `Found ${visibleGroups} group${visibleGroups !== 1 ? 's' : ''}`
             : '';
+    }
+
+    function refreshKeybinds(button) {
+        if (!button || button.disabled) return;
+
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Refreshing…';
+
+        sendValueToPlugin('refreshKeybinds', 'piEvent');
+
+        setTimeout(() => {
+            button.disabled = false;
+            button.textContent = originalText;
+        }, 800);
     }
 
     function clearSound(inputId) {
