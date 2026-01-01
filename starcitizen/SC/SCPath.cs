@@ -12,7 +12,7 @@ using TheUser = p4ktest.SC.TheUser;
 
 //using SCJMapper_V2.Translation;
 
-namespace SCJMapper_V2.SC
+namespace starcitizen.SC
 {
     /// <summary>
     /// Find the SC pathes and folders using multiple detection methods

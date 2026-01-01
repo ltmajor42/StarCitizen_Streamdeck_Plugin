@@ -13,7 +13,7 @@ using BarRaider.SdTools;
 using p4ktest;
 using TheUser = p4ktest.SC.TheUser;
 
-namespace SCJMapper_V2.SC
+namespace starcitizen.SC
 {
     /// <summary>
     /// Manages all SC files from Pak

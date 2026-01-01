@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using p4ktest.SC;
 using SCJMapper_V2.p4kFile;
 
-namespace SCJMapper_V2.SC
+namespace starcitizen.SC
 {
     sealed class SCUiText
     {

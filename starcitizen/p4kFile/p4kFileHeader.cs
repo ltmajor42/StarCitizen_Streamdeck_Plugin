@@ -5,7 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using ZstdNet;
+using Zstd.Net;
 
 namespace SCJMapper_V2.p4kFile
 {

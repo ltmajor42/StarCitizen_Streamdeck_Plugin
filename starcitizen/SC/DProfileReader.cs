@@ -8,7 +8,7 @@ using BarRaider.SdTools;
 using starcitizen;
 using TheUser = p4ktest.SC.TheUser;
 
-namespace SCJMapper_V2.SC
+namespace starcitizen.SC
 {
     public class DProfileReader
     {
