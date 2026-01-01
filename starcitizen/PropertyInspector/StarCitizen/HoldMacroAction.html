@@ -181,6 +181,10 @@
     document.addEventListener('websocketCreate', function () {
         const originalOnMessage = websocket.onmessage;
 
+        websocket.addEventListener('open', function () {
+            sendValueToPlugin('requestFunctions', 'property_inspector');
+        });
+
         websocket.onmessage = function (evt) {
             const jsonObj = JSON.parse(evt.data);
 

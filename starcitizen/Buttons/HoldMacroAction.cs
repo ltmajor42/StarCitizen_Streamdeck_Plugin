@@ -353,7 +353,9 @@ namespace starcitizen.Buttons
             {
                 var payload = e.ExtractPayload();
 
-                if (payload?["property_inspector"]?.ToString() == "propertyInspectorConnected")
+                var piSignal = payload?["property_inspector"]?.ToString();
+                if (string.Equals(piSignal, "propertyInspectorConnected", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(piSignal, "requestFunctions", StringComparison.OrdinalIgnoreCase))
                 {
                     UpdatePropertyInspector();
                 }
