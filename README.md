@@ -15,7 +15,7 @@
 ## Ownership, Credits, and Thanks
 
 - **Maintainer:** Ltmajor42
-- **Maintainer:** Jarex985 ([streamdeck-starcitizen](https://github.com/Jarex985/streamdeck-starcitizen))
+- **Maintainer:** Jarex985 [streamdeck-starcitizen](https://github.com/Jarex985/streamdeck-starcitizen)
 - **Upstream inspiration:** [mhwlng/streamdeck-starcitizen](https://github.com/mhwlng/streamdeck-starcitizen)
 - **Binding loader / parsing resources:** [SCJMapper-V2](https://github.com/SCToolsfactory/SCJMapper-V2) resources used for Star Citizen keybind parsing.
 - **P4K extraction tooling:** [unp4k](https://github.com/dolkensp/unp4k) (used for extracting/working with Star Citizen `.p4k` archives, where applicable).
@@ -249,7 +249,7 @@ Dial action for the **Stream Deck+** dials (rotate, press, and touch screen).
 If something is wrong or inconsistent, open an Issue and include:
 
 1. Plugin version (V2.x) and Stream Deck version
-2. Which button (ActionKey / State Memory / Momentary / Dual Action / Action Delay / Hold Repeat / Cosmetic)
+2. Which button (ActionKey / State Memory / Momentary / Dual Action / Action Delay / Repeat Action / Cosmetic / Hold Macro)
 3. Exact steps to reproduce (what you pressed, how fast, expected vs actual)
 4. The log file:
 
