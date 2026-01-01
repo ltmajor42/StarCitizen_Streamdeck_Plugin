@@ -59,29 +59,10 @@ namespace SCJMapper_V2.SC
 
             if (!File.Exists(mFile))
             {
-                return "";
-            }
-
-            const int maxAttempts = 3;
-            for (int attempt = 1; attempt <= maxAttempts; attempt++)
-            {
-                try
+                using (var stream = new FileStream(mFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var reader = new StreamReader(stream))
                 {
-                    using (var stream = new FileStream(mFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                    using (var reader = new StreamReader(stream))
-                    {
-                        return reader.ReadToEnd();
-                    }
-                }
-                catch (IOException ex) when (attempt < maxAttempts)
-                {
-                    Logger.Instance.LogMessage(TracingLevel.WARN, $"actionmaps.xml busy (attempt {attempt}): {ex.Message}");
-                    Thread.Sleep(100);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Instance.LogMessage(TracingLevel.ERROR, $"Failed reading actionmaps.xml: {ex}");
-                    break;
+                    return reader.ReadToEnd();
                 }
             }
 
