@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net48</TargetFrameworks>
+    <TargetFrameworks>net48;net9.0-windows</TargetFrameworks>
     <PackageId>SharpZipLib</PackageId>
     <SignAssembly>False</SignAssembly>
     <AssemblyOriginatorKeyFile>ICSharpCode.SharpZipLib.snk</AssemblyOriginatorKeyFile>
@@ -10,7 +10,8 @@
     <RepositoryUrl>https://github.com/icsharpcode/SharpZipLib</RepositoryUrl>
     <PackageReleaseNotes>This is a pre-release version! Please see https://github.com/icsharpcode/SharpZipLib/wiki/Release-1.0 for more information.</PackageReleaseNotes>
     <PackageLicenseUrl>https://github.com/icsharpcode/SharpZipLib/blob/master/LICENSE.txt</PackageLicenseUrl>
-    <PackageProjectUrl>https://github.com/icsharpcode/SharpZipLib</PackageProjectUrl> 
+    <PackageProjectUrl>https://github.com/icsharpcode/SharpZipLib</PackageProjectUrl>
+    <NoWarn>SYSLIB0041;SYSLIB0021;CA2022</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">

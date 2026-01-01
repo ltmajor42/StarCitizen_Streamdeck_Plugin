@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34728.123
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "starcitizen", "starcitizen\starcitizen.csproj", "{761FCC88-EAF9-4C7A-BBFD-139D186437A5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "starcitizen", "starcitizen\starcitizen.csproj", "{761FCC88-EAF9-4C7A-BBFD-139D186437A5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsInput", "InputSimulatorPlus\WindowsInput\WindowsInput.csproj", "{3549CD6F-80F8-450F-B99E-CF0A736B1F2A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowsInput", "InputSimulatorPlus\WindowsInput\WindowsInput.csproj", "{3549CD6F-80F8-450F-B99E-CF0A736B1F2A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ICSharpCode.SharpZipLib", "ICSharpCode.SharpZipLib\ICSharpCode.SharpZipLib.csproj", "{DD0BB39C-4D0D-46B4-A606-5DF3EF234585}"
 EndProject
