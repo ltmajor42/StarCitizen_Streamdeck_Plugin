@@ -9,10 +9,15 @@ namespace starcitizen
         private static readonly Dictionary<string, string> CanonicalTokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["mouse1"] = "mouse1",
+            ["mousebutton1"] = "mouse1",
             ["mouse2"] = "mouse2",
+            ["mousebutton2"] = "mouse2",
             ["mouse3"] = "mouse3",
+            ["mousebutton3"] = "mouse3",
             ["mouse4"] = "mouse4",
+            ["mousebutton4"] = "mouse4",
             ["mouse5"] = "mouse5",
+            ["mousebutton5"] = "mouse5",
             ["mwheelup"] = "mwheelup",
             ["mousewheelup"] = "mwheelup",
             ["wheelup"] = "mwheelup",
