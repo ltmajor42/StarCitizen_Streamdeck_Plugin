@@ -77,25 +77,6 @@
         </div>
     </div>
 
-    <!-- HOLD DURATION -->
-    <div class="sdpi-item" id="durationRow">
-        <div class="sdpi-item-label">Hold duration (ms)</div>
-        <input type="number"
-               class="sdpi-item-value sdProperty"
-               id="holdDurationMs"
-               min="0"
-               max="60000"
-               step="50"
-               oninput="validateDuration(); setSettings();"
-               onchange="validateDuration(); setSettings();">
-    </div>
-    <div class="sdpi-item">
-        <div class="sdpi-item-label"></div>
-        <div class="sdpi-item-value note">
-            If unchecked, the key will auto-release after the duration. Max 60,000ms.
-        </div>
-    </div>
-
     <div class="sdpi-item no-results hidden" id="noResults">
         No functions match your search.
     </div>
@@ -110,7 +91,6 @@
 </div>
 
 <script>
-    const MAX_DURATION = 60000;
     let allOptions = [];
     let functionsLoaded = false;
     let savedFunctionValue = null;
@@ -122,7 +102,6 @@
             savedFunctionValue = payload.function;
         }
         originalLoadConfiguration(payload);
-        toggleDuration();
 
         if (functionsLoaded && savedFunctionValue) {
             const sel = document.getElementById('function');
@@ -199,24 +178,6 @@
             : '';
     }
 
-    function validateDuration() {
-        const input = document.getElementById('holdDurationMs');
-        if (!input) return;
-        const parsed = parseInt(input.value || '0', 10);
-        if (isNaN(parsed)) {
-            input.value = 0;
-            return;
-        }
-        input.value = Math.min(Math.max(parsed, 0), MAX_DURATION);
-    }
-
-    function toggleDuration() {
-        const checkbox = document.getElementById('holdUntilRelease');
-        const row = document.getElementById('durationRow');
-        if (!checkbox || !row) return;
-        row.classList.toggle('hidden', checkbox.checked);
-    }
-
     /* Hook into websocket to receive function list */
     document.addEventListener('websocketCreate', function () {
         const originalOnMessage = websocket.onmessage;
@@ -249,8 +210,6 @@
                 document.getElementById('functionSearch').value = '';
                 document.getElementById('searchResults').textContent = '';
             });
-
-        toggleDuration();
     });
 </script>
 
