@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
-    <title>Star Citizen – Action Key</title>
+    <title>Star Citizen - Action Key</title>
 
     <link rel="stylesheet" href="../sdpi.css">
     <link rel="stylesheet" href="../jquery.highlight-within-textarea.css">
@@ -26,50 +26,29 @@
         .hidden {
             display: none !important;
         }
-    .search-row {
-        display: flex;
-        gap: 6px;
-        align-items: stretch;
-        min-height: 23px;
-    }
-    .search-row input.sdpi-item-value {
-        flex: 1;
-        height: 100%;
-        min-height: 23px;
-        box-sizing: border-box;
-    }
     </style>
 </head>
 
 <body>
 <div class="sdpi-wrapper">
 
-    <!-- SEARCH -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Search</div>
-        <div class="sdpi-item-value search-row">
-            <input type="text"
-                   class="sdpi-item-value"
-                   id="functionSearch"
-                   placeholder="Type to search functions..."
-                   autocomplete="off">
-        </div>
-        <div class="sdpi-item-value"
-             id="searchResults"
-             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
-    </div>
-
     <!-- FUNCTION -->
     <div class="sdpi-item">
         <div class="sdpi-item-label">Function</div>
-        <select class="sdpi-item-value select sdProperty"
-                id="function"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">
+        <div class="sdpi-item-value" style="display: flex; flex-direction: column; gap: 4px;">
+            <div id="searchResults"
+                 style="font-size: 11px; color: #999; min-height: 14px;">
                 Loading Star Citizen functions...
-            </option>
-        </select>
+            </div>
+            <select class="sdpi-item-value select sdProperty"
+                    id="function"
+                    oninput="setSettings()"
+                    onchange="setSettings()">
+                <option value="">
+                    Loading Star Citizen functions...
+                </option>
+            </select>
+        </div>
     </div>
 
     <!-- CLICK SOUND -->
@@ -107,6 +86,8 @@
     let allOptions = [];
     let functionsLoaded = false;
     let savedFunctionValue = null;
+    let searchBuffer = '';
+    let searchMode = false;
 
     /* Preserve function value while dropdown loads */
     const originalLoadConfiguration = loadConfiguration;
@@ -123,6 +104,7 @@
         }
 
         updateClearSoundVisibility();
+        filterOptions();
     };
 
     function populateDropdown(functionsData) {
@@ -132,7 +114,7 @@
 
         const empty = document.createElement('option');
         empty.value = '';
-        empty.textContent = '-- Select a function --';
+        empty.textContent = '-- Select a function or double click to search --';
         select.appendChild(empty);
 
         functionsData.forEach(group => {
@@ -163,21 +145,28 @@
             select.value = savedFunctionValue;
         }
 
-        filterOptions();
+        resetSearch();
     }
 
     function filterOptions() {
-        if (!functionsLoaded) return;
-
-        const term = document.getElementById('functionSearch').value.toLowerCase().trim();
         const noResults = document.getElementById('noResults');
         const searchResults = document.getElementById('searchResults');
 
+        if (!functionsLoaded) {
+            if (searchResults) searchResults.textContent = 'Loading Star Citizen functions...';
+            if (noResults) noResults.classList.add('hidden');
+            return;
+        }
+
+        const term = searchBuffer.toLowerCase().trim();
+
         let visibleGroups = 0;
+        let visibleOptions = 0;
 
         allOptions.forEach(o => {
             const visible = !term || o.search.includes(term);
             o.option.style.display = visible ? '' : 'none';
+            if (visible) visibleOptions++;
         });
 
         document.querySelectorAll('#function optgroup').forEach(group => {
@@ -187,10 +176,54 @@
             if (hasVisible) visibleGroups++;
         });
 
-        noResults.classList.toggle('hidden', visibleGroups > 0);
-        searchResults.textContent = term
-            ? `Found ${visibleGroups} group${visibleGroups !== 1 ? 's' : ''}`
-            : '';
+        if (noResults) {
+            noResults.classList.toggle('hidden', visibleOptions > 0);
+        }
+
+        if (!searchResults) return;
+
+        if (!term) {
+            searchResults.textContent = '-- Select a function or double click to search --';
+        } else if (visibleOptions === 0) {
+            searchResults.textContent = `No functions match "${term}"`;
+        } else {
+            searchResults.textContent = `Filtering "${term}" (${visibleOptions} option${visibleOptions !== 1 ? 's' : ''} in ${visibleGroups} group${visibleGroups !== 1 ? 's' : ''})`;
+        }
+    }
+
+    function resetSearch() {
+        searchBuffer = '';
+        searchMode = false;
+        filterOptions();
+    }
+
+    function activateSearchMode() {
+        if (!functionsLoaded) return;
+        searchMode = true;
+        searchBuffer = '';
+        filterOptions();
+    }
+
+    function handleSearchKey(event) {
+        if (!functionsLoaded || !searchMode) return;
+
+        if (event.key === 'Escape') {
+            resetSearch();
+            return;
+        }
+
+        if (event.key === 'Backspace') {
+            searchBuffer = searchBuffer.slice(0, -1);
+            filterOptions();
+            event.preventDefault();
+            return;
+        }
+
+        if (event.key.length === 1 && !event.altKey && !event.metaKey && !event.ctrlKey) {
+            searchBuffer += event.key;
+            filterOptions();
+            event.preventDefault();
+        }
     }
 
     function clearClickSound() {
@@ -228,18 +261,27 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        document.getElementById('functionSearch')
-            .addEventListener('input', function () {
-                clearTimeout(this.searchTimeout);
-                this.searchTimeout = setTimeout(filterOptions, 150);
-            });
+        const functionSelect = document.getElementById('function');
 
-        document.getElementById('function')
-            .addEventListener('change', function () {
-                document.getElementById('functionSearch').value = '';
-                document.getElementById('searchResults').textContent = '';
-            });
+        functionSelect.addEventListener('change', function () {
+            resetSearch();
+        });
 
+        functionSelect.addEventListener('dblclick', function () {
+            activateSearchMode();
+            this.focus();
+        });
+
+        functionSelect.addEventListener('keydown', function (evt) {
+            if (!searchMode && evt.key === 'Enter') {
+                activateSearchMode();
+            } else if (!searchMode && evt.key.length === 1 && !evt.altKey && !evt.metaKey && !evt.ctrlKey) {
+                activateSearchMode();
+            }
+            handleSearchKey(evt);
+        });
+
+        filterOptions();
         updateClearSoundVisibility();
     });
 </script>
