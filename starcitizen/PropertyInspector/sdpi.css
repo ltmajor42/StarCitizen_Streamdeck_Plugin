@@ -862,9 +862,9 @@ input[type="radio"]:checked + label span {
 }
 
 .pi-shell {
-  max-width: 460px;
+  max-width: 560px;
   margin: 0 auto;
-  padding: 12px 12px 10px;
+  padding: 10px 12px 14px;
 }
 
 .pi-header {
@@ -905,24 +905,24 @@ input[type="radio"]:checked + label span {
 .pi-grid {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .pi-card {
-  background: #2d2d2d;
-  border: 1px solid #3a3a3a;
-  border-radius: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
   box-shadow: none;
 }
 
 .pi-card-header {
-  padding: 10px 10px 0;
+  padding: 0 0 6px;
 }
 
 .pi-card-title {
   margin: 2px 0 0;
   color: var(--sdpi-color);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .pi-card-subtitle {
@@ -933,7 +933,7 @@ input[type="radio"]:checked + label span {
 }
 
 .pi-card-body {
-  padding: 8px 10px 12px;
+  padding: 0;
 }
 
 .pi-stack {
@@ -945,7 +945,7 @@ input[type="radio"]:checked + label span {
 
 .pi-stack .sdpi-item {
   margin-top: 0;
-  padding: 6px 0;
+  padding: 0;
   background: transparent;
   border: none;
   border-radius: 0;
@@ -965,7 +965,7 @@ input[type="radio"]:checked + label span {
 
 .pi-note-block {
   margin: 6px 0 0;
-  padding: 10px 0 0;
+  padding: 8px 0 0;
   background: transparent;
   border-top: 1px solid var(--sdpi-bordercolor);
   border-radius: 0;
