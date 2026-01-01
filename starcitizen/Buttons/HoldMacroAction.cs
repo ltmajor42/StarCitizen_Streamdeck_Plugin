@@ -227,7 +227,15 @@ namespace starcitizen.Buttons
 
         private void StartRepeat(string keyInfo)
         {
-            if (string.IsNullOrWhiteSpace(keyInfo) || ContainsMouseToken(keyInfo))
+            if (string.IsNullOrWhiteSpace(keyInfo))
+            {
+                return;
+            }
+
+            var containsWheelToken = ContainsMouseWheelToken(keyInfo);
+
+            // Do not repeat non-wheel mouse actions to avoid spamming button presses.
+            if (!containsWheelToken && ContainsMouseToken(keyInfo))
             {
                 return;
             }
@@ -284,6 +292,23 @@ namespace starcitizen.Buttons
             {
                 var token = match.Value.Replace("{", string.Empty).Replace("}", string.Empty);
                 if (MouseTokenHelper.TryNormalize(token, out _))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool ContainsMouseWheelToken(string keyInfo)
+        {
+            var matches = Regex.Matches(keyInfo, CommandTools.REGEX_SUB_COMMAND);
+
+            foreach (Match match in matches)
+            {
+                var token = match.Value.Replace("{", string.Empty).Replace("}", string.Empty);
+                if (MouseTokenHelper.TryNormalize(token, out var normalized) &&
+                    normalized.StartsWith("mwheel", StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }
