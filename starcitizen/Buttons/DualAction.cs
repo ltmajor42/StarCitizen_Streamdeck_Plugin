@@ -126,11 +126,18 @@ namespace starcitizen.Buttons
 
         private void Connection_OnSendToPlugin(object sender, EventArgs e)
         {
-            var payload = e.ExtractPayload();
-
-            if (payload?["property_inspector"]?.ToString() == "propertyInspectorConnected")
+            try
             {
-                UpdatePropertyInspector();
+                var payload = e.ExtractPayload();
+
+                if (payload?["property_inspector"]?.ToString() == "propertyInspectorConnected")
+                {
+                    UpdatePropertyInspector();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.LogMessage(TracingLevel.WARN, $"Failed processing PI payload: {ex.Message}");
             }
         }
 

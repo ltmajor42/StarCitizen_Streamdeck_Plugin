@@ -21,6 +21,18 @@
     .note { font-size: 11px; color: #999; line-height: 1.4; }
     .hidden { display: none; }
     .no-results { padding: 10px; color: #999; font-style: italic; text-align: center; }
+    .search-row {
+        display: flex;
+        gap: 6px;
+        align-items: stretch;
+        min-height: 23px;
+    }
+    .search-row input.sdpi-item-value {
+        flex: 1;
+        height: 100%;
+        min-height: 23px;
+        box-sizing: border-box;
+    }
   </style>
 </head>
 
@@ -29,11 +41,13 @@
 
   <div class="sdpi-item">
     <div class="sdpi-item-label">Search</div>
-    <input type="text"
-           class="sdpi-item-value"
-           id="functionSearch"
-           placeholder="Type to search functions..."
-           autocomplete="off">
+    <div class="sdpi-item-value search-row">
+      <input type="text"
+             class="sdpi-item-value"
+             id="functionSearch"
+             placeholder="Type to search functions..."
+             autocomplete="off">
+    </div>
     <div class="sdpi-item-value" id="searchResults"
          style="font-size: 11px; color: #999; margin-top: 4px;"></div>
   </div>

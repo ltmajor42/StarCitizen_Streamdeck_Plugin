@@ -31,6 +31,19 @@
             color: #999;
             margin-top: 4px;
         }
+        .search-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 100%;
+        }
+        .search-container input[type="text"] {
+            width: 100%;
+        }
+        .search-status {
+            font-size: 11px;
+            color: #999;
+        }
     </style>
 </head>
 
@@ -40,14 +53,13 @@
     <!-- SEARCH -->
     <div class="sdpi-item">
         <div class="sdpi-item-label">Search</div>
-        <input type="text"
-               class="sdpi-item-value"
-               id="functionSearch"
-               placeholder="Type to search functions..."
-               autocomplete="off">
-        <div class="sdpi-item-value"
-             id="searchResults"
-             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
+        <div class="sdpi-item-value search-container">
+            <input type="text"
+                   id="functionSearch"
+                   placeholder="Type to search functions..."
+                   autocomplete="off">
+            <div class="search-status" id="searchResults"></div>
+        </div>
     </div>
 
     <!-- FUNCTION -->
