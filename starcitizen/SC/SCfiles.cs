@@ -89,12 +89,12 @@ namespace starcitizen.SC
             {
                 try
                 {
-                    var PD = new p4kFile.p4kDirectory();
+                    var PD = new p4kDirectory();
                     // Multiple copies of defaultProfile.xml can exist inside Data.p4k.
                     // Picking the "first match" is unstable and can lead to missing/incorrect bindings.
                     var candidates = PD.ScanDirectoryForAllEndsWith(SCPath.SCData_p4k, SCDefaultProfile.DefaultProfileName);
 
-                    p4kFile.p4kFile p4K = null;
+                    p4kFile p4K = null;
                     if (candidates != null && candidates.Count > 0)
                     {
                         foreach (var c in candidates)
@@ -171,8 +171,8 @@ namespace starcitizen.SC
                 try
                 {
                     var PD = new p4kDirectory();
-                    IList<p4kFile.p4kFile> fileList = PD.ScanDirectoryContaining(SCPath.SCData_p4k, @"\global.ini");
-                    foreach (p4kFile.p4kFile file in fileList)
+                    IList<p4kFile> fileList = PD.ScanDirectoryContaining(SCPath.SCData_p4k, @"\global.ini");
+                    foreach (p4kFile file in fileList)
                     {
                         string retVal = "";
                         string lang = Path.GetFileNameWithoutExtension(Path.GetDirectoryName(file.Filename));
