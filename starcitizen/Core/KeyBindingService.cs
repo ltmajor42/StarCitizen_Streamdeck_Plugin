@@ -128,7 +128,7 @@ namespace starcitizen.Core
             }
         }
 
-        private static bool TryApplyActionMapsWithRetry(DProfileReader reader, int maxAttempts = 6, int baseDelayMs = 120)
+        private static bool TryApplyActionMapsWithRetry(DProfileReader reader, int maxAttempts = 8, int baseDelayMs = 180)
         {
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {

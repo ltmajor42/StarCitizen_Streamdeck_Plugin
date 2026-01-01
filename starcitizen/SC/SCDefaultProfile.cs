@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 using BarRaider.SdTools;
 
 namespace SCJMapper_V2.SC
@@ -70,18 +71,31 @@ namespace SCJMapper_V2.SC
                     using (var stream = new FileStream(resolvedPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     using (var reader = new StreamReader(stream))
                     {
-                        return reader.ReadToEnd();
+                        content = reader.ReadToEnd();
                     }
+
+                    Thread.Sleep(stabilizationDelayMs);
+
+                    var secondInfo = new FileInfo(path);
+                    var secondWrite = secondInfo.LastWriteTimeUtc;
+                    var secondLength = secondInfo.Length;
+
+                    if (firstWrite == secondWrite && firstLength == secondLength)
+                    {
+                        Logger.Instance.LogMessage(TracingLevel.INFO, $"actionmaps.xml stabilized on attempt {attempt}: {path}");
+                        return content;
+                    }
+
+                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"actionmaps.xml changed between reads (attempt {attempt}/{maxAttempts}), retrying...");
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.LogMessage(TracingLevel.ERROR, $"Failed reading actionmaps.xml: {ex}");
-                    return "";
+                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"actionmaps.xml read failed (attempt {attempt}/{maxAttempts}): {ex.Message}");
                 }
             }
 
-            Logger.Instance.LogMessage(TracingLevel.WARN, "actionmaps.xml not found.");
-            return "";
+            Logger.Instance.LogMessage(TracingLevel.WARN, $"actionmaps.xml never stabilized after {maxAttempts} attempts.");
+            return null;
         }
     }
 }
