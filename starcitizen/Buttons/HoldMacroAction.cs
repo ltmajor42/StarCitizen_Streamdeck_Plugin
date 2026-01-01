@@ -353,7 +353,8 @@ namespace starcitizen.Buttons
             {
                 var payload = e.ExtractPayload();
 
-                if (payload?["property_inspector"]?.ToString() == "propertyInspectorConnected")
+                if (payload?["property_inspector"]?.ToString() == "propertyInspectorConnected" ||
+                    payload?["requestFunctions"]?.Value<bool>() == true)
                 {
                     UpdatePropertyInspector();
                 }
