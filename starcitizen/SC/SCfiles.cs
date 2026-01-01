@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 using SCJMapper_V2.CryXMLlib;
 using SCJMapper_V2.p4kFile;
 using System.IO.Compression;
