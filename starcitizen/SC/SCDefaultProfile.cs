@@ -62,37 +62,17 @@ namespace SCJMapper_V2.SC
                 return "";
             }
 
-            Logger.Instance.LogMessage(TracingLevel.INFO, $"Attempting to read actionmaps.xml at: {resolvedPath}");
-            var content = ReadActionMapsWithStabilization(resolvedPath);
-            if (!string.IsNullOrEmpty(content))
-            {
-                return content;
-            }
+            Logger.Instance.LogMessage(TracingLevel.INFO, resolvedPath);
 
-            Logger.Instance.LogMessage(TracingLevel.WARN, "actionmaps.xml not found or never stabilized.");
-            return string.Empty;
-        }
-
-        /// <summary>
-        /// Read the actionmaps file only after it appears stable (size/write time unchanged across reads).
-        /// This reduces flaky parses when the game is still flushing the file.
-        /// </summary>
-        private static string ReadActionMapsWithStabilization(string path, int maxAttempts = 5, int stabilizationDelayMs = 150)
-        {
-            if (!File.Exists(path))
-            {
-                return string.Empty;
-            }
-
-            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            if (File.Exists(resolvedPath))
             {
                 try
                 {
-                    var firstInfo = new FileInfo(path);
-                    var firstWrite = firstInfo.LastWriteTimeUtc;
-                    var firstLength = firstInfo.Length;
-
-                    string content = ReadFileContent(path);
+                    using (var stream = new FileStream(resolvedPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (var reader = new StreamReader(stream))
+                    {
+                        content = reader.ReadToEnd();
+                    }
 
                     Thread.Sleep(stabilizationDelayMs);
 
@@ -115,16 +95,7 @@ namespace SCJMapper_V2.SC
             }
 
             Logger.Instance.LogMessage(TracingLevel.WARN, $"actionmaps.xml never stabilized after {maxAttempts} attempts.");
-            return string.Empty;
-        }
-
-        private static string ReadFileContent(string path)
-        {
-            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            using (var reader = new StreamReader(stream))
-            {
-                return reader.ReadToEnd();
-            }
+            return null;
         }
     }
 }
