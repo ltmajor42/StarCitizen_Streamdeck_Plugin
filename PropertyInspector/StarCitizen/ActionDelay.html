@@ -21,6 +21,7 @@
             --bg: #05090f;
             --surface: #0b1320;
             --surface-strong: #0f1a2b;
+            --panel: #0d1524;
             --border: rgba(255, 255, 255, 0.06);
             --border-strong: rgba(255, 255, 255, 0.14);
             --text: #e6edf7;
@@ -28,6 +29,7 @@
             --accent: #33b0ff;
             --accent-strong: #1c8de8;
             --shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+            --glow: 0 25px 60px rgba(51, 176, 255, 0.12);
         }
 
         body {
@@ -42,6 +44,8 @@
             flex-direction: column;
             gap: 14px;
             padding: 14px;
+            background: radial-gradient(circle at 20% 20%, rgba(51, 176, 255, 0.04), transparent 22%), radial-gradient(circle at 80% 0%, rgba(255, 255, 255, 0.05), transparent 18%);
+            min-height: 100vh;
         }
 
         .hero {
@@ -116,11 +120,14 @@
         }
 
         .section {
-            background: var(--surface);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01)), var(--surface);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.26);
+            border-radius: 14px;
+            padding: 12px 14px 16px;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .section-heading {
@@ -128,7 +135,7 @@
             flex-direction: column;
             gap: 8px;
             padding-bottom: 8px;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
 
         .section-title-line {
@@ -137,7 +144,7 @@
             align-items: center;
             gap: 10px;
             color: #cdd9f2;
-            font-size: 12px;
+            font-size: 11px;
             letter-spacing: 0.6px;
             text-transform: uppercase;
         }
@@ -182,26 +189,51 @@
             flex-direction: column;
         }
 
+        .soft-panel {
+            position: relative;
+            background: linear-gradient(140deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            padding: 12px 14px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 10px 26px rgba(0, 0, 0, 0.22), var(--glow);
+            overflow: hidden;
+        }
+
+        .soft-panel:before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 20% 0%, rgba(51, 176, 255, 0.08), transparent 25%), radial-gradient(circle at 80% 0%, rgba(255, 255, 255, 0.05), transparent 22%);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .soft-panel > * {
+            position: relative;
+            z-index: 1;
+        }
+
         .field-row {
             display: grid;
             grid-template-columns: 150px 1fr;
             gap: 12px;
             align-items: center;
-            padding: 8px 0;
+            padding: 10px 0;
         }
 
         .field-row + .field-row {
-            border-top: 1px solid var(--border);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
         }
 
         .field-label {
             color: #d8e4ff;
             font-weight: 600;
-            letter-spacing: 0.2px;
-            font-size: 13px;
+            font-size: 12px;
             display: flex;
             align-items: center;
             gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
         }
 
         .field-control {
@@ -215,13 +247,14 @@
         input[type="number"],
         select {
             width: 100%;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
             color: var(--text);
-            padding: 10px 12px;
+            padding: 12px 13px;
             font-size: 13px;
-            transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+            transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease, transform 120ms ease;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 12px 28px rgba(0, 0, 0, 0.22);
         }
 
         select {
@@ -235,9 +268,10 @@
         input:focus,
         select:focus {
             outline: none;
-            border-color: var(--accent);
-            background: var(--surface-strong);
-            box-shadow: 0 0 0 1px rgba(51, 176, 255, 0.32);
+            border-color: rgba(51, 176, 255, 0.55);
+            background: linear-gradient(135deg, rgba(51, 176, 255, 0.1), rgba(51, 176, 255, 0.02));
+            box-shadow: 0 0 0 1px rgba(51, 176, 255, 0.32), 0 18px 36px rgba(51, 176, 255, 0.12);
+            transform: translateY(-1px);
         }
 
         .input-footnote,
@@ -249,14 +283,15 @@
             justify-content: space-between;
             gap: 8px;
             align-items: center;
+            opacity: 0.92;
         }
 
         .inline-notice {
-            background: rgba(255, 179, 179, 0.06);
-            border: 1px dashed rgba(255, 179, 179, 0.45);
-            color: #ffd9d9;
+            background: linear-gradient(120deg, rgba(255, 179, 179, 0.12), rgba(255, 179, 179, 0.06));
+            border: 1px dashed rgba(255, 179, 179, 0.35);
+            color: #ffe3e3;
             padding: 8px 10px;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 12px;
         }
 
@@ -318,13 +353,14 @@
             flex-wrap: wrap;
             gap: 8px;
             align-items: center;
+            padding: 6px 0;
         }
 
         .sdpi-item-group.file {
-            border-radius: 10px;
+            border-radius: 12px;
             border: 1px dashed var(--border);
-            background: rgba(255, 255, 255, 0.02);
-            padding: 8px 10px;
+            background: linear-gradient(140deg, rgba(255, 255, 255, 0.02), rgba(51, 176, 255, 0.05));
+            padding: 10px 12px;
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -346,8 +382,8 @@
 
         .sdpi-file-label {
             background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-            border-radius: 8px;
-            padding: 8px 10px;
+            border-radius: 10px;
+            padding: 9px 12px;
             color: #041427;
             font-weight: 700;
             cursor: pointer;
@@ -355,11 +391,11 @@
         }
 
         .ghost-button {
-            padding: 9px 12px;
-            border-radius: 9px;
-            background: rgba(51, 176, 255, 0.08);
-            border: 1px solid rgba(51, 176, 255, 0.24);
-            color: #cde9ff;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(51, 176, 255, 0.12), rgba(51, 176, 255, 0.07));
+            border: 1px solid rgba(51, 176, 255, 0.28);
+            color: #d2ecff;
             font-weight: 600;
             cursor: pointer;
             transition: border-color 120ms ease, transform 120ms ease;
@@ -371,10 +407,11 @@
         }
 
         .footer-hint {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--muted);
             text-align: center;
             padding: 4px 8px 10px;
+            letter-spacing: 0.4px;
         }
     </style>
 </head>
@@ -409,40 +446,42 @@
                 <div class="section-meta">Quick find</div>
             </div>
         </div>
-        <div class="field-stack">
-            <div class="field-row">
-                <label class="field-label" for="functionSearch">Search</label>
-                <div class="field-control">
-                    <input type="text"
-                           id="functionSearch"
-                           placeholder="Type to search functions..."
-                           autocomplete="off">
-                    <div class="input-footnote">
-                        <span id="searchResults"></span>
-                        <span class="hint">Filter by name or alias.</span>
+        <div class="soft-panel">
+            <div class="field-stack">
+                <div class="field-row">
+                    <label class="field-label" for="functionSearch">Search</label>
+                    <div class="field-control">
+                        <input type="text"
+                               id="functionSearch"
+                               placeholder="Type to search functions..."
+                               autocomplete="off">
+                        <div class="input-footnote">
+                            <span id="searchResults"></span>
+                            <span class="hint">Filter by name or alias.</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="field-row">
-                <label class="field-label" for="function">Function</label>
-                <div class="field-control">
-                    <select class="sdProperty"
-                            id="function"
-                            oninput="setSettings()"
-                            onchange="setSettings()">
-                        <option value="">
-                            Loading Star Citizen functions...
-                        </option>
-                    </select>
+                <div class="field-row">
+                    <label class="field-label" for="function">Function</label>
+                    <div class="field-control">
+                        <select class="sdProperty"
+                                id="function"
+                                oninput="setSettings()"
+                                onchange="setSettings()">
+                            <option value="">
+                                Loading Star Citizen functions...
+                            </option>
+                        </select>
+                    </div>
                 </div>
-            </div>
 
-            <div class="field-row">
-                <span class="field-label"></span>
-                <div class="field-control">
-                    <div class="inline-notice hidden" id="noResults">
-                        No functions match your search.
+                <div class="field-row">
+                    <span class="field-label"></span>
+                    <div class="field-control">
+                        <div class="inline-notice hidden" id="noResults">
+                            No functions match your search.
+                        </div>
                     </div>
                 </div>
             </div>
@@ -459,61 +498,63 @@
                 <div class="section-meta">Rhythmic spacing</div>
             </div>
         </div>
-        <div class="option-grid">
-            <div class="field-row">
-                <label class="field-label" for="executionDelayMs">Execution Delay (ms)</label>
-                <div class="field-control">
-                    <input type="number"
-                           class="sdProperty"
-                           id="executionDelayMs"
-                           min="100"
-                           max="5000"
-                           step="50"
-                           oninput="setSettings()"
-                           onchange="setSettings()">
-                    <div class="hint">Delay between tap and action execution.</div>
+        <div class="soft-panel">
+            <div class="option-grid">
+                <div class="field-row">
+                    <label class="field-label" for="executionDelayMs">Execution Delay (ms)</label>
+                    <div class="field-control">
+                        <input type="number"
+                               class="sdProperty"
+                               id="executionDelayMs"
+                               min="100"
+                               max="5000"
+                               step="50"
+                               oninput="setSettings()"
+                               onchange="setSettings()">
+                        <div class="hint">Delay between tap and action execution.</div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="field-row">
-                <label class="field-label" for="confirmationDurationMs">Confirmation Duration (ms)</label>
-                <div class="field-control">
-                    <input type="number"
-                           class="sdProperty"
-                           id="confirmationDurationMs"
-                           min="100"
-                           max="3000"
-                           step="50"
-                           oninput="setSettings()"
-                           onchange="setSettings()">
-                    <div class="hint">How long State 1 image is shown after execution.</div>
+                <div class="field-row">
+                    <label class="field-label" for="confirmationDurationMs">Confirmation Duration (ms)</label>
+                    <div class="field-control">
+                        <input type="number"
+                               class="sdProperty"
+                               id="confirmationDurationMs"
+                               min="100"
+                               max="3000"
+                               step="50"
+                               oninput="setSettings()"
+                               onchange="setSettings()">
+                        <div class="hint">How long State 1 image is shown after execution.</div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="field-row">
-                <label class="field-label" for="blinkRateMs">Blink Rate (ms)</label>
-                <div class="field-control">
-                    <input type="number"
-                           class="sdProperty"
-                           id="blinkRateMs"
-                           min="100"
-                           max="1000"
-                           step="50"
-                           oninput="setSettings()"
-                           onchange="setSettings()">
-                    <div class="hint">Interval for blinking State 0 while arming.</div>
+                <div class="field-row">
+                    <label class="field-label" for="blinkRateMs">Blink Rate (ms)</label>
+                    <div class="field-control">
+                        <input type="number"
+                               class="sdProperty"
+                               id="blinkRateMs"
+                               min="100"
+                               max="1000"
+                               step="50"
+                               oninput="setSettings()"
+                               onchange="setSettings()">
+                        <div class="hint">Interval for blinking State 0 while arming.</div>
+                    </div>
                 </div>
-            </div>
 
-            <div class="field-row">
-                <label class="field-label" for="holdToCancel">Hold to Cancel</label>
-                <div class="field-control toggle-row">
-                    <input type="checkbox"
-                           class="sdProperty toggle"
-                           id="holdToCancel"
-                           oninput="setSettings()"
-                           onchange="setSettings()">
-                    <span class="hint">Press-and-hold to abort a pending action.</span>
+                <div class="field-row">
+                    <label class="field-label" for="holdToCancel">Hold to Cancel</label>
+                    <div class="field-control toggle-row">
+                        <input type="checkbox"
+                               class="sdProperty toggle"
+                               id="holdToCancel"
+                               oninput="setSettings()"
+                               onchange="setSettings()">
+                        <span class="hint">Press-and-hold to abort a pending action.</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -529,27 +570,29 @@
                 <div class="section-meta">Optional</div>
             </div>
         </div>
-        <div class="field-stack">
-            <div class="field-row" id="dvClickSound">
-                <label class="field-label" for="clickSound">Sound</label>
-                <div class="field-control file-row sdpi-item-group file">
-                    <input class="sdProperty sdFile"
-                           type="file"
-                           id="clickSound"
-                           accept=".wav"
-                           oninput="setSettings(); updateClearSoundVisibility();"
-                           onchange="setSettings(); updateClearSoundVisibility();">
-                    <label class="sdpi-file-info"
-                           id="clickSoundFilename">No file...</label>
-                    <label class="sdpi-file-label"
-                           for="clickSound">Choose file...</label>
+        <div class="soft-panel">
+            <div class="field-stack">
+                <div class="field-row" id="dvClickSound">
+                    <label class="field-label" for="clickSound">Sound</label>
+                    <div class="field-control file-row sdpi-item-group file">
+                        <input class="sdProperty sdFile"
+                               type="file"
+                               id="clickSound"
+                               accept=".wav"
+                               oninput="setSettings(); updateClearSoundVisibility();"
+                               onchange="setSettings(); updateClearSoundVisibility();">
+                        <label class="sdpi-file-info"
+                               id="clickSoundFilename">No file...</label>
+                        <label class="sdpi-file-label"
+                               for="clickSound">Choose file...</label>
+                    </div>
                 </div>
-            </div>
 
-            <div class="field-row hidden" id="dvClearSound">
-                <span class="field-label"></span>
-                <div class="field-control">
-                    <button class="ghost-button" onclick="clearClickSound()">Clear sound</button>
+                <div class="field-row hidden" id="dvClearSound">
+                    <span class="field-label"></span>
+                    <div class="field-control">
+                        <button class="ghost-button" onclick="clearClickSound()">Clear sound</button>
+                    </div>
                 </div>
             </div>
         </div>
