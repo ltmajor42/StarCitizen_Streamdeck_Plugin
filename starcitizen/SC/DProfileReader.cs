@@ -291,7 +291,7 @@ namespace SCJMapper_V2.SC
                 {
                     var normalized = NormalizeMouseBinding(input);
                     currentAction.Mouse = normalized;
-                    if (string.IsNullOrWhiteSpace(currentAction.Keyboard))
+                    if (string.IsNullOrWhiteSpace(currentAction.Keyboard) || MouseTokenHelper.IsMouseLike(currentAction.Keyboard))
                     {
                         currentAction.Keyboard = normalized;
                     }
@@ -446,7 +446,8 @@ namespace SCJMapper_V2.SC
                                 {
                                     var normalized = NormalizeMouseBinding(input);
                                     map.Actions[actionName].Mouse = normalized;
-                                    if (string.IsNullOrWhiteSpace(map.Actions[actionName].Keyboard))
+                                    if (string.IsNullOrWhiteSpace(map.Actions[actionName].Keyboard) ||
+                                        MouseTokenHelper.IsMouseLike(map.Actions[actionName].Keyboard))
                                     {
                                         map.Actions[actionName].Keyboard = normalized;
                                     }
@@ -455,6 +456,11 @@ namespace SCJMapper_V2.SC
                                 else if (SCPath.TreatBlankRebindAsUnbound)
                                 {
                                     map.Actions[actionName].Mouse = "";
+                                    if (string.IsNullOrWhiteSpace(map.Actions[actionName].Keyboard) ||
+                                        MouseTokenHelper.IsMouseLike(map.Actions[actionName].Keyboard))
+                                    {
+                                        map.Actions[actionName].Keyboard = "";
+                                    }
                                     map.Actions[actionName].MouseOverRule = true;
                                 }
                             }
