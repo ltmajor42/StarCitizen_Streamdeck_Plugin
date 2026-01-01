@@ -20,9 +20,6 @@
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
     <RuntimeIdentifiers>win</RuntimeIdentifiers>
-    <RuntimeIdentifier>win</RuntimeIdentifier>
-    <Configurations>Debug;Release</Configurations>
-    <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
