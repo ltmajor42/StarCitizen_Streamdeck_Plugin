@@ -272,7 +272,7 @@ then the button image would be out of sync.
 
 The plugin also has a Dial button for use with the 4 dials on the Streamdeck+ model. You’ll find it under the **Dials** section of the Stream Deck+ action list (look for the Star Citizen category with the dial icon).
 
-There are 5 bindings (They must be keyboard bindings, you can't bind the mouse wheel!) :
+There are 5 bindings (keyboard or mouse tokens are supported) :
 
 - Dial Clockwise
 - Dial Counter-Clockwise
@@ -294,8 +294,10 @@ The 'key down' event is sent to the keyboard. After a user-definable delay (defa
 After you install the plugin in the streamdeck software, then there will be new button types in the streamdeck software.
 
 Choose a button in the streamdeck software (drag and drop), then choose a Star Citizen function for that button 
-(that must have a keyboard binding in Star Citizen. **A mouse, gamepad or joystick binding won't work!**) 
+(that must have a keyboard or mouse binding in Star Citizen. **Gamepad or joystick bindings won't work!**) 
 and then choose any picture for that button.
+
+Mouse output (mouse1/mouse2/mwheelup/etc.) is enabled by default and can be toggled in `appsettings.config` using `EnableMouseOutput=true|false`. If mouse clicks or wheel events do not register in-game, make sure Star Citizen is the focused window and run Stream Deck with the same (or higher) privileges as the game.
 
 Add an image to a button in this way:
 

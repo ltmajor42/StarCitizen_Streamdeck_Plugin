@@ -864,9 +864,9 @@ namespace SCJMapper_V2.SC
 
         /// <summary>
         /// Optional feature: allow mouse tokens (mouse1/mwheelup/...) to be sent via InputSimulator.
-        /// Default: false (legacy behavior).
+        /// Default: true (more convenient; can be disabled via appsettings.config).
         /// </summary>
-        public static bool EnableMouseOutput => ReadBoolAppSetting("EnableMouseOutput", false);
+        public static bool EnableMouseOutput => ReadBoolAppSetting("EnableMouseOutput", true);
 
 
 
