@@ -1,0 +1,258 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,minimal-ui,viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+    <title>Star Citizen – Hold Macro</title>
+
+    <link rel="stylesheet" href="../sdpi.css">
+    <link rel="stylesheet" href="../jquery.highlight-within-textarea.css">
+
+    <script src="../sdtools.common.js"></script>
+    <script src="../jquery-3.3.1.min.js"></script>
+    <script src="../jquery.highlight-within-textarea.js"></script>
+
+    <style>
+        .no-results {
+            padding: 10px;
+            color: #999;
+            font-style: italic;
+            text-align: center;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .note {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+
+<body>
+<div class="sdpi-wrapper">
+
+    <!-- SEARCH -->
+    <div class="sdpi-item">
+        <div class="sdpi-item-label">Search</div>
+        <input type="text"
+               class="sdpi-item-value"
+               id="functionSearch"
+               placeholder="Type to search functions..."
+               autocomplete="off">
+        <div class="sdpi-item-value"
+             id="searchResults"
+             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
+    </div>
+
+    <!-- FUNCTION -->
+    <div class="sdpi-item">
+        <div class="sdpi-item-label">Function</div>
+        <select class="sdpi-item-value select sdProperty"
+                id="function"
+                oninput="setSettings()"
+                onchange="setSettings()">
+            <option value="">Loading Star Citizen functions...</option>
+        </select>
+    </div>
+
+    <!-- HOLD UNTIL RELEASE -->
+    <div class="sdpi-item">
+        <div class="sdpi-item-label">Hold Mode</div>
+        <div class="sdpi-item-value">
+            <label for="holdUntilRelease" class="sdpi-item-label" style="width: auto;">
+                <input type="checkbox"
+                       class="sdProperty"
+                       id="holdUntilRelease"
+                       oninput="setSettings(); toggleDuration();"
+                       onchange="setSettings(); toggleDuration();">
+                Hold until release
+            </label>
+        </div>
+    </div>
+
+    <!-- HOLD DURATION -->
+    <div class="sdpi-item" id="durationRow">
+        <div class="sdpi-item-label">Hold duration (ms)</div>
+        <input type="number"
+               class="sdpi-item-value sdProperty"
+               id="holdDurationMs"
+               min="0"
+               max="60000"
+               step="50"
+               oninput="validateDuration(); setSettings();"
+               onchange="validateDuration(); setSettings();">
+    </div>
+    <div class="sdpi-item">
+        <div class="sdpi-item-label"></div>
+        <div class="sdpi-item-value note">
+            If unchecked, the key will auto-release after the duration. Max 60,000ms.
+        </div>
+    </div>
+
+    <div class="sdpi-item no-results hidden" id="noResults">
+        No functions match your search.
+    </div>
+
+    <div class="sdpi-item">
+        <div class="sdpi-item-label"></div>
+        <div class="sdpi-item-value note">
+            Images are managed by Stream Deck (State 0 = idle, State 1 = held). Supports keyboard and mouse tokens.
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const MAX_DURATION = 60000;
+    let allOptions = [];
+    let functionsLoaded = false;
+    let savedFunctionValue = null;
+
+    /* Preserve selected function if payload arrives before functions list */
+    const originalLoadConfiguration = loadConfiguration;
+    loadConfiguration = function (payload) {
+        if (payload && payload.function !== undefined) {
+            savedFunctionValue = payload.function;
+        }
+        originalLoadConfiguration(payload);
+        toggleDuration();
+
+        if (functionsLoaded && savedFunctionValue) {
+            const sel = document.getElementById('function');
+            if (sel) sel.value = savedFunctionValue;
+        }
+    };
+
+    function populateDropdown(functions) {
+        const select = document.getElementById('function');
+        select.innerHTML = '';
+        allOptions = [];
+
+        const empty = document.createElement('option');
+        empty.value = '';
+        empty.textContent = '-- Select a function --';
+        select.appendChild(empty);
+
+        functions.forEach(group => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = group.label;
+
+            group.options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.textContent = opt.text;
+                option.dataset.search = opt.searchText || opt.text.toLowerCase();
+
+                optgroup.appendChild(option);
+
+                allOptions.push({
+                    option,
+                    optgroup,
+                    search: option.dataset.search
+                });
+            });
+
+            select.appendChild(optgroup);
+        });
+
+        functionsLoaded = true;
+
+        if (savedFunctionValue) {
+            select.value = savedFunctionValue;
+        }
+
+        filterOptions();
+    }
+
+    function filterOptions() {
+        if (!functionsLoaded) return;
+
+        const term = document.getElementById('functionSearch').value.toLowerCase().trim();
+        const noResults = document.getElementById('noResults');
+        const searchResults = document.getElementById('searchResults');
+
+        let visibleGroups = 0;
+
+        allOptions.forEach(o => {
+            const visible = !term || o.search.includes(term);
+            o.option.style.display = visible ? '' : 'none';
+        });
+
+        document.querySelectorAll('#function optgroup').forEach(group => {
+            const hasVisible = Array.from(group.children)
+                .some(o => o.style.display !== 'none');
+
+            group.style.display = hasVisible ? '' : 'none';
+            if (hasVisible) visibleGroups++;
+        });
+
+        noResults.classList.toggle('hidden', visibleGroups > 0);
+        searchResults.textContent = term
+            ? `Found ${visibleGroups} group${visibleGroups !== 1 ? 's' : ''}`
+            : '';
+    }
+
+    function validateDuration() {
+        const input = document.getElementById('holdDurationMs');
+        if (!input) return;
+        const parsed = parseInt(input.value || '0', 10);
+        if (isNaN(parsed)) {
+            input.value = 0;
+            return;
+        }
+        input.value = Math.min(Math.max(parsed, 0), MAX_DURATION);
+    }
+
+    function toggleDuration() {
+        const checkbox = document.getElementById('holdUntilRelease');
+        const row = document.getElementById('durationRow');
+        if (!checkbox || !row) return;
+        row.classList.toggle('hidden', checkbox.checked);
+    }
+
+    /* Hook into websocket to receive function list */
+    document.addEventListener('websocketCreate', function () {
+        const originalOnMessage = websocket.onmessage;
+
+        websocket.onmessage = function (evt) {
+            const jsonObj = JSON.parse(evt.data);
+
+            if (jsonObj.event === 'sendToPropertyInspector'
+                && jsonObj.payload
+                && jsonObj.payload.functionsLoaded) {
+
+                populateDropdown(jsonObj.payload.functions);
+            }
+
+            if (originalOnMessage) {
+                originalOnMessage.call(this, evt);
+            }
+        };
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('functionSearch')
+            .addEventListener('input', function () {
+                clearTimeout(this.searchTimeout);
+                this.searchTimeout = setTimeout(filterOptions, 150);
+            });
+
+        document.getElementById('function')
+            .addEventListener('change', function () {
+                document.getElementById('functionSearch').value = '';
+                document.getElementById('searchResults').textContent = '';
+            });
+
+        toggleDuration();
+    });
+</script>
+
+</body>
+</html>

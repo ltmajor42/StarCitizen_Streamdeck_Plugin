@@ -98,6 +98,27 @@
       "PropertyInspectorPath": "PropertyInspector/StarCitizen/Repeataction.html"
     },
     {
+      "Icon": "Images/HoldMacroAction0",
+      "Name": "Hold Macro",
+      "Controllers": ["Keypad"],
+      "States": [
+        {
+          "Image": "Images/HoldMacroAction0",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        },
+        {
+          "Image": "Images/HoldMacroAction1",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "Hold to send key/mouse down, release manually or after a set duration",
+      "UUID": "com.ltmajor42.starcitizen.holdmacro",
+      "PropertyInspectorPath": "PropertyInspector/StarCitizen/HoldMacroAction.html"
+    },
+    {
       "Icon": "Images/ActionDelay0",
       "Name": "Action Delay",
       "Controllers": ["Keypad"],
