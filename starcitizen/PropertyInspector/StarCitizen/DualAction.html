@@ -26,11 +26,18 @@
         .hidden {
             display: none !important;
         }
-        .search-row {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-        }
+    .search-row {
+        display: flex;
+        gap: 6px;
+        align-items: stretch;
+        min-height: 23px;
+    }
+    .search-row input.sdpi-item-value {
+        flex: 1;
+        height: 100%;
+        min-height: 23px;
+        box-sizing: border-box;
+    }
     </style>
 </head>
 
@@ -45,8 +52,7 @@
                    class="sdpi-item-value"
                    id="functionSearch"
                    placeholder="Type to search functions..."
-                   autocomplete="off"
-                   style="flex: 1;">
+                   autocomplete="off">
         </div>
         <div class="sdpi-item-value"
              id="searchResults"
