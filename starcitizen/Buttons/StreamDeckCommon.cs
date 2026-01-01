@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 using WindowsInput;
 using WindowsInput.Native;
 using BarRaider.SdTools;
@@ -12,6 +13,7 @@ using starcitizen.SC;
 
 namespace starcitizen.Buttons
 {
+    [SupportedOSPlatform("windows")]
     static class StreamDeckCommon
     {
         [DllImport("user32.dll")]

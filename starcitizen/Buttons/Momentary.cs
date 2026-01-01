@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 using BarRaider.SdTools;
 using BarRaider.SdTools.Events;
 using BarRaider.SdTools.Wrappers;
@@ -12,6 +13,7 @@ using starcitizen.Core;
 namespace starcitizen.Buttons
 {
     [PluginActionId("com.ltmajor42.starcitizen.momentary")]
+    [SupportedOSPlatform("windows")]
     public class Momentary : StarCitizenKeypadBase
     {
         protected class PluginSettings

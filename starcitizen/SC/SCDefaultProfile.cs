@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
+using System.Runtime.Versioning;
 using BarRaider.SdTools;
 
 namespace starcitizen.SC
@@ -9,6 +10,7 @@ namespace starcitizen.SC
     /// Finds and returns the DefaultProfile from SC GameData.pak
     /// it is located in GameData.pak \Libs\Config
         /// </summary>
+        [SupportedOSPlatform("windows")]
         class SCDefaultProfile
         {
             private static string m_defProfileCached = ""; // cache...

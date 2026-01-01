@@ -18,6 +18,7 @@ namespace starcitizen.SC
     /// Manages all SC files from Pak
     /// tracks the filedate to update only if needed
     /// </summary>
+    [SupportedOSPlatform("windows")]
     class SCFiles
     {
         private SCFile m_pakFile; // no content, carries only the filedate
