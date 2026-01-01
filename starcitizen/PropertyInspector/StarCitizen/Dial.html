@@ -31,10 +31,6 @@
             gap: 6px;
             align-items: center;
         }
-        .refresh-button {
-            min-width: 48px;
-            padding: 6px 10px;
-        }
     </style>
 </head>
 
@@ -51,12 +47,6 @@
                    placeholder="Type to search functions..."
                    autocomplete="off"
                    style="flex: 1;">
-            <button class="sdpi-item-value refresh-button"
-                    type="button"
-                    onclick="refreshKeybinds(this)"
-                    title="Reload Star Citizen keybinds">
-                ⟳
-            </button>
         </div>
         <div class="sdpi-item-value"
              id="searchResults"
@@ -230,21 +220,6 @@
         searchResults.textContent = term
             ? `Found ${count} group${count !== 1 ? 's' : ''}`
             : '';
-    }
-
-    function refreshKeybinds(button) {
-        if (!button || button.disabled) return;
-
-        const originalText = button.textContent;
-        button.disabled = true;
-        button.textContent = 'Refreshing…';
-
-        sendValueToPlugin('refreshKeybinds', 'piEvent');
-
-        setTimeout(() => {
-            button.disabled = false;
-            button.textContent = originalText;
-        }, 800);
     }
 
     document.addEventListener('websocketCreate', function () {

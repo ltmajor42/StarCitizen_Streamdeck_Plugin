@@ -8,10 +8,11 @@ namespace SCJMapper_V2.SC
     /// <summary>
     /// Finds and returns the DefaultProfile from SC GameData.pak
     /// it is located in GameData.pak \Libs\Config
-    /// </summary>
-    class SCDefaultProfile
-    {
-        private static string m_defProfileCached = ""; // cache...
+        /// </summary>
+        class SCDefaultProfile
+        {
+            private static string m_defProfileCached = ""; // cache...
+            private static string lastReadContent; // cache the last actionmaps.xml content
 
         /// <summary>
         /// Returns a list of files found that match 'defaultProfile*.xml'
