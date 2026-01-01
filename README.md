@@ -16,8 +16,13 @@
 
 - **Maintainer:** Ltmajor42
 - **Maintainer:** Jarex985
-- **Upstream inspiration:** [ltmajor42/streamdeck-starcitizen](https://github.com/ltmajor42/streamdeck-starcitizen)  
-- **Binding loader:** [SCJMapper resources](https://github.com/SCToolsfactory/SCJMapper-V2) power the Star Citizen keybind parsing.
+- **Upstream inspiration:** [ltmajor42/streamdeck-starcitizen](https://github.com/ltmajor42/streamdeck-starcitizen)
+- **Binding loader / parsing resources:** [SCJMapper-V2](https://github.com/SCToolsfactory/SCJMapper-V2) resources used for Star Citizen keybind parsing.
+- **P4K extraction tooling:** [unp4k](https://github.com/dolkensp/unp4k) (used for extracting/working with Star Citizen `.p4k` archives, where applicable).
+- **Input simulation library:** [InputSimulator](https://github.com/ishaaniMittal/inputsimulator) (used for keyboard/mouse input simulation, where applicable).
+
+### Additional thanks
+- Thanks to all upstream authors and contributors of the above projects for making this plugin possible.
 
 ## V2 Full Release
 
