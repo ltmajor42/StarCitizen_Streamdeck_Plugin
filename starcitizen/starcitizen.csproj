@@ -179,6 +179,7 @@
     <Compile Include="Audio\CachedSound.cs" />
     <Compile Include="Audio\CachedSoundSampleProvider.cs" />
     <Compile Include="Buttons\ActionDelay.cs" />
+    <Compile Include="Buttons\HoldMacroAction.cs" />
     <Compile Include="Buttons\CosmeticKey.cs" />
     <Compile Include="Buttons\FunctionListBuilder.cs" />
     <Compile Include="Buttons\DualAction.cs" />
@@ -281,6 +282,12 @@
     <Content Include="Images\Dualaction1.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Images\HoldMacroAction0.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\HoldMacroAction1.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Images\icon%402x.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -357,6 +364,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="PropertyInspector\StarCitizen\DualAction.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="PropertyInspector\StarCitizen\HoldMacroAction.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="PropertyInspector\StarCitizen\Repeataction.html">

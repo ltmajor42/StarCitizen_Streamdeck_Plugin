@@ -177,6 +177,29 @@ Press-and-hold repeat behavior.
 
 ---
 
+### Hold Macro
+
+Press-and-hold behavior without rapid-fire repeats.
+
+**Behavior:**
+
+1. Press sends the selected function’s **key/mouse down** immediately.
+2. Choose between **Hold until release** (default) or a fixed **Hold duration (ms)** that auto-releases after the timer.
+3. Supports both keyboard and mouse tokens using the existing macro handling.
+
+**Tips:**
+
+- For reliable input injection, keep Star Citizen focused and run the Stream Deck app with admin rights when required by your OS settings.
+- If you enable the duration option, a safety cap limits holds to 60 seconds to avoid accidental “infinite” holds.
+
+**Use cases:**
+
+1. Charge-up/activate workflows where you only want a single held input
+2. Mouse-button style holds (e.g., ADS) without triggering repeats
+3. Any “hold to engage, release to stop” macro
+
+---
+
 ### Cosmetic
 <img width="100" height="100" alt="Cosmetic" src="https://github.com/user-attachments/assets/6891af8c-352b-4c2c-81d4-335df945e9b8" />
 
