@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Threading;
 using BarRaider.SdTools;
 using SCJMapper_V2.CryXMLlib;
 
@@ -56,7 +57,7 @@ namespace SCJMapper_V2.SC
 
             Logger.Instance.LogMessage(TracingLevel.INFO, mFile);
 
-            if (File.Exists(mFile))
+            if (!File.Exists(mFile))
             {
                 using (var stream = new FileStream(mFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 using (var reader = new StreamReader(stream))
