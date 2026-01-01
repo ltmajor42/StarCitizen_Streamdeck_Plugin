@@ -788,6 +788,46 @@ namespace SCJMapper_V2.SC
             }
         }
 
+        /// <summary>
+        /// Returns the best-effort path to the current actionmaps.xml file.
+        /// Tries the expected profile folder first, then falls back to scanning
+        /// the USER tree (handles non-default profile folders or renamed paths).
+        /// </summary>
+        public static string ResolveActionMapsPath()
+        {
+            var profilePath = SCClientProfilePath;
+            if (!string.IsNullOrWhiteSpace(profilePath))
+            {
+                var candidate = Path.Combine(profilePath, "actionmaps.xml");
+                if (File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            var userRoot = SCClientUSERPath;
+            if (!string.IsNullOrWhiteSpace(userRoot) && Directory.Exists(userRoot))
+            {
+                try
+                {
+                    var candidates = Directory.EnumerateFiles(userRoot, "actionmaps.xml", SearchOption.AllDirectories)
+                                              .OrderByDescending(File.GetLastWriteTimeUtc)
+                                              .ToArray();
+
+                    if (candidates.Length > 0)
+                    {
+                        return candidates[0];
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"ResolveActionMapsPath scan failed: {ex.Message}");
+                }
+            }
+
+            return "";
+        }
+
 
 
         /// <summary>
