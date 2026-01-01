@@ -802,6 +802,106 @@ input[type="radio"]:checked + label span {
 }
 */
 
+/* =====================================================================
+   Star Citizen – Property Inspector "Modern" visual theme (UI only)
+
+   IMPORTANT:
+   - This is *styling only*. No settings keys, ids, or JS behavior changed.
+   - Keeps compatibility with existing HTML/JS and StreamDeckTools sdpi.
+   ===================================================================== */
+
+/* Color + radius overrides (closer to the clean PI mockups) */
+html {
+  --sdpi-bgcolor: #2b2b2b;
+  --sdpi-background: #333333;
+  --sdpi-color: #e6e6e6;
+  --sdpi-bordercolor: #444444;
+  --sdpi-buttonbordercolor: #444444;
+  --sdpi-borderradius: 4px;
+  --sdpi-fontweight: 400;
+}
+
+/* Wrapper padding (less "cramped" and more consistent) */
+.sdpi-wrapper {
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* Row spacing + alignment */
+.sdpi-item {
+  margin-top: 8px;
+  min-height: 30px;
+  max-width: none;
+}
+
+.sdpi-item-label {
+  width: 120px;
+  color: #a0a0a0;
+  text-align: left;
+  font-weight: 400;
+}
+
+/* Remove forced colon after labels to match the cleaner look */
+.sdpi-item-label:after {
+  content: "";
+}
+
+/* Value column spacing */
+.sdpi-test,
+.sdpi-item-value {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* Inputs/selects/buttons look */
+input.sdpi-item-value,
+select.sdpi-item-value,
+button.sdpi-item-value,
+textarea.sdpi-item-value {
+  background-color: var(--sdpi-background);
+  border: 1px solid var(--sdpi-bordercolor);
+  color: var(--sdpi-color);
+  border-radius: var(--sdpi-borderradius);
+  padding: 6px 8px;
+  min-height: 28px !important;
+  height: 28px;
+  box-sizing: border-box;
+}
+
+/* Some SDPI rules add extra margins; tighten for compact layout */
+input.sdpi-item-value {
+  margin-left: 0;
+}
+
+.sdpi-item-value button,
+button.sdpi-item-value {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* File picker row: align + make the filename box match the theme */
+.sdpi-item-group.file {
+  width: auto;
+  gap: 8px;
+}
+
+.sdpi-file-info {
+  background-color: var(--sdpi-background);
+  border: 1px solid var(--sdpi-bordercolor);
+  border-radius: var(--sdpi-borderradius);
+}
+
+/* Select caret remains, but keep it subtle */
+select {
+  background-position: 98% center;
+}
+
+/* Utility: keep the "hidden" class working everywhere */
+.hidden {
+  display: none !important;
+}
+
+
 input[type="range"] {
   width: var(--sdpi-width);
   height: 30px;

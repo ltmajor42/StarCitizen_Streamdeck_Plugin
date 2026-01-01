@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
@@ -108,9 +108,6 @@
     let allOptions = [];
     let functionsLoaded = false;
     let savedFunctionValue = null;
-    let functionsRequested = false;
-    let requestRetryTimer = null;
-    const REQUEST_RETRY_INTERVAL_MS = 1000;
 
     /* Preserve selected function if payload arrives before functions list */
     const originalLoadConfiguration = loadConfiguration;
@@ -118,11 +115,6 @@
         if (payload && payload.function !== undefined) {
             savedFunctionValue = payload.function;
         }
-
-        if (payload && payload.functionsLoaded && Array.isArray(payload.functions)) {
-            populateDropdown(payload.functions);
-        }
-
         originalLoadConfiguration(payload);
 
         if (functionsLoaded && savedFunctionValue) {
@@ -130,29 +122,6 @@
             if (sel) sel.value = savedFunctionValue;
         }
     };
-
-    function requestFunctions(force = false) {
-        if (functionsLoaded) return;
-        if (!force && functionsRequested) return;
-
-        if (websocket && websocket.readyState === 1) {
-            functionsRequested = true;
-            sendValueToPlugin(true, 'requestFunctions');
-            scheduleRequestRetry();
-        } else {
-            scheduleRequestRetry();
-        }
-    }
-
-    function scheduleRequestRetry() {
-        if (functionsLoaded) return;
-
-        clearTimeout(requestRetryTimer);
-        requestRetryTimer = setTimeout(() => {
-            functionsRequested = false; // allow the next retry to fire
-            requestFunctions();
-        }, REQUEST_RETRY_INTERVAL_MS);
-    }
 
     function populateDropdown(functions) {
         const select = document.getElementById('function');
@@ -187,9 +156,6 @@
         });
 
         functionsLoaded = true;
-        functionsRequested = false;
-        clearTimeout(requestRetryTimer);
-        requestRetryTimer = null;
 
         if (savedFunctionValue) {
             select.value = savedFunctionValue;
@@ -229,19 +195,6 @@
     /* Hook into websocket to receive function list */
     document.addEventListener('websocketCreate', function () {
         const originalOnMessage = websocket.onmessage;
-        const originalOnOpen = websocket.onopen;
-
-        websocket.onopen = function (evt) {
-            if (originalOnOpen) {
-                originalOnOpen.call(this, evt);
-            }
-
-            requestFunctions();
-        };
-
-        requestFunctions();
-
-        requestFunctions();
 
         websocket.onmessage = function (evt) {
             const jsonObj = JSON.parse(evt.data);
@@ -250,13 +203,7 @@
                 && jsonObj.payload
                 && jsonObj.payload.functionsLoaded) {
 
-                clearTimeout(requestRetryTimer);
-                requestRetryTimer = null;
-                functionsLoaded = true;
                 populateDropdown(jsonObj.payload.functions);
-            }
-            else {
-                scheduleRequestRetry();
             }
 
             if (originalOnMessage) {
@@ -277,8 +224,6 @@
                 document.getElementById('functionSearch').value = '';
                 document.getElementById('searchResults').textContent = '';
             });
-
-        scheduleRequestRetry();
     });
 </script>
 
