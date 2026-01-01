@@ -33,106 +33,238 @@
         min-height: 23px;
         box-sizing: border-box;
     }
+    .pi-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 16px;
+        margin: 0 0 12px;
+        background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+        border: 1px solid #494949;
+        border-radius: 8px;
+        box-shadow: 0 10px 26px rgba(0,0,0,0.35);
+    }
+    .pi-title-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .pi-eyebrow {
+        text-transform: uppercase;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        color: #9ba2ad;
+    }
+    .pi-title {
+        font-size: 16px;
+        color: #ffffff;
+        font-weight: 700;
+    }
+    .pi-subtitle {
+        color: #b5b5b5;
+        font-size: 11px;
+        line-height: 1.4;
+    }
+    .pi-badge {
+        background: #3f3f3f;
+        color: #d6d6d6;
+        border: 1px solid #575757;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 10px;
+        white-space: nowrap;
+    }
+    .settings-card {
+        background: #2f2f2f;
+        border: 1px solid #454545;
+        border-radius: 8px;
+        padding: 14px 12px;
+        box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+        margin-bottom: 12px;
+    }
+    .settings-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .card-title {
+        font-weight: 700;
+        color: #ffffff;
+        font-size: 13px;
+    }
+    .card-subtitle {
+        color: #b3b3b3;
+        font-size: 11px;
+        margin-top: 2px;
+    }
+    .settings-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 10px 12px;
+        align-items: start;
+    }
+    .settings-stack .sdpi-item,
+    .settings-grid .sdpi-item {
+        margin: 0;
+    }
+    .toggle-wrap label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        color: #d6d6d6;
+        font-weight: 700;
+    }
+    .footer-note {
+        margin-top: 6px;
+        color: #b3b3b3;
+        font-size: 11px;
+    }
   </style>
 </head>
 
 <body>
 <div class="sdpi-wrapper">
 
-  <div class="sdpi-item">
-    <div class="sdpi-item-label">Search</div>
-    <div class="sdpi-item-value search-row">
-      <input type="text"
-             class="sdpi-item-value"
-             id="functionSearch"
-             placeholder="Type to search functions..."
-             autocomplete="off">
+  <div class="pi-header">
+    <div class="pi-title-group">
+      <div class="pi-eyebrow">Star Citizen • Action Delay</div>
+      <div class="pi-title">Per-button configuration</div>
+      <div class="pi-subtitle">
+        Adjust how this key arms, executes, confirms, and sounds without affecting other buttons.
+      </div>
     </div>
-    <div class="sdpi-item-value" id="searchResults"
-         style="font-size: 11px; color: #999; margin-top: 4px;"></div>
+    <div class="pi-badge">Button specific</div>
   </div>
 
-  <div class="sdpi-item">
-    <div class="sdpi-item-label">Function</div>
-    <select class="sdpi-item-value select sdProperty"
-            id="function"
-            oninput="setSettings()"
-            onchange="setSettings()">
-      <option value="">Loading Star Citizen functions...</option>
-    </select>
-  </div>
+  <div class="settings-card">
+    <div class="settings-card-header">
+      <div>
+        <div class="card-title">Function lookup</div>
+        <div class="card-subtitle">Search the exported Star Citizen functions, then bind one to this key.</div>
+      </div>
+    </div>
 
-  <div class="sdpi-item">
-    <div class="sdpi-item-label">Execute after (ms)</div>
-    <input type="number"
-           class="sdpi-item-value sdProperty"
-           id="executionDelayMs"
-           min="100"
-           max="5000"
-           step="10"
-           oninput="setSettings()"
-           onchange="setSettings()">
-  </div>
+    <div class="settings-stack">
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Search</div>
+        <div class="sdpi-item-value search-row">
+          <input type="text"
+                 class="sdpi-item-value"
+                 id="functionSearch"
+                 placeholder="Type to search functions..."
+                 autocomplete="off">
+        </div>
+        <div class="sdpi-item-value" id="searchResults"
+             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
+      </div>
 
-  <div class="sdpi-item">
-    <div class="sdpi-item-label">Confirm state (ms)</div>
-    <input type="number"
-           class="sdpi-item-value sdProperty"
-           id="confirmationDurationMs"
-           min="100"
-           max="3000"
-           step="10"
-           oninput="setSettings()"
-           onchange="setSettings()">
-  </div>
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Function</div>
+        <select class="sdpi-item-value select sdProperty"
+                id="function"
+                oninput="setSettings()"
+                onchange="setSettings()">
+          <option value="">Loading Star Citizen functions...</option>
+        </select>
+      </div>
 
-  <div class="sdpi-item">
-    <div class="sdpi-item-label">Blink rate (ms)</div>
-    <input type="number"
-           class="sdpi-item-value sdProperty"
-           id="blinkRateMs"
-           min="100"
-           max="1000"
-           step="10"
-           oninput="setSettings()"
-           onchange="setSettings()">
-  </div>
-
-  <div class="sdpi-item">
-    <div class="sdpi-item-label">Tap again to cancel</div>
-    <input type="checkbox"
-           class="sdpi-item-value sdProperty"
-           id="holdToCancel"
-           oninput="setSettings()"
-           onchange="setSettings()">
-  </div>
-
-  <div class="sdpi-item" id="dvClickSound">
-    <div class="sdpi-item-label">Sound</div>
-    <div class="sdpi-item-group file">
-      <input class="sdpi-item-value sdProperty sdFile"
-             type="file"
-             id="clickSound"
-             accept=".wav"
-             oninput="setSettings(); updateClearSoundVisibility();"
-             onchange="setSettings(); updateClearSoundVisibility();">
-      <label class="sdpi-file-info" id="clickSoundFilename">No file...</label>
-      <label class="sdpi-file-label" for="clickSound">Choose file...</label>
+      <div class="sdpi-item no-results hidden" id="noResults">
+        No functions match your search.
+      </div>
     </div>
   </div>
 
-  <div class="sdpi-item hidden" id="dvClearSound">
-    <div class="sdpi-item-label"></div>
-    <button class="sdpi-item-value" onclick="clearClickSound()">Clear sound</button>
-  </div>
+  <div class="settings-card">
+    <div class="settings-card-header">
+      <div>
+        <div class="card-title">Timing & behavior</div>
+        <div class="card-subtitle">Tune delays, confirmation, cancellation, and feedback for this button.</div>
+      </div>
+    </div>
 
-  <div class="sdpi-item no-results hidden" id="noResults">
-    No functions match your search.
-  </div>
+    <div class="settings-grid">
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Execute after (ms)</div>
+        <input type="number"
+               class="sdpi-item-value sdProperty"
+               id="executionDelayMs"
+               min="100"
+               max="5000"
+               step="10"
+               oninput="setSettings()"
+               onchange="setSettings()">
+      </div>
 
-  <div class="sdpi-item">
-    <div class="sdpi-item-label"></div>
-    <div class="sdpi-item-value note">
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Confirm state (ms)</div>
+        <input type="number"
+               class="sdpi-item-value sdProperty"
+               id="confirmationDurationMs"
+               min="100"
+               max="3000"
+               step="10"
+               oninput="setSettings()"
+               onchange="setSettings()">
+      </div>
+
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Blink rate (ms)</div>
+        <input type="number"
+               class="sdpi-item-value sdProperty"
+               id="blinkRateMs"
+               min="100"
+               max="1000"
+               step="10"
+               oninput="setSettings()"
+               onchange="setSettings()">
+      </div>
+
+      <div class="sdpi-item">
+        <div class="sdpi-item-label">Tap again to cancel</div>
+        <div class="sdpi-item-value toggle-wrap">
+          <label for="holdToCancel">
+            <input type="checkbox"
+                   class="sdpi-item-value sdProperty"
+                   id="holdToCancel"
+                   oninput="setSettings()"
+                   onchange="setSettings()">
+            Enabled
+          </label>
+        </div>
+      </div>
+
+      <div class="sdpi-item" id="dvClickSound">
+        <div class="sdpi-item-label">Sound</div>
+        <div class="sdpi-item-group file">
+          <input class="sdpi-item-value sdProperty sdFile"
+                 type="file"
+                 id="clickSound"
+                 accept=".wav"
+                 oninput="setSettings(); updateClearSoundVisibility();"
+                 onchange="setSettings(); updateClearSoundVisibility();">
+          <label class="sdpi-file-info" id="clickSoundFilename">No file...</label>
+          <label class="sdpi-file-label" for="clickSound">Choose file...</label>
+        </div>
+      </div>
+
+      <div class="sdpi-item hidden" id="dvClearSound">
+        <div class="sdpi-item-label"></div>
+        <button class="sdpi-item-value" onclick="clearClickSound()">Clear sound</button>
+      </div>
+    </div>
+
+    <div class="footer-note">
       Pending blinks by toggling Stream Deck State 0 ↔ State 1. Make sure your State 0 and State 1 images are different.
     </div>
   </div>
