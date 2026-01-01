@@ -16,89 +16,74 @@
     <script src="../jquery-3.3.1.min.js"></script>
     <script src="../jquery.highlight-within-textarea.js"></script>
 
-    <style>
-        .no-results {
-            padding: 10px;
-            color: #999;
-            font-style: italic;
-            text-align: center;
-        }
-        .hidden {
-            display: none !important;
-        }
-        .note {
-            font-size: 11px;
-            color: #999;
-            margin-top: 4px;
-            line-height: 1.4;
-        }
-    .search-row {
-        display: flex;
-        gap: 6px;
-        align-items: stretch;
-        min-height: 23px;
-    }
-    .search-row input.sdpi-item-value {
-        flex: 1;
-        height: 100%;
-        min-height: 23px;
-        box-sizing: border-box;
-    }
-    </style>
 </head>
 
-<body>
-<div class="sdpi-wrapper">
+<body class="pi-theme">
+<div class="sdpi-wrapper pi-shell">
 
-    <!-- SEARCH -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Search</div>
-        <div class="sdpi-item-value search-row">
-            <input type="text"
-                   class="sdpi-item-value"
-                   id="functionSearch"
-                   placeholder="Type to search functions..."
-                   autocomplete="off">
+    <div class="pi-header">
+        <div>
+            <p class="pi-eyebrow">Star Citizen</p>
+            <h1 class="pi-title">Hold Macro</h1>
+            <p class="pi-subtitle">Tap once to press, tap again to release — or hold until you let go.</p>
         </div>
-        <div class="sdpi-item-value"
-             id="searchResults"
-             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
+        <div class="pi-badge">Property Inspector</div>
     </div>
 
-    <!-- FUNCTION -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Function</div>
-        <select class="sdpi-item-value select sdProperty"
-                id="function"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions...</option>
-        </select>
-    </div>
+    <div class="pi-grid">
+        <div class="pi-card">
+            <div class="pi-card-header">
+                <h2 class="pi-card-title">Function</h2>
+                <p class="pi-card-subtitle">Search and assign the macro function.</p>
+            </div>
+            <div class="pi-card-body">
+                <div class="pi-stack">
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Search</div>
+                        <div class="sdpi-item-value search-row">
+                            <input type="text"
+                                   class="sdpi-item-value"
+                                   id="functionSearch"
+                                   placeholder="Type to search functions..."
+                                   autocomplete="off">
+                        </div>
+                        <div class="sdpi-item-value pi-helper"
+                             id="searchResults"></div>
+                    </div>
 
-    <!-- HOLD UNTIL RELEASE -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Hold Mode</div>
-        <div class="sdpi-item-value">
-            <label for="holdUntilRelease" class="sdpi-item-label" style="width: auto;">
-                <input type="checkbox"
-                       class="sdProperty"
-                       id="holdUntilRelease"
-                       oninput="setSettings(); toggleDuration();"
-                       onchange="setSettings(); toggleDuration();">
-                Hold until release
-            </label>
-        </div>
-    </div>
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Function</div>
+                        <select class="sdpi-item-value select sdProperty"
+                                id="function"
+                                oninput="setSettings()"
+                                onchange="setSettings()">
+                            <option value="">Loading Star Citizen functions...</option>
+                        </select>
+                    </div>
 
-    <div class="sdpi-item no-results hidden" id="noResults">
-        No functions match your search.
-    </div>
+                    <div class="sdpi-item">
+                        <div class="sdpi-item-label">Hold Mode</div>
+                        <div class="sdpi-item-value">
+                            <label for="holdUntilRelease" class="sdpi-item-label" style="width: auto;">
+                                <input type="checkbox"
+                                       class="sdProperty"
+                                       id="holdUntilRelease"
+                                       oninput="setSettings(); toggleDuration();"
+                                       onchange="setSettings(); toggleDuration();">
+                                Hold until release
+                            </label>
+                        </div>
+                    </div>
 
-    <div class="sdpi-item">
-        <div class="sdpi-item-label"></div>
-        <div class="sdpi-item-value note">
-            Images are managed by Stream Deck (State 0 = idle, State 1 = held). Supports keyboard and mouse tokens.
+                    <div class="sdpi-item no-results hidden" id="noResults">
+                        No functions match your search.
+                    </div>
+                </div>
+
+                <div class="pi-note-block">
+                    Images are managed by Stream Deck (State 0 = idle, State 1 = held). Supports keyboard and mouse tokens.
+                </div>
+            </div>
         </div>
     </div>
 
