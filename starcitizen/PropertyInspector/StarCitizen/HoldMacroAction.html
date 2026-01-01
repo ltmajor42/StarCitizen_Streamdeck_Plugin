@@ -108,6 +108,8 @@
     let allOptions = [];
     let functionsLoaded = false;
     let savedFunctionValue = null;
+    let functionsRequested = false;
+    let requestRetryTimer = null;
 
     /* Preserve selected function if payload arrives before functions list */
     const originalLoadConfiguration = loadConfiguration;
@@ -115,6 +117,7 @@
         if (payload && payload.function !== undefined) {
             savedFunctionValue = payload.function;
         }
+
         originalLoadConfiguration(payload);
 
         if (functionsLoaded && savedFunctionValue) {
@@ -122,6 +125,25 @@
             if (sel) sel.value = savedFunctionValue;
         }
     };
+
+    function requestFunctions() {
+        if (functionsLoaded || functionsRequested) {
+            return;
+        }
+
+        if (websocket && websocket.readyState === 1) {
+            functionsRequested = true;
+            sendValueToPlugin(true, 'requestFunctions');
+        }
+    }
+
+    function scheduleRequestRetry() {
+        clearTimeout(requestRetryTimer);
+        requestRetryTimer = setTimeout(() => {
+            functionsRequested = false;
+            requestFunctions();
+        }, 750);
+    }
 
     function populateDropdown(functions) {
         const select = document.getElementById('function');
@@ -196,6 +218,8 @@
     document.addEventListener('websocketCreate', function () {
         const originalOnMessage = websocket.onmessage;
 
+        requestFunctions();
+
         websocket.onmessage = function (evt) {
             const jsonObj = JSON.parse(evt.data);
 
@@ -203,7 +227,12 @@
                 && jsonObj.payload
                 && jsonObj.payload.functionsLoaded) {
 
+                clearTimeout(requestRetryTimer);
+                functionsLoaded = true;
                 populateDropdown(jsonObj.payload.functions);
+            }
+            else {
+                scheduleRequestRetry();
             }
 
             if (originalOnMessage) {
@@ -224,6 +253,8 @@
                 document.getElementById('functionSearch').value = '';
                 document.getElementById('searchResults').textContent = '';
             });
+
+        scheduleRequestRetry();
     });
 </script>
 

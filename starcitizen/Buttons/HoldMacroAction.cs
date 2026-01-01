@@ -55,7 +55,8 @@ namespace starcitizen.Buttons
 
             if (payload.Settings != null && payload.Settings.Count > 0)
             {
-                Tools.AutoPopulateSettings(settings, payload.Settings);
+                var sanitizedSettings = SanitizeSettings(payload.Settings);
+                Tools.AutoPopulateSettings(settings, sanitizedSettings);
                 ClampHoldDuration();
             }
             else
@@ -143,7 +144,8 @@ namespace starcitizen.Buttons
         {
             if (payload.Settings != null)
             {
-                Tools.AutoPopulateSettings(settings, payload.Settings);
+                var sanitizedSettings = SanitizeSettings(payload.Settings);
+                Tools.AutoPopulateSettings(settings, sanitizedSettings);
                 ClampHoldDuration();
             }
         }
@@ -342,6 +344,54 @@ namespace starcitizen.Buttons
             }
         }
 
+        private JObject SanitizeSettings(JObject rawSettings)
+        {
+            if (rawSettings == null)
+            {
+                return JObject.FromObject(settings ?? PluginSettings.CreateDefaultSettings());
+            }
+
+            var sanitized = (JObject)rawSettings.DeepClone();
+
+            try
+            {
+                if (sanitized.TryGetValue("holdDurationMs", out var durationToken))
+                {
+                    if (!int.TryParse(durationToken?.ToString(), out var parsedDuration))
+                    {
+                        parsedDuration = 0;
+                    }
+
+                    sanitized["holdDurationMs"] = parsedDuration;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.LogMessage(TracingLevel.WARN, $"HoldMacroAction: failed to sanitize holdDurationMs: {ex.Message}");
+                sanitized["holdDurationMs"] = 0;
+            }
+
+            try
+            {
+                if (sanitized.TryGetValue("holdUntilRelease", out var holdToken))
+                {
+                    if (!bool.TryParse(holdToken?.ToString(), out var parsedBool))
+                    {
+                        parsedBool = true;
+                    }
+
+                    sanitized["holdUntilRelease"] = parsedBool;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Instance.LogMessage(TracingLevel.WARN, $"HoldMacroAction: failed to sanitize holdUntilRelease: {ex.Message}");
+                sanitized["holdUntilRelease"] = true;
+            }
+
+            return sanitized;
+        }
+
         private void Connection_OnPropertyInspectorDidAppear(object sender, EventArgs e)
         {
             UpdatePropertyInspector();
@@ -353,7 +403,8 @@ namespace starcitizen.Buttons
             {
                 var payload = e.ExtractPayload();
 
-                if (payload?["property_inspector"]?.ToString() == "propertyInspectorConnected")
+                if (payload?["property_inspector"]?.ToString() == "propertyInspectorConnected" ||
+                    payload?["requestFunctions"]?.Value<bool>() == true)
                 {
                     UpdatePropertyInspector();
                 }
