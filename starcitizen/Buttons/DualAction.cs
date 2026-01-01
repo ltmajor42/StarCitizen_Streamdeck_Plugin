@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.Versioning;
 using BarRaider.SdTools;
 using BarRaider.SdTools.Events;
 using BarRaider.SdTools.Wrappers;
@@ -10,6 +11,7 @@ using starcitizen.Core;
 namespace starcitizen.Buttons
 {
     [PluginActionId("com.ltmajor42.starcitizen.dualaction")]
+    [SupportedOSPlatform("windows")]
     public class DualAction : StarCitizenKeypadBase
     {
         protected class PluginSettings

@@ -4,12 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
+using System.Runtime.Versioning;
 using BarRaider.SdTools;
 using starcitizen;
 using TheUser = p4ktest.SC.TheUser;
 
 namespace starcitizen.SC
 {
+    [SupportedOSPlatform("windows")]
     public class DProfileReader
     {
         public class ActivationMode

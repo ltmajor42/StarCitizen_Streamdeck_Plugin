@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
 namespace SCJMapper_V2.p4kFile
 {
@@ -11,6 +12,7 @@ namespace SCJMapper_V2.p4kFile
   /// Represents a Directory entry in the p4k file
   /// The file seems to be based on a Zip64 file structure
   /// </summary>
+  [SupportedOSPlatform("windows")]
   internal class p4kDirectoryEntry
   {
 

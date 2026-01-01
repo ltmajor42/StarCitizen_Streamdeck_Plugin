@@ -4,10 +4,12 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Runtime.Versioning;
 using WindowsInput.Native;
 
 namespace starcitizen
 {
+    [SupportedOSPlatform("windows")]
     internal static class CommandTools
     {
         internal const char MACRO_START_CHAR = '{';

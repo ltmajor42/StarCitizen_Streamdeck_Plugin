@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Runtime.Versioning;
 using WindowsInput.Native;
 using BarRaider.SdTools;
 using BarRaider.SdTools.Events;
@@ -18,6 +19,7 @@ namespace starcitizen.Buttons
 {
 
     [PluginActionId("com.ltmajor42.starcitizen.static")]
+    [SupportedOSPlatform("windows")]
     public class ActionKey : StarCitizenKeypadBase
     {
         protected class PluginSettings
