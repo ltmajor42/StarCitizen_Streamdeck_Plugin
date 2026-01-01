@@ -149,6 +149,7 @@ namespace starcitizen.Buttons
         public override void Dispose()
         {
             CancelAutoRelease(false);
+            CancelRepeat();
             Connection.OnPropertyInspectorDidAppear -= Connection_OnPropertyInspectorDidAppear;
             Connection.OnSendToPlugin -= Connection_OnSendToPlugin;
             bindingService.KeyBindingsLoaded -= OnKeyBindingsLoaded;
