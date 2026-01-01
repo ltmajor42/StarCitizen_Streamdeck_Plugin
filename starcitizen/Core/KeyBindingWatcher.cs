@@ -10,21 +10,29 @@ namespace starcitizen.Core
         public event EventHandler KeyBindingUpdated;
 
         private readonly Timer debounceTimer;
+        private readonly Timer pollTimer;
         private readonly object debounceLock = new object();
+        private readonly string targetFilePath;
+        private DateTime? lastWriteTimeUtc;
         private const int DebounceDelayMs = 200;
+        private const int PollIntervalMs = 1500;
 
         public KeyBindingWatcher(string path, string fileName)
         {
             Filter = fileName;
             NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.CreationTime | NotifyFilters.Size;
             Path = path;
+            targetFilePath = System.IO.Path.Combine(path, fileName);
+            lastWriteTimeUtc = GetFileWriteTimeUtc();
             debounceTimer = new Timer(_ => RaiseUpdate(), null, Timeout.Infinite, Timeout.Infinite);
+            pollTimer = new Timer(_ => PollForChanges(), null, Timeout.Infinite, Timeout.Infinite);
         }
 
         public virtual void StartWatching()
         {
             if (EnableRaisingEvents)
             {
+                pollTimer.Change(PollIntervalMs, PollIntervalMs);
                 return;
             }
 
@@ -36,6 +44,7 @@ namespace starcitizen.Core
             Renamed += UpdateStatus;
 
             EnableRaisingEvents = true;
+            pollTimer.Change(PollIntervalMs, PollIntervalMs);
         }
 
         public virtual void StopWatching()
@@ -46,6 +55,8 @@ namespace starcitizen.Core
                 {
                     debounceTimer.Change(Timeout.Infinite, Timeout.Infinite);
                 }
+
+                pollTimer.Change(Timeout.Infinite, Timeout.Infinite);
 
                 if (EnableRaisingEvents)
                 {
@@ -64,11 +75,13 @@ namespace starcitizen.Core
 
         protected void UpdateStatus(object sender, FileSystemEventArgs e)
         {
+            TouchLastWriteTimestamp();
             ScheduleUpdate();
         }
 
         protected void UpdateStatus(object sender, RenamedEventArgs e)
         {
+            TouchLastWriteTimestamp();
             ScheduleUpdate();
         }
 
@@ -85,11 +98,62 @@ namespace starcitizen.Core
             KeyBindingUpdated?.Invoke(this, EventArgs.Empty);
         }
 
+        private void PollForChanges()
+        {
+            try
+            {
+                var currentWriteTime = GetFileWriteTimeUtc();
+
+                lock (debounceLock)
+                {
+                    if (currentWriteTime == lastWriteTimeUtc)
+                    {
+                        return;
+                    }
+
+                    lastWriteTimeUtc = currentWriteTime;
+                    debounceTimer.Change(DebounceDelayMs, Timeout.Infinite);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Instance.LogMessage(TracingLevel.WARN, $"Key binding poll failed: {e.Message}");
+            }
+        }
+
+        private void TouchLastWriteTimestamp()
+        {
+            try
+            {
+                lock (debounceLock)
+                {
+                    lastWriteTimeUtc = GetFileWriteTimeUtc();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Instance.LogMessage(TracingLevel.WARN, $"Could not update key binding timestamp: {e.Message}");
+            }
+        }
+
+        private DateTime? GetFileWriteTimeUtc()
+        {
+            var info = new FileInfo(targetFilePath);
+            if (!info.Exists)
+            {
+                return null;
+            }
+
+            info.Refresh();
+            return info.LastWriteTimeUtc;
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
                 debounceTimer.Dispose();
+                pollTimer.Dispose();
             }
 
             base.Dispose(disposing);
