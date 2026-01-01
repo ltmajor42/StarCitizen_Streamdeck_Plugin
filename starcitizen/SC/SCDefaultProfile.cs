@@ -49,21 +49,25 @@ namespace SCJMapper_V2.SC
         /// </summary>
         public static string ActionMaps()
         {
-            var profilePath = SCPath.SCClientProfilePath;
-            if (string.IsNullOrWhiteSpace(profilePath))
+            return ActionMaps(out _);
+        }
+
+        public static string ActionMaps(out string resolvedPath)
+        {
+            resolvedPath = SCPath.ResolveActionMapsPath();
+            if (string.IsNullOrWhiteSpace(resolvedPath))
             {
-                Logger.Instance.LogMessage(TracingLevel.WARN, "SCClientProfilePath is empty/null.");
+                Logger.Instance.LogMessage(TracingLevel.WARN, "Could not resolve actionmaps.xml path.");
                 return "";
             }
 
-            string mFile = Path.Combine(profilePath, "actionmaps.xml");
-            Logger.Instance.LogMessage(TracingLevel.INFO, mFile);
+            Logger.Instance.LogMessage(TracingLevel.INFO, resolvedPath);
 
-            if (File.Exists(mFile))
+            if (File.Exists(resolvedPath))
             {
                 try
                 {
-                    using (var stream = new FileStream(mFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (var stream = new FileStream(resolvedPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     using (var reader = new StreamReader(stream))
                     {
                         return reader.ReadToEnd();

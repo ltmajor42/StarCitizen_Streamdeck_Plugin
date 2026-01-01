@@ -132,10 +132,11 @@ namespace starcitizen.Core
         {
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
-                var actionmaps = SCDefaultProfile.ActionMaps();
+                var actionmaps = SCDefaultProfile.ActionMaps(out var actionmapsPath);
                 if (string.IsNullOrEmpty(actionmaps))
                 {
                     // No actionmaps.xml (or empty) => nothing to apply
+                    PluginLog.Warn($"actionmaps.xml missing or empty at '{actionmapsPath ?? "(unknown)"}'. Keeping previous bindings.");
                     return true;
                 }
 
