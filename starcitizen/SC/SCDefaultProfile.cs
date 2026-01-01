@@ -64,11 +64,26 @@ namespace SCJMapper_V2.SC
 
             Logger.Instance.LogMessage(TracingLevel.INFO, resolvedPath);
 
-            if (File.Exists(resolvedPath))
+            var path = resolvedPath;
+            const int maxAttempts = 5;
+            const int stabilizationDelayMs = 120;
+
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
                 try
                 {
-                    using (var stream = new FileStream(resolvedPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    if (!File.Exists(path))
+                    {
+                        Logger.Instance.LogMessage(TracingLevel.WARN, $"actionmaps.xml missing at {path}");
+                        return "";
+                    }
+
+                    var firstInfo = new FileInfo(path);
+                    var firstWrite = firstInfo.LastWriteTimeUtc;
+                    var firstLength = firstInfo.Length;
+
+                    string content;
+                    using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     using (var reader = new StreamReader(stream))
                     {
                         content = reader.ReadToEnd();
@@ -76,7 +91,7 @@ namespace SCJMapper_V2.SC
 
                     Thread.Sleep(stabilizationDelayMs);
 
-                    var secondInfo = new FileInfo(path);
+                    var secondInfo = new FileInfo(resolvedPath);
                     var secondWrite = secondInfo.LastWriteTimeUtc;
                     var secondLength = secondInfo.Length;
 
@@ -92,6 +107,8 @@ namespace SCJMapper_V2.SC
                 {
                     Logger.Instance.LogMessage(TracingLevel.DEBUG, $"actionmaps.xml read failed (attempt {attempt}/{maxAttempts}): {ex.Message}");
                 }
+
+                Thread.Sleep(stabilizationDelayMs);
             }
 
             Logger.Instance.LogMessage(TracingLevel.WARN, $"actionmaps.xml never stabilized after {maxAttempts} attempts.");
