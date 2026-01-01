@@ -857,127 +857,119 @@ input[type="radio"]:checked + label span {
 
 /* Modernized layout for the property inspector */
 .pi-theme {
-  background: radial-gradient(circle at 22% 20%, #3b4155 0, #2a2f3c 35%, #1d212a 75%);
-  color: #e4e8f3;
+  background: var(--sdpi-bgcolor);
+  color: var(--sdpi-color);
 }
 
 .pi-shell {
-  max-width: 760px;
+  max-width: 460px;
   margin: 0 auto;
-  padding: 12px 14px 18px;
+  padding: 12px 12px 10px;
 }
 
 .pi-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, rgba(72, 93, 130, 0.28), rgba(27, 32, 42, 0.85));
-  border: 1px solid #394054;
-  border-radius: 14px;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
-  margin-bottom: 12px;
+  display: none;
 }
 
 .pi-title {
   margin: 0;
-  font-size: 16px;
-  color: #f1f4fb;
+  font-size: 12px;
+  color: var(--sdpi-color);
 }
 
 .pi-subtitle {
   margin: 4px 0 0;
-  color: #bcc4d5;
-  font-weight: 400;
+  color: #bfbfbf;
+  font-weight: 500;
 }
 
 .pi-eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-size: 10px;
-  color: #93a2c1;
+  color: #bfbfbf;
   margin: 0 0 2px;
 }
 
 .pi-badge {
-  padding: 8px 12px;
-  border: 1px solid #4a5266;
-  border-radius: 999px;
-  background: #252a35;
-  color: #d8deee;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
 }
 
 .pi-grid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .pi-card {
-  background: #1f242f;
-  border: 1px solid #2f3544;
-  border-radius: 14px;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.32);
+  background: #2d2d2d;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  box-shadow: none;
 }
 
 .pi-card-header {
-  padding: 12px 16px 0;
+  padding: 10px 10px 0;
 }
 
 .pi-card-title {
-  margin: 2px 0;
-  color: #f3f5fb;
-  font-size: 14px;
+  margin: 2px 0 0;
+  color: var(--sdpi-color);
+  font-size: 12px;
 }
 
 .pi-card-subtitle {
-  margin: 4px 0 0;
-  color: #aab2c6;
-  font-weight: 400;
+  margin: 2px 0 0;
+  color: #bfbfbf;
+  font-weight: 500;
+  font-size: 10px;
 }
 
 .pi-card-body {
-  padding: 8px 12px 14px;
+  padding: 8px 10px 12px;
 }
 
 .pi-stack {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 6px 0 2px;
+  gap: 6px;
+  padding: 0;
 }
 
 .pi-stack .sdpi-item {
   margin-top: 0;
-  padding: 8px 10px;
-  background: #252b37;
-  border: 1px solid #323a4b;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  padding: 6px 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .pi-stack .sdpi-item-label {
-  color: #e5e9f4;
+  color: var(--sdpi-color);
   font-weight: 600;
 }
 
 .pi-stack .sdpi-item.no-results {
   justify-content: center;
-  background: #1f2430;
-  border-style: dashed;
+  background: transparent;
+  border: 1px dashed var(--sdpi-bordercolor);
 }
 
 .pi-note-block {
-  margin: 4px 0 0;
-  padding: 10px 12px;
-  background: #1c202a;
-  border: 1px solid #32384a;
-  border-radius: 12px;
-  color: #c7cfe0;
+  margin: 6px 0 0;
+  padding: 10px 0 0;
+  background: transparent;
+  border-top: 1px solid var(--sdpi-bordercolor);
+  border-radius: 0;
+  color: #bfbfbf;
 }
 
 input[type="range"] {
