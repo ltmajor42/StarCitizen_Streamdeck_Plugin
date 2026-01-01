@@ -87,6 +87,26 @@ namespace SCJMapper_V2.SC
             return keyboard;
         }
 
+        private static string NormalizeMouseBinding(string mouse)
+        {
+            if (string.IsNullOrWhiteSpace(mouse))
+            {
+                return null;
+            }
+
+            return MouseTokenHelper.TryNormalize(mouse, out var normalized) ? normalized : mouse;
+        }
+
+        private static string MergePrimaryBinding(string keyboard, string mouse)
+        {
+            if (!string.IsNullOrWhiteSpace(keyboard))
+            {
+                return keyboard;
+            }
+
+            return mouse;
+        }
+
         private static ActivationMode CloneActivationMode(ActivationMode source)
         {
             if (source == null)
@@ -191,7 +211,7 @@ namespace SCJMapper_V2.SC
             uiDescription = SCUiText.Instance.Text(uiDescription, uiDescription ?? "");
 
             string keyboard = NormalizeKeyboardBinding((string)action.Attribute("keyboard"));
-            string mouse = (string)action.Attribute("mouse");
+            string mouse = NormalizeMouseBinding((string)action.Attribute("mouse"));
             string joystick = (string)action.Attribute("joystick");
             string gamepad = (string)action.Attribute("gamepad");
 
@@ -207,7 +227,7 @@ namespace SCJMapper_V2.SC
                 UILabel = uiLabel,
                 UIDescription = uiDescription,
                 ActivationMode = currentActivationMode,
-                Keyboard = keyboard,
+                Keyboard = MergePrimaryBinding(keyboard, mouse),
 
                 Mouse = mouse,
                 Joystick = joystick,
@@ -269,7 +289,12 @@ namespace SCJMapper_V2.SC
 
                 if (!string.IsNullOrEmpty(input))
                 {
-                    currentAction.Mouse = input;
+                    var normalized = NormalizeMouseBinding(input);
+                    currentAction.Mouse = normalized;
+                    if (string.IsNullOrWhiteSpace(currentAction.Keyboard))
+                    {
+                        currentAction.Keyboard = normalized;
+                    }
                     currentAction.MouseOverRule = true;
                 }
             }
@@ -419,7 +444,12 @@ namespace SCJMapper_V2.SC
 
                                 if (!string.IsNullOrEmpty(input))
                                 {
-                                    map.Actions[actionName].Mouse = input;
+                                    var normalized = NormalizeMouseBinding(input);
+                                    map.Actions[actionName].Mouse = normalized;
+                                    if (string.IsNullOrWhiteSpace(map.Actions[actionName].Keyboard))
+                                    {
+                                        map.Actions[actionName].Keyboard = normalized;
+                                    }
                                     map.Actions[actionName].MouseOverRule = true;
                                 }
                                 else if (SCPath.TreatBlankRebindAsUnbound)
