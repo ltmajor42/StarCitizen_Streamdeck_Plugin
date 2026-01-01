@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 using NAudio.Wave;
 
 namespace starcitizen
 {
+    [SupportedOSPlatform("windows")]
     class CachedSound
     {
         public float[] AudioData { get; private set; }
