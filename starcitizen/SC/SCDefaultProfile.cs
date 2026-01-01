@@ -64,15 +64,33 @@ namespace SCJMapper_V2.SC
 
             Logger.Instance.LogMessage(TracingLevel.INFO, resolvedPath);
 
-            if (File.Exists(resolvedPath))
+            var path = resolvedPath;
+            const int maxAttempts = 10;
+            const int stabilizationDelayMs = 180;
+            string lastReadContent = null;
+
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
                 try
                 {
-                    using (var stream = new FileStream(resolvedPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    if (!File.Exists(path))
+                    {
+                        Logger.Instance.LogMessage(TracingLevel.DEBUG, $"actionmaps.xml not found (attempt {attempt}/{maxAttempts}) at {path}");
+                        Thread.Sleep(stabilizationDelayMs);
+                        continue;
+                    }
+
+                    var firstInfo = new FileInfo(path);
+                    var firstWrite = firstInfo.LastWriteTimeUtc;
+                    var firstLength = firstInfo.Length;
+
+                    string content;
+                    using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     using (var reader = new StreamReader(stream))
                     {
                         content = reader.ReadToEnd();
                     }
+                    lastReadContent = content;
 
                     Thread.Sleep(stabilizationDelayMs);
 
@@ -92,10 +110,18 @@ namespace SCJMapper_V2.SC
                 {
                     Logger.Instance.LogMessage(TracingLevel.DEBUG, $"actionmaps.xml read failed (attempt {attempt}/{maxAttempts}): {ex.Message}");
                 }
+
+                Thread.Sleep(stabilizationDelayMs);
             }
 
             Logger.Instance.LogMessage(TracingLevel.WARN, $"actionmaps.xml never stabilized after {maxAttempts} attempts.");
-            return null;
+            if (lastReadContent != null)
+            {
+                Logger.Instance.LogMessage(TracingLevel.WARN, "Returning last actionmaps.xml read even though file was still changing.");
+                return lastReadContent;
+            }
+
+            return "";
         }
     }
 }
