@@ -59,7 +59,6 @@ namespace SCJMapper_V2.SC
             string mFile = Path.Combine(profilePath, "actionmaps.xml");
             Logger.Instance.LogMessage(TracingLevel.INFO, mFile);
 
-            // ✅ FIX: The old code checked "!File.Exists" (inverted) and then tried to open the file.
             if (File.Exists(mFile))
             {
                 try

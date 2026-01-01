@@ -88,23 +88,30 @@ namespace starcitizen.Core
             try
             {
                 PluginLog.Info("Loading Star Citizen key bindings...");
+
                 var profile = SCDefaultProfile.DefaultProfile();
-                var actionmaps = SCDefaultProfile.ActionMaps();
-
-                var reader = new DProfileReader();
-                reader.fromXML(profile);
-
-                if (!string.IsNullOrEmpty(actionmaps))
+                if (string.IsNullOrEmpty(profile))
                 {
-                    reader.fromActionProfile(actionmaps);
+                    PluginLog.Warn("Default profile is empty. Keeping previous bindings.");
+                    return;
                 }
 
-                reader.Actions();
-                reader.CreateCsv(enableCsvExport);
+                // Build a fresh reader first (do NOT overwrite current Reader unless successful)
+                var newReader = new DProfileReader();
+                newReader.fromXML(profile);
 
-                Reader = reader;
+                // Apply actionmaps.xml with retry (handles SC writing/flush timing)
+                if (!TryApplyActionMapsWithRetry(newReader))
+                {
+                    PluginLog.Warn("Failed to apply actionmaps.xml after retries. Keeping previous bindings.");
+                    return;
+                }
 
-                MonitorProfileDirectory();
+                newReader.Actions();
+                newReader.CreateCsv(enableCsvExport);
+
+                // Success => swap
+                Reader = newReader;
 
                 Interlocked.Increment(ref bindingsVersion);
                 KeyBindingsLoaded?.Invoke(this, EventArgs.Empty);
@@ -112,8 +119,40 @@ namespace starcitizen.Core
             }
             catch (Exception ex)
             {
-                PluginLog.Error($"Error loading key bindings: {ex.Message}");
+                PluginLog.Error($"Error loading key bindings: {ex}");
             }
+            finally
+            {
+                // Always restart watcher so refresh keeps working
+                MonitorProfileDirectory();
+            }
+        }
+
+        private static bool TryApplyActionMapsWithRetry(DProfileReader reader, int maxAttempts = 6, int baseDelayMs = 120)
+        {
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                var actionmaps = SCDefaultProfile.ActionMaps();
+                if (string.IsNullOrEmpty(actionmaps))
+                {
+                    // No actionmaps.xml (or empty) => nothing to apply
+                    return true;
+                }
+
+                try
+                {
+                    reader.fromActionProfile(actionmaps);
+                    return true; // success
+                }
+                catch (Exception ex)
+                {
+                    // Common when SC is still flushing the file (partial/incomplete XML)
+                    PluginLog.Warn($"actionmaps.xml parse failed (attempt {attempt}/{maxAttempts}). Retrying... {ex.Message}");
+                    Thread.Sleep(baseDelayMs * attempt); // small backoff
+                }
+            }
+
+            return false;
         }
 
         private void MonitorProfileDirectory()
