@@ -175,17 +175,19 @@ namespace SCJMapper_V2.p4kFile
       byte[] decompFile = null;
       if ( m_item.CompressionMethod == 0x64 ) {
         // this indicates p4k ZStd compression
-        using ( var decompressor = new Decompressor( ) ) {
-          try {
-            decompFile = decompressor.Unwrap( fileBytes );
+        try {
+          using ( var compressedStream = new MemoryStream( fileBytes ) )
+          using ( var decompressor = new InputStream( compressedStream, true ) )
+          using ( var output = new MemoryStream( ) ) {
+            decompressor.CopyTo( output );
+            decompFile = output.ToArray( );
             return decompFile;
           }
-          catch ( ZstdException e ) {
-            Console.WriteLine( "ZStd - Cannot decode file: " + m_filename );
-            Console.WriteLine( "Error: " + e.Message );
-            //Console.ReadLine();
-            return  new byte[] { };
-          }
+        }
+        catch ( ZStdException e ) {
+          Console.WriteLine( "ZStd - Cannot decode file: " + m_filename );
+          Console.WriteLine( "Error: " + e.Message );
+          return  new byte[] { };
         }
       }
       else {
