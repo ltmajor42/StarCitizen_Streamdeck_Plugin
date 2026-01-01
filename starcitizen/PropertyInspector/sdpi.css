@@ -271,6 +271,13 @@ option {
   padding: 0px 4px 0px 4px;
 }
 
+.sdpi-item select.sdpi-item-value,
+.sdpi-item input.sdpi-item-value:not([type="radio"]):not([type="checkbox"]):not([type="file"]),
+.sdpi-item textarea.sdpi-item-value {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 
 .sdpi-item-group {
   padding: 0 !important;
