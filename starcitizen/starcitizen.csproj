@@ -10,13 +10,11 @@
     <Nullable>disable</Nullable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <OutputPath>bin\$(Configuration)\com.ltmajor42.starcitizen.sdPlugin\</OutputPath>
-    <NoWarn>IDE0130</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ICSharpCode.SharpZipLib\ICSharpCode.SharpZipLib.csproj" />
     <ProjectReference Include="..\InputSimulatorPlus\WindowsInput\WindowsInput.csproj" />
-    <ProjectReference Include="..\Zstd.Net\Zstd.Net.csproj" />
   </ItemGroup>
 
   <ItemGroup>
