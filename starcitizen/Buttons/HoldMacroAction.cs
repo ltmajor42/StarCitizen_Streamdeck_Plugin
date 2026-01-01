@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using BarRaider.SdTools;
@@ -6,6 +7,7 @@ using BarRaider.SdTools.Events;
 using BarRaider.SdTools.Wrappers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using starcitizen;
 using starcitizen.Core;
 
 namespace starcitizen.Buttons
@@ -36,10 +38,13 @@ namespace starcitizen.Buttons
         }
 
         private const int MaxHoldDurationMs = 60000;
+        private const int RepeatInitialDelayMs = 250;
+        private const int RepeatIntervalMs = 45;
 
         private PluginSettings settings;
         private readonly KeyBindingService bindingService = KeyBindingService.Instance;
         private CancellationTokenSource autoReleaseToken;
+        private CancellationTokenSource repeatToken;
         private string activeKeyInfo;
         private bool isKeyDown;
 
@@ -97,6 +102,7 @@ namespace starcitizen.Buttons
             Logger.Instance.LogMessage(TracingLevel.INFO, $"HoldMacroAction pressed: sending DOWN for '{settings.Function}' (holdUntilRelease={settings.HoldUntilRelease}, duration={settings.HoldDurationMs}ms)");
 
             StreamDeckCommon.SendKeypressDown(keyInfo);
+            StartRepeat(keyInfo);
             _ = Connection.SetStateAsync(1);
 
             if (!settings.HoldUntilRelease)
@@ -117,6 +123,7 @@ namespace starcitizen.Buttons
             }
 
             CancelAutoRelease(true);
+            CancelRepeat();
 
             if (!string.IsNullOrWhiteSpace(activeKeyInfo))
             {
@@ -168,6 +175,7 @@ namespace starcitizen.Buttons
                     }
 
                     Logger.Instance.LogMessage(TracingLevel.INFO, $"HoldMacroAction: auto-releasing '{settings.Function}' after {duration}ms");
+                    CancelRepeat();
                     StreamDeckCommon.SendKeypressUp(keyInfo);
                 }
                 catch (TaskCanceledException)
@@ -212,6 +220,73 @@ namespace starcitizen.Buttons
         {
             autoReleaseToken?.Dispose();
             autoReleaseToken = null;
+        }
+
+        private void StartRepeat(string keyInfo)
+        {
+            if (string.IsNullOrWhiteSpace(keyInfo) || ContainsMouseToken(keyInfo))
+            {
+                return;
+            }
+
+            CancelRepeat();
+
+            repeatToken = new CancellationTokenSource();
+            var token = repeatToken.Token;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(RepeatInitialDelayMs, token);
+
+                    while (!token.IsCancellationRequested && isKeyDown)
+                    {
+                        StreamDeckCommon.SendKeypressDown(keyInfo);
+                        await Task.Delay(RepeatIntervalMs, token);
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    // Expected when the button is released or the repeat is cancelled.
+                }
+                catch (Exception ex)
+                {
+                    Logger.Instance.LogMessage(TracingLevel.ERROR, $"HoldMacroAction: repeat loop failed: {ex}");
+                }
+            }, token);
+        }
+
+        private void CancelRepeat()
+        {
+            if (repeatToken == null)
+            {
+                return;
+            }
+
+            if (!repeatToken.IsCancellationRequested)
+            {
+                repeatToken.Cancel();
+            }
+
+            repeatToken.Dispose();
+            repeatToken = null;
+        }
+
+        private bool ContainsMouseToken(string keyInfo)
+        {
+            var matches = Regex.Matches(keyInfo, CommandTools.REGEX_SUB_COMMAND);
+
+            foreach (Match match in matches)
+            {
+                var token = match.Value.Replace("{", string.Empty).Replace("}", string.Empty);
+                if (MouseTokenHelper.TryNormalize(token, out _))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void ClampHoldDuration()
