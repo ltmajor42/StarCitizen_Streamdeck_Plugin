@@ -9,7 +9,6 @@ using SCJMapper_V2.p4kFile;
 using System.IO.Compression;
 using BarRaider.SdTools;
 using System.Text.Json;
-using System.Runtime.Versioning;
 using p4ktest;
 using TheUser = p4ktest.SC.TheUser;
 
