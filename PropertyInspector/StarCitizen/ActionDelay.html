@@ -17,155 +17,338 @@
     <script src="../jquery.highlight-within-textarea.js"></script>
 
     <style>
-        .no-results {
-            padding: 10px;
-            color: #999;
-            font-style: italic;
-            text-align: center;
+        :root {
+            --accent: #00a3ff;
+            --accent-strong: #0077cc;
+            --card: #0e1724;
+            --card-border: #1c2940;
+            --text-muted: #9fb2cc;
+            --label: #c8d7f2;
+            --bg: linear-gradient(145deg, #05090f, #0b1220 35%, #0d1729);
         }
-        .hidden {
-            display: none !important;
+
+        body {
+            background: var(--bg);
+            color: #e6edf7;
+            font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
         }
-        .hint {
+
+        .pi-shell {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 12px;
+        }
+
+        .pi-header {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+        }
+
+        .pi-header h1 {
+            margin: 0;
+            font-size: 18px;
+            letter-spacing: 0.25px;
+        }
+
+        .pi-header .subtitle {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .pill-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pill {
+            background: rgba(0, 163, 255, 0.14);
+            border: 1px solid rgba(0, 163, 255, 0.35);
+            color: #9ad5ff;
+            border-radius: 999px;
+            padding: 4px 10px;
             font-size: 11px;
-            color: #999;
-            margin-top: 4px;
+            letter-spacing: 0.2px;
         }
+
+        .sdpi-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+        }
+
+        .card-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #d8e7ff;
+            letter-spacing: 0.2px;
+        }
+
+        .sdpi-item {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            padding: 8px;
+            margin: 0;
+            border: 1px solid transparent;
+        }
+
+        .sdpi-item:hover {
+            border-color: rgba(0, 163, 255, 0.3);
+        }
+
+        .sdpi-item-label {
+            color: var(--label);
+            font-weight: 600;
+        }
+
+        .sdpi-item-value select,
+        .sdpi-item-value input,
+        .sdpi-item-value button {
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: #0b1320;
+            color: #e6edf7;
+        }
+
+        .sdpi-item-value select:focus,
+        .sdpi-item-value input:focus,
+        .sdpi-item-value button:focus {
+            outline: 2px solid var(--accent);
+            border-color: var(--accent);
+        }
+
         .search-container {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px;
             width: 100%;
         }
-        .search-container input[type="text"] {
-            width: 100%;
+
+        .search-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
         }
+
+        .search-row input[type="text"] {
+            flex: 1;
+            min-width: 160px;
+            padding: 10px;
+        }
+
         .search-status {
             font-size: 11px;
-            color: #999;
+            color: var(--text-muted);
+        }
+
+        .hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .no-results {
+            padding: 10px;
+            color: #ffb3b3;
+            font-style: italic;
+            text-align: center;
+            border: 1px dashed rgba(255, 179, 179, 0.5);
+            border-radius: 8px;
+            background: rgba(255, 179, 179, 0.05);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .layout-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .accent-button {
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            border: none;
+            color: #fff;
+            padding: 10px 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 80ms ease, box-shadow 120ms ease;
+        }
+
+        .accent-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(0, 163, 255, 0.25);
+        }
+
+        .footer-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: center;
+            padding: 8px 4px 12px;
         }
     </style>
 </head>
 
 <body>
-<div class="sdpi-wrapper">
-
-    <!-- SEARCH -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Search</div>
-        <div class="sdpi-item-value search-container">
-            <input type="text"
-                   id="functionSearch"
-                   placeholder="Type to search functions..."
-                   autocomplete="off">
-            <div class="search-status" id="searchResults"></div>
+<div class="pi-shell">
+    <div class="pi-header">
+        <h1>Action Delay controls</h1>
+        <p class="subtitle">Search, schedule, and confirm Star Citizen inputs with a streamlined layout that scales cleanly.</p>
+        <div class="pill-group">
+            <span class="pill">Modernized Property Inspector</span>
+            <span class="pill">Optimized for .NET 8 builds</span>
         </div>
     </div>
 
-    <!-- FUNCTION -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Function</div>
-        <select class="sdpi-item-value select sdProperty"
-                id="function"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">
-                Loading Star Citizen functions...
-            </option>
-        </select>
-    </div>
+    <div class="sdpi-wrapper">
 
-    <!-- EXECUTION DELAY -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Execution Delay (ms)</div>
-        <input type="number"
-               class="sdpi-item-value sdProperty"
-               id="executionDelayMs"
-               min="100"
-               max="5000"
-               step="50"
-               oninput="setSettings()"
-               onchange="setSettings()">
-        <div class="sdpi-item-value hint">Delay between tap and action execution.</div>
-    </div>
+        <div class="card">
+            <div class="card-title">Find the right function fast</div>
+            <div class="sdpi-item">
+                <div class="sdpi-item-label">Search</div>
+                <div class="sdpi-item-value search-container">
+                    <div class="search-row">
+                        <input type="text"
+                               id="functionSearch"
+                               placeholder="Type to search functions..."
+                               autocomplete="off">
+                    </div>
+                    <div class="search-status" id="searchResults"></div>
+                </div>
+            </div>
 
-    <!-- CONFIRMATION DURATION -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Confirmation Duration (ms)</div>
-        <input type="number"
-               class="sdpi-item-value sdProperty"
-               id="confirmationDurationMs"
-               min="100"
-               max="3000"
-               step="50"
-               oninput="setSettings()"
-               onchange="setSettings()">
-        <div class="sdpi-item-value hint">How long State 1 image is shown after execution.</div>
-    </div>
+            <div class="sdpi-item">
+                <div class="sdpi-item-label">Function</div>
+                <select class="sdpi-item-value select sdProperty"
+                        id="function"
+                        oninput="setSettings()"
+                        onchange="setSettings()">
+                    <option value="">
+                        Loading Star Citizen functions...
+                    </option>
+                </select>
+            </div>
 
-    <!-- BLINK RATE -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Blink Rate (ms)</div>
-        <input type="number"
-               class="sdpi-item-value sdProperty"
-               id="blinkRateMs"
-               min="100"
-               max="1000"
-               step="50"
-               oninput="setSettings()"
-               onchange="setSettings()">
-        <div class="sdpi-item-value hint">Interval for blinking State 0 while arming.</div>
-    </div>
-
-    <!-- HOLD TO CANCEL -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Hold to Cancel</div>
-        <div class="sdpi-item-value">
-            <label for="holdToCancel" class="sdpi-item-label" style="width: auto;">
-                <input type="checkbox"
-                       class="sdProperty"
-                       id="holdToCancel"
-                       oninput="setSettings()"
-                       onchange="setSettings()">
-                Enabled
-            </label>
+            <div class="sdpi-item no-results hidden" id="noResults">
+                No functions match your search.
+            </div>
         </div>
-    </div>
 
-    <!-- SOUND -->
-    <div class="sdpi-item" id="dvClickSound">
-        <div class="sdpi-item-label">Sound</div>
-        <div class="sdpi-item-group file">
-            <input class="sdpi-item-value sdProperty sdFile"
-                   type="file"
-                   id="clickSound"
-                   accept=".wav"
-                   oninput="setSettings(); updateClearSoundVisibility();"
-                   onchange="setSettings(); updateClearSoundVisibility();">
-            <label class="sdpi-file-info"
-                   id="clickSoundFilename">No file...</label>
-            <label class="sdpi-file-label"
-                   for="clickSound">Choose file...</label>
+        <div class="card">
+            <div class="card-title">Timing and safety</div>
+            <div class="layout-grid">
+                <div class="sdpi-item">
+                    <div class="sdpi-item-label">Execution Delay (ms)</div>
+                    <input type="number"
+                           class="sdpi-item-value sdProperty"
+                           id="executionDelayMs"
+                           min="100"
+                           max="5000"
+                           step="50"
+                           oninput="setSettings()"
+                           onchange="setSettings()">
+                    <div class="sdpi-item-value hint">Delay between tap and action execution.</div>
+                </div>
+
+                <div class="sdpi-item">
+                    <div class="sdpi-item-label">Confirmation Duration (ms)</div>
+                    <input type="number"
+                           class="sdpi-item-value sdProperty"
+                           id="confirmationDurationMs"
+                           min="100"
+                           max="3000"
+                           step="50"
+                           oninput="setSettings()"
+                           onchange="setSettings()">
+                    <div class="sdpi-item-value hint">How long State 1 image is shown after execution.</div>
+                </div>
+
+                <div class="sdpi-item">
+                    <div class="sdpi-item-label">Blink Rate (ms)</div>
+                    <input type="number"
+                           class="sdpi-item-value sdProperty"
+                           id="blinkRateMs"
+                           min="100"
+                           max="1000"
+                           step="50"
+                           oninput="setSettings()"
+                           onchange="setSettings()">
+                    <div class="sdpi-item-value hint">Interval for blinking State 0 while arming.</div>
+                </div>
+
+                <div class="sdpi-item">
+                    <div class="sdpi-item-label">Hold to Cancel</div>
+                    <div class="sdpi-item-value toggle-row">
+                        <input type="checkbox"
+                               class="sdProperty"
+                               id="holdToCancel"
+                               oninput="setSettings()"
+                               onchange="setSettings()">
+                        <span class="hint">Press-and-hold to abort a pending action.</span>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- CLEAR SOUND -->
-    <div class="sdpi-item hidden" id="dvClearSound">
-        <div class="sdpi-item-label"></div>
-        <button class="sdpi-item-value" onclick="clearClickSound()">
-            Clear sound
-        </button>
-    </div>
+        <div class="card">
+            <div class="card-title">Audio feedback</div>
+            <div class="sdpi-item" id="dvClickSound">
+                <div class="sdpi-item-label">Sound</div>
+                <div class="sdpi-item-group file">
+                    <input class="sdpi-item-value sdProperty sdFile"
+                           type="file"
+                           id="clickSound"
+                           accept=".wav"
+                           oninput="setSettings(); updateClearSoundVisibility();"
+                           onchange="setSettings(); updateClearSoundVisibility();">
+                    <label class="sdpi-file-info"
+                           id="clickSoundFilename">No file...</label>
+                    <label class="sdpi-file-label"
+                           for="clickSound">Choose file...</label>
+                </div>
+            </div>
 
-    <div class="sdpi-item no-results hidden" id="noResults">
-        No functions match your search.
-    </div>
+            <div class="sdpi-item hidden" id="dvClearSound">
+                <div class="sdpi-item-label"></div>
+                <button class="sdpi-item-value accent-button" onclick="clearClickSound()">
+                    Clear sound
+                </button>
+            </div>
+        </div>
 
-    <div class="sdpi-item">
-        <div class="sdpi-item-label"></div>
-        <div class="sdpi-item-value hint">Tap to arm → Hold to abort → Wait to execute.</div>
-    </div>
+        <div class="card">
+            <div class="sdpi-item">
+                <div class="sdpi-item-label">Workflow hint</div>
+                <div class="sdpi-item-value hint">Tap to arm → Hold to abort → Wait to execute.</div>
+            </div>
+        </div>
 
+    </div>
+    <div class="footer-hint">Designed to stay legible and touch-friendly across Property Inspector sizes.</div>
 </div>
 
 <script>
