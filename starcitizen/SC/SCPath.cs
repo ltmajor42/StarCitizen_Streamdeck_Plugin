@@ -7,6 +7,7 @@ using System.Text;
 using System.IO;
 using BarRaider.SdTools;
 using Microsoft.Win32;
+using System.Runtime.Versioning;
 using p4ktest;
 using TheUser = p4ktest.SC.TheUser;
 
@@ -17,6 +18,7 @@ namespace starcitizen.SC
     /// <summary>
     /// Find the SC pathes and folders using multiple detection methods
     /// </summary>
+    [SupportedOSPlatform("windows")]
     class SCPath
     {
         private static readonly string[] KNOWN_REGISTRY_KEYS = new[]

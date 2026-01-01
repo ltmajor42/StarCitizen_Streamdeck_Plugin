@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 using ICSharpCode.SharpZipLib.Zip;
 
 
@@ -15,6 +16,7 @@ namespace SCJMapper_V2.p4kFile
   /// <summary>
   /// Limited Directory scanner for p4k files
   /// </summary>
+  [SupportedOSPlatform("windows")]
   public class p4kDirectory
   {
         //  4.3.6 Overall.ZIP file format:

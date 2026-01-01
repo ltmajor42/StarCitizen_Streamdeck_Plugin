@@ -4,12 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
 using SCJMapper_V2.CryXMLlib;
 using SCJMapper_V2.p4kFile;
 using System.IO.Compression;
 using BarRaider.SdTools;
+using System.Text.Json;
 using p4ktest;
 using TheUser = p4ktest.SC.TheUser;
 
@@ -24,6 +23,10 @@ namespace starcitizen.SC
         private SCFile m_pakFile; // no content, carries only the filedate
         private SCFile m_defProfile;
         private Dictionary<string, SCFile> m_langFiles;
+        private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
 
         // Singleton
         private static readonly Lazy<SCFiles> m_lazy = new Lazy<SCFiles>(() => new SCFiles());
@@ -263,11 +266,13 @@ namespace starcitizen.SC
                     {
                         using (var gZipStream = new GZipStream(stream, CompressionMode.Decompress))
                         {
-                            BinaryFormatter binaryFormatter = new BinaryFormatter();
-                            obj = (SCFile) binaryFormatter.Deserialize(gZipStream);
+                            obj = JsonSerializer.Deserialize<SCFile>(gZipStream, s_jsonOptions);
                         }
-
-                        stream.Close();
+                        if (obj == null)
+                        {
+                            Logger.Instance.LogMessage(TracingLevel.WARN, $"LoadPack - unable to deserialize {file}");
+                            continue;
+                        }
                         if (obj.Filetype == SCFile.FileType.PakFile)
                         {
                             m_pakFile = obj;
@@ -324,11 +329,8 @@ namespace starcitizen.SC
                 {
                     using (var gZipStream = new GZipStream(stream, CompressionMode.Compress))
                     {
-                        BinaryFormatter binaryFormatter = new BinaryFormatter();
-                        binaryFormatter.Serialize(gZipStream, m_pakFile);
+                        JsonSerializer.Serialize(gZipStream, m_pakFile, s_jsonOptions);
                     }
-
-                    stream.Close();
                 }
 
                 if (m_defProfile.Filetype == SCFile.FileType.DefProfile)
@@ -339,11 +341,8 @@ namespace starcitizen.SC
                     {
                         using (var gZipStream = new GZipStream(stream, CompressionMode.Compress))
                         {
-                            BinaryFormatter binaryFormatter = new BinaryFormatter();
-                            binaryFormatter.Serialize(gZipStream, m_defProfile);
+                            JsonSerializer.Serialize(gZipStream, m_defProfile, s_jsonOptions);
                         }
-
-                        stream.Close();
                     }
 
                     File.WriteAllText(Path.Combine(p4ktest.SC.TheUser.FileStoreDir, m_defProfile.Filename),
@@ -359,11 +358,8 @@ namespace starcitizen.SC
                         {
                             using (var gZipStream = new GZipStream(stream, CompressionMode.Compress))
                             {
-                                BinaryFormatter binaryFormatter = new BinaryFormatter();
-                                binaryFormatter.Serialize(gZipStream, kv.Value);
+                                JsonSerializer.Serialize(gZipStream, kv.Value, s_jsonOptions);
                             }
-
-                            stream.Close();
                         }
                     }
                 }

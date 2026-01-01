@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 using Zstd.Net;
 
 namespace SCJMapper_V2.p4kFile
@@ -13,6 +14,7 @@ namespace SCJMapper_V2.p4kFile
   /// Represents a Fileheader entry in the p4k File
   /// seems to be a Zip64 based file and therefore using those headers
   /// </summary>
+  [SupportedOSPlatform("windows")]
   internal class p4kFileHeader : IDisposable
   {
 
