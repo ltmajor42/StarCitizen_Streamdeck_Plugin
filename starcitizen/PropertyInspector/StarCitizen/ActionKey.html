@@ -40,6 +40,11 @@
                  style="font-size: 11px; color: #999; min-height: 14px;">
                 Loading Star Citizen functions...
             </div>
+            <input type="text"
+                   class="sdpi-item-value hidden"
+                   id="functionSearch"
+                   placeholder="Type to search functions..."
+                   autocomplete="off">
             <select class="sdpi-item-value select sdProperty"
                     id="function"
                     oninput="setSettings()"
@@ -125,7 +130,7 @@
                 const option = document.createElement('option');
                 option.value = opt.value;
                 option.textContent = opt.text;
-                option.dataset.search = opt.searchText || opt.text.toLowerCase();
+                option.dataset.search = (opt.searchText || opt.text).toLowerCase();
 
                 optgroup.appendChild(option);
 
@@ -194,17 +199,34 @@
     function resetSearch() {
         searchBuffer = '';
         searchMode = false;
+        const searchInput = document.getElementById('functionSearch');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.classList.add('hidden');
+        }
         filterOptions();
     }
 
-    function activateSearchMode() {
+    function activateSearchMode(initialCharacter = '') {
         if (!functionsLoaded) return;
         searchMode = true;
-        searchBuffer = '';
+        const searchInput = document.getElementById('functionSearch');
+        if (searchInput) {
+            searchInput.classList.remove('hidden');
+            searchInput.focus();
+            if (initialCharacter) {
+                searchInput.value = initialCharacter;
+                searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+            }
+            searchBuffer = searchInput.value;
+        } else {
+            searchBuffer = initialCharacter;
+        }
         filterOptions();
     }
 
     function handleSearchKey(event) {
+        const searchInput = document.getElementById('functionSearch');
         if (!functionsLoaded || !searchMode) return;
 
         if (event.key === 'Escape') {
@@ -214,6 +236,7 @@
 
         if (event.key === 'Backspace') {
             searchBuffer = searchBuffer.slice(0, -1);
+            if (searchInput) searchInput.value = searchBuffer;
             filterOptions();
             event.preventDefault();
             return;
@@ -221,6 +244,7 @@
 
         if (event.key.length === 1 && !event.altKey && !event.metaKey && !event.ctrlKey) {
             searchBuffer += event.key;
+            if (searchInput) searchInput.value = searchBuffer;
             filterOptions();
             event.preventDefault();
         }
@@ -262,6 +286,7 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         const functionSelect = document.getElementById('function');
+        const searchInput = document.getElementById('functionSearch');
 
         functionSelect.addEventListener('change', function () {
             resetSearch();
@@ -276,10 +301,26 @@
             if (!searchMode && evt.key === 'Enter') {
                 activateSearchMode();
             } else if (!searchMode && evt.key.length === 1 && !evt.altKey && !evt.metaKey && !evt.ctrlKey) {
-                activateSearchMode();
+                activateSearchMode(evt.key);
+                evt.preventDefault();
+                return;
             }
             handleSearchKey(evt);
         });
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                searchBuffer = searchInput.value;
+                filterOptions();
+            });
+            searchInput.addEventListener('keydown', function (evt) {
+                if (evt.key === 'Escape') {
+                    resetSearch();
+                    functionSelect.focus();
+                    return;
+                }
+            });
+        }
 
         filterOptions();
         updateClearSoundVisibility();
