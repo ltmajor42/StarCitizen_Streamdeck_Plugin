@@ -178,6 +178,8 @@ Press-and-hold repeat behavior.
 ---
 
 ### Hold Macro
+<img width="100" height="100" alt="HoldMacroAction1" src="https://github.com/user-attachments/assets/4ab49941-864b-4474-8f10-4f687cd6eff3" />
+<img width="100" height="100" alt="HoldMacroAction0" src="https://github.com/user-attachments/assets/667011aa-7561-4a44-b8b0-ca1cda105b1f" />
 
 Press-and-hold behavior without rapid-fire repeats.
 
@@ -212,6 +214,7 @@ Visual-only tile (no keybind, no action).
 3. Aesthetic/branding tiles
 
 ### Dial (Stream Deck+)
+<img width="400" height="100" alt="pluginDialIcon" src="https://github.com/user-attachments/assets/a129b5b6-040c-43ce-a2c7-bf67fa340c6b" />
 
 
 Dial action for the **Stream Deck+** dials (rotate, press, and touch screen).
