@@ -5,6 +5,36 @@
 
 ## Changelog
 
+## [2.0.5] - Property Inspector refactor, compact layout, and stability fixes
+
+Summary
+- Refactored the Property Inspector (PI) pages so each inspector is self-contained and robust.
+- Added per-PI JavaScript to reliably receive and render the `functions` payload from the plugin, populate dropdowns (optgroups/options), and preserve saved selections when payloads arrive out-of-order.
+- Implemented a shared, debounced search/filter UI across PIs that hides non-matching optgroups and shows a concise "Found X group(s)" summary.
+- Hardened file-picker behavior: filename labels and Clear buttons update correctly even if shared init is skipped.
+- Consolidated and compacted `sdpi.css` to reduce vertical space and minimize PI scrolling while keeping readability.
+- Normalized text/encoding (replaced en-dash with ASCII hyphen) in `ActionKey.html` and ensured consistent section titles and subtitles.
+
+Files changed (high-level)
+- Modified: `PropertyInspector/sdpi.css` — reduced paddings/margins, compact control sizing, removed separator above "How it works" details, tightened stacked layout gaps.
+- Modified: `PropertyInspector/sdtools.common.js` — ensure PI initialization and file-picker helpers are robust and idempotent.
+- Modified: `PropertyInspector/StarCitizen/ActionKey.html` — per-PI JS to populate functions, search/filter, preserve selection, move search into configuration, add Function subtitle, and title normalization.
+- Modified: `PropertyInspector/StarCitizen/HoldMacroAction.html` — move search into configuration, add Function subtitle, preserve selection, search/filter.
+- Modified: `PropertyInspector/StarCitizen/StateMemory.html` — move search into configuration and preserve selection.
+- Modified: `PropertyInspector/StarCitizen/Repeataction.html` — move search into configuration and preserve selection.
+- Modified: `PropertyInspector/StarCitizen/Momentary.html` — move search into configuration and preserve selection.
+- Modified: `PropertyInspector/StarCitizen/DualAction.html` — move search into configuration, handle paired selects, preserve selections.
+- Modified: `PropertyInspector/StarCitizen/Dial.html` — move search into configuration, support multiple selects and preserve selections.
+- Modified: `PropertyInspector/StarCitizen/ActionDelay.html` — move search into configuration.
+
+Notes for maintainers and testers
+- Build status: Build succeeded after these changes during development. Run a full build locally to confirm: open solution in Visual Studio and build.
+- Test guidance: Open each action's Property Inspector in the Stream Deck app and verify:
+  - The search box appears above the configuration and filters options as you type.
+  - Dropdowns populate with grouped functions when the PI connects.
+  - Saved selections are preserved when settings load before/after the functions payload.
+  - File pickers show filenames and the Clear button toggles correctly.
+  - The "How it works" block no longer has a separator line and sections are more compact.
 
 ## v2.0.1
 
@@ -14,7 +44,6 @@
 - Prevented “catch-up” lag when rapidly reversing direction by clearing stale queued ticks.
 - `Delay` now controls keypress duration (ms) with sensible bounds for smoother feel.
 - Unknown or unsupported key tokens now stay marked as unknown (no Escape fallback) and are surfaced in the action dropdown for easier cleanup.
-
 
 ## v2.0.0
 
@@ -28,7 +57,6 @@
 
 ### Fixes
 - Dial action now explicitly targets the Stream Deck+ encoders and uses a dedicated dial icon, so it shows up correctly in the Stream Deck action list.
-
 
 ## v1.1.8
 
@@ -55,7 +83,6 @@
   - Does not send any keybinds or events (purely cosmetic).
   - Uses a custom action icon in the Stream Deck actions list.
 
-
 ## v1.1.5
 
 ### New Features
@@ -74,7 +101,6 @@
 ### Technical Changes
 - Cleaned up visual state handling and race conditions on rapid presses
 
-
 ## v1.1.4
 
 ### New Features
@@ -90,7 +116,6 @@
 - Added `Momentary.html` Property Inspector
 - Reused dynamic function loading and WebSocket communication system
 - Improved Property Inspector persistence handling for numeric inputs
-
 
 ## v1.1.3a
 
@@ -114,7 +139,6 @@
 - **Currently only available for the Action Key:**
   - **Search Functionality**: Added a search box to find Keybindings faster in the dropdown list
   - **Dynamic Function Loading**: Functions are now loaded dynamically via WebSocket communication instead of hardcoded HTML Option Values
-
 
 ### Technical Changes
 - `ActionKey.cs`: Added SDK event handlers (`OnPropertyInspectorDidAppear`, `OnSendToPlugin`) for proper Property Inspector communication

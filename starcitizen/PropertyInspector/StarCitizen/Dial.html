@@ -17,143 +17,163 @@
     <script src="../jquery.highlight-within-textarea.js"></script>
 
     <style>
-        .no-results {
-            padding: 10px;
-            color: #999;
-            font-style: italic;
-            text-align: center;
-        }
-        .hidden {
-            display: none !important;
-        }
-    .search-row {
-        display: flex;
-        gap: 6px;
-        align-items: stretch;
-        min-height: 23px;
-    }
-    .search-row input.sdpi-item-value {
-        flex: 1;
-        height: 100%;
-        min-height: 23px;
-        box-sizing: border-box;
-    }
+        .no-results { padding: 10px; color: #999; font-style: italic; text-align: center; }
+        .hidden { display: none !important; }
+    .search-row { display: flex; gap: 6px; align-items: stretch; min-height: 23px; }
+    .search-row input.sdpi-item-value { flex: 1; height: 100%; min-height: 23px; box-sizing: border-box; }
     </style>
 </head>
 
 <body>
-<div class="sdpi-wrapper">
+<div class="sdpi-wrapper sdpi-stack">
 
-    <!-- SEARCH -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Search</div>
-        <div class="sdpi-item-value search-row">
-            <input type="text"
-                   class="sdpi-item-value"
-                   id="functionSearch"
-                   placeholder="Type to search functions..."
-                   autocomplete="off">
+    <div class="sdpi-section sdpi-section--search" id="section-search">
+        <div class="sdpi-section-title">Search</div>
+        <div class="sdpi-item">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value search-row">
+                <input type="text" class="sdpi-item-value" id="functionSearch" placeholder="Type to search functions..." autocomplete="off">
+            </div>
+            <div class="sdpi-item-value" id="searchResults" style="font-size: 11px; color: #999; margin-top: 0;"></div>
         </div>
-        <div class="sdpi-item-value"
-             id="searchResults"
-             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
     </div>
 
-    <!-- FUNCTION PICKERS -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Dial CW</div>
-        <select class="sdpi-item-value select sdProperty function-select"
-                id="functioncw"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions...</option>
-        </select>
+    <div class="sdpi-section" id="section-dial-config">
+        <div class="sdpi-section-title">Dial Configuration</div>
+
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Dial CW</div>
+            <div class="sdpi-item-value">
+                <select class="sdpi-item-value select sdProperty function-select" id="functioncw" oninput="setSettings()" onchange="setSettings()">
+                    <option value="">Loading Star Citizen functions...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Dial CCW</div>
+            <div class="sdpi-item-value">
+                <select class="sdpi-item-value select sdProperty function-select" id="functionccw" oninput="setSettings()" onchange="setSettings()">
+                    <option value="">Loading Star Citizen functions...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Dial Press</div>
+            <div class="sdpi-item-value">
+                <select class="sdpi-item-value select sdProperty function-select" id="functionpress" oninput="setSettings()" onchange="setSettings()">
+                    <option value="">Loading Star Citizen functions...</option>
+                </select>
+            </div>
+        </div>
     </div>
 
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Dial CCW</div>
-        <select class="sdpi-item-value select sdProperty function-select"
-                id="functionccw"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions...</option>
-        </select>
+    <div class="sdpi-section" id="section-touch-config">
+        <div class="sdpi-section-title">Touch Configuration</div>
+
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Touch Press</div>
+            <div class="sdpi-item-value">
+                <select class="sdpi-item-value select sdProperty function-select" id="functiontouchpress" oninput="setSettings()" onchange="setSettings()">
+                    <option value="">Loading Star Citizen functions...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Touch Longpress</div>
+            <div class="sdpi-item-value">
+                <select class="sdpi-item-value select sdProperty function-select" id="functiontouchlongpress" oninput="setSettings()" onchange="setSettings()">
+                    <option value="">Loading Star Citizen functions...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Timing</div>
+            <div class="sdpi-item-value">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <div style="min-width:130px;color:#d0d0d0;">Delay (ms)</div>
+                        <input type="number" class="sdpi-item-value sdProperty" id="delay" min="0" oninput="setSettings()" onchange="setSettings()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Dial Press</div>
-        <select class="sdpi-item-value select sdProperty function-select"
-                id="functionpress"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions...</option>
-        </select>
-    </div>
+    <div class="sdpi-section sdpi-section--details" id="section-how">
+        <div class="sdpi-item" type="group">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value">
+                <details style="font-size: 11px; color: #bbb; margin: 0;">
+                    <summary>How it works</summary>
 
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Touch Press</div>
-        <select class="sdpi-item-value select sdProperty function-select"
-                id="functiontouchpress"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions...</option>
-        </select>
-    </div>
+                    <div style="margin-top:8px;color:#ddd;line-height:1.35;">
+                      <strong>Overview</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li>The Dial action maps physical dial interactions (rotate, press, touch) to configured Star Citizen functions. Rotate events queue ticks; press/touch produce short key pulses or down/up pairs depending on the interaction.</li>
+                      </ul>
 
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Touch Longpress</div>
-        <select class="sdpi-item-value select sdProperty function-select"
-                id="functiontouchlongpress"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions...</option>
-        </select>
-    </div>
+                      <strong style="display:block;margin-top:8px;">Images / states</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ccc;">
+                        <li><strong>State 0</strong> — idle/default image when no activity is occurring.</li>
+                        <li><strong>State 1</strong> — active/pressed image shown while a press is held or briefly used for visual feedback when sending pulses.</li>
+                      </ul>
 
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Touch Delay (ms)</div>
-        <input type="number"
-               class="sdpi-item-value sdProperty"
-               id="delay"
-               min="0"
-               oninput="setSettings()"
-               onchange="setSettings()">
-    </div>
+                      <strong style="display:block;margin-top:8px;">Timing parameter</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li><strong>Delay (ms)</strong> — controls the duration of the key press pulse used for rotate ticks and touch/press pulses. The code uses this value to send a short down/up pair when needed. Recommended: 10–25 ms for responsive rotate pulses; increase to 30–50 ms if the game misses short pulses.</li>
+                      </ul>
 
-    <div class="sdpi-item no-results hidden" id="noResults">
-        No functions match your search.
+                      <strong style="display:block;margin-top:8px;">Behavior details</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li><strong>Rotate (CW / CCW)</strong> — each dial tick enqueues a single keypress pulse for the configured CW/CCW function. Fast rotations queue multiple ticks but the worker drains them quickly so the dial feels responsive.</li>
+
+                        <li style="margin-top:6px;"><strong>Dial Press</strong> — on dial down the plugin sends a key down for the configured function and sets State 1; on release the plugin sends key up and clears State 1. Use this for actions that require hold behavior.</li>
+
+                        <li style="margin-top:6px;"><strong>Touch Press / Longpress</strong> — touch interactions send a short keypress (down then up) using the configured Delay. Longpress behaves like a longer touch interaction; mapping of long vs short press is handled by the Stream Deck hardware timing.</li>
+
+                        <li style="margin-top:6px;"><strong>Queueing and responsiveness</strong> — the dial uses an internal queue to convert ticks into individual key pulses. Reversing direction quickly clears stale ticks for better feel.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Example</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ccc;">
+                        <li>Settings: Delay = 20 ms.</li>
+                        <li>User rotates quickly 5 ticks CW → the plugin enqueues 5 pulses and sends them in rapid succession (each pulse uses a ~20 ms down/up).</li>
+                        <li>User presses the dial → plugin sends key down and sets State 1 until release, then sends key up and returns to idle.</li>
+                        <li>User touch-presses the dial → plugin sends a single down/up pulse using the Delay value.</li>
+                      </ul>
+
+                      <div style="margin-top:8px;color:#999;font-size:11px;">Tip: prefer small Delay values (10–25 ms) for rotation pulses; increase only if inputs are being missed in-game.</div>
+                    </div>
+
+                </details>
+            </div>
+        </div>
     </div>
 
 </div>
 
 <script>
+    // In-memory state while waiting for functions list
     let allOptions = [];
     let functionsLoaded = false;
-    const savedValues = {
-        functioncw: null,
-        functionccw: null,
-        functionpress: null,
-        functiontouchpress: null,
-        functiontouchlongpress: null,
-        delay: null
-    };
+    const savedValues = { functioncw: null, functionccw: null, functionpress: null, functiontouchpress: null, functiontouchlongpress: null, delay: null };
 
-    /* Keep selections when payload arrives before functions */
     const originalLoadConfiguration = loadConfiguration;
     loadConfiguration = function (payload) {
         if (payload) {
             Object.keys(savedValues).forEach(key => {
-                if (payload[key] !== undefined) {
-                    savedValues[key] = payload[key];
-                }
+                if (payload[key] !== undefined) savedValues[key] = payload[key];
             });
         }
 
         originalLoadConfiguration(payload);
 
-        if (functionsLoaded) {
-            restoreSelections();
-        }
+        if (functionsLoaded) restoreSelections();
     };
 
     function populateDropdowns(functionsData) {
@@ -167,7 +187,7 @@
             empty.textContent = '-- Select a function --';
             select.appendChild(empty);
 
-            functionsData.forEach(group => {
+            (functionsData || []).forEach(group => {
                 const optgroup = document.createElement('optgroup');
                 optgroup.label = group.label;
 
@@ -214,41 +234,37 @@
 
         document.querySelectorAll('.function-select').forEach(select => {
             select.querySelectorAll('optgroup').forEach(group => {
-                const hasVisible = Array.from(group.children)
-                    .some(o => o.style.display !== 'none');
+                const hasVisible = Array.from(group.children).some(o => o.style.display !== 'none');
                 group.style.display = hasVisible ? '' : 'none';
                 if (hasVisible) visibleLabels.add(group.label);
             });
         });
 
         const count = visibleLabels.size;
-        noResults.classList.toggle('hidden', count > 0);
-        searchResults.textContent = term
-            ? `Found ${count} group${count !== 1 ? 's' : ''}`
-            : '';
+        if (noResults) {
+            const showNoResults = term && count === 0;
+            noResults.classList.toggle('hidden', !showNoResults);
+        }
+
+        searchResults.textContent = term ? `Found ${count} group${count !== 1 ? 's' : ''}` : '';
     }
 
     document.addEventListener('websocketCreate', function () {
         const originalOnMessage = websocket.onmessage;
         websocket.onmessage = function (evt) {
             const jsonObj = JSON.parse(evt.data);
-            if (jsonObj.event === 'sendToPropertyInspector'
-                && jsonObj.payload
-                && jsonObj.payload.functionsLoaded) {
+            if (jsonObj.event === 'sendToPropertyInspector' && jsonObj.payload && jsonObj.payload.functionsLoaded) {
                 populateDropdowns(jsonObj.payload.functions);
             }
-            if (originalOnMessage) {
-                originalOnMessage.call(this, evt);
-            }
+            if (originalOnMessage) originalOnMessage.call(this, evt);
         };
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        document.getElementById('functionSearch')
-            .addEventListener('input', function () {
-                clearTimeout(this.searchTimeout);
-                this.searchTimeout = setTimeout(filterOptions, 150);
-            });
+        document.getElementById('functionSearch').addEventListener('input', function () {
+            clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(filterOptions, 150);
+        });
 
         document.querySelectorAll('.function-select').forEach(sel => {
             sel.addEventListener('change', function () {
@@ -256,6 +272,8 @@
                 document.getElementById('searchResults').textContent = '';
             });
         });
+
+        updateClearButtons();
     });
 </script>
 

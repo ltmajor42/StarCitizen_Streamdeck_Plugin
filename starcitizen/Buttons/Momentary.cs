@@ -81,6 +81,7 @@ namespace starcitizen.Buttons
             }
 
             PlayClickSound();
+            
         }
 
         public override void KeyReleased(KeyPayload payload)
@@ -101,7 +102,7 @@ namespace starcitizen.Buttons
                 }
             }
 
-            // 🔑 ALWAYS prefer live payload value
+            // ALWAYS prefer live payload value
             int delayToUse = currentDelay;
 
             if (payload?.Settings != null &&

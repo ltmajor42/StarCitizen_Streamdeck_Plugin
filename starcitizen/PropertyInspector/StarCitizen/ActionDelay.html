@@ -19,7 +19,7 @@
 
   <style>
     .note { font-size: 11px; color: #999; line-height: 1.4; }
-    .hidden { display: none; }
+    .hidden { display: none !important; }
     .no-results { padding: 10px; color: #999; font-style: italic; text-align: center; }
     .search-row {
         display: flex;
@@ -37,113 +37,185 @@
 </head>
 
 <body>
-<div class="sdpi-wrapper">
+<div class="sdpi-wrapper sdpi-stack">
 
-  <div class="sdpi-item">
-    <div class="sdpi-item-label">Search</div>
-    <div class="sdpi-item-value search-row">
-      <input type="text"
-             class="sdpi-item-value"
-             id="functionSearch"
-             placeholder="Type to search functions..."
-             autocomplete="off">
+  <!-- Combined Configuration: Function + Timing -->
+  <div class="sdpi-section" id="section-configuration">
+    <div class="sdpi-section-title">Configuration</div>
+
+    <!-- SEARCH moved into Configuration so it appears first -->
+    <div class="sdpi-item">
+      <div class="sdpi-item-label empty"></div>
+      <div class="sdpi-item-value search-row">
+        <input type="text"
+               class="sdpi-item-value"
+               id="functionSearch"
+               placeholder="Type to search functions..."
+               autocomplete="off">
+      </div>
+      <div class="sdpi-item-value" id="searchResults" style="font-size: 11px; color: #999; margin-top: 0;"></div>
     </div>
-    <div class="sdpi-item-value" id="searchResults"
-         style="font-size: 11px; color: #999; margin-top: 4px;"></div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Function</div>
+      <div class="sdpi-item-value">
+        <select class="sdpi-item-value select sdProperty"
+                id="function"
+                oninput="setSettings()"
+                onchange="setSettings()">
+          <option value="">Loading Star Citizen functions...</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Timing</div>
+      <div class="sdpi-item-value">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <div style="min-width:130px;color:#d0d0d0;">Execute after (ms)</div>
+            <input type="number"
+                   class="sdpi-item-value sdProperty"
+                   id="executionDelayMs"
+                   min="100"
+                   max="5000"
+                   step="10"
+                   oninput="setSettings()"
+                   onchange="setSettings()">
+          </div>
+
+          <div style="display:flex;gap:8px;align-items:center;">
+            <div style="min-width:130px;color:#d0d0d0;">Blink rate (ms)</div>
+            <input type="number"
+                   class="sdpi-item-value sdProperty"
+                   id="blinkRateMs"
+                   min="100"
+                   max="1000"
+                   step="10"
+                   oninput="setSettings()"
+                   onchange="setSettings()">
+          </div>
+
+          <div style="display:flex;gap:8px;align-items:center;">
+            <div style="min-width:130px;color:#d0d0d0;">Confirm state (ms)</div>
+            <input type="number"
+                   class="sdpi-item-value sdProperty"
+                   id="confirmationDurationMs"
+                   min="100"
+                   max="3000"
+                   step="10"
+                   oninput="setSettings()"
+                   onchange="setSettings()">
+          </div>
+
+          <div style="display:flex;gap:8px;align-items:center;">
+            <div style="min-width:130px;color:#d0d0d0;">Tap again to cancel</div>
+            <select id="holdToCancel" class="sdpi-item-value sdProperty" onchange="setSettings()">
+              <option value="true">Enabled</option>
+              <option value="false">Disabled</option>
+            </select>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <div class="sdpi-item">
-    <div class="sdpi-item-label">Function</div>
-    <select class="sdpi-item-value select sdProperty"
-            id="function"
-            oninput="setSettings()"
-            onchange="setSettings()">
-      <option value="">Loading Star Citizen functions...</option>
-    </select>
-  </div>
-
-  <div class="sdpi-item">
-    <div class="sdpi-item-label">Execute after (ms)</div>
-    <input type="number"
-           class="sdpi-item-value sdProperty"
-           id="executionDelayMs"
-           min="100"
-           max="5000"
-           step="10"
-           oninput="setSettings()"
-           onchange="setSettings()">
-  </div>
-
-  <div class="sdpi-item">
-    <div class="sdpi-item-label">Blink rate (ms)</div>
-    <input type="number"
-           class="sdpi-item-value sdProperty"
-           id="blinkRateMs"
-           min="100"
-           max="1000"
-           step="10"
-           oninput="setSettings()"
-           onchange="setSettings()">
-  </div>
-
-  <div class="sdpi-item">
-    <div class="sdpi-item-label">Confirm state (ms)</div>
-    <input type="number"
-           class="sdpi-item-value sdProperty"
-           id="confirmationDurationMs"
-           min="100"
-           max="3000"
-           step="10"
-           oninput="setSettings()"
-           onchange="setSettings()">
-  </div>
-
-  <div class="sdpi-item">
-    <div class="sdpi-item-label">Tap again to cancel</div>
-    <input type="checkbox"
-           class="sdpi-item-value sdProperty"
-           id="holdToCancel"
-           oninput="setSettings()"
-           onchange="setSettings()">
-  </div>
-
-  <div class="sdpi-item" id="dvClickSound">
-    <div class="sdpi-item-label">Sound</div>
-    <div class="sdpi-item-group file">
-      <input class="sdpi-item-value sdProperty sdFile"
-             type="file"
-             id="clickSound"
-             accept=".wav"
-             oninput="setSettings(); updateClearSoundVisibility();"
-             onchange="setSettings(); updateClearSoundVisibility();">
-      <label class="sdpi-file-info" id="clickSoundFilename">No file...</label>
-      <label class="sdpi-file-label" for="clickSound">Choose file...</label>
+  <div class="sdpi-section sdpi-section--sound" id="section-sound">
+    <div class="sdpi-section-title">Sound</div>
+    <div class="sdpi-item" id="dvClickSound">
+      <div class="sdpi-item-label empty"></div>
+      <div class="sdpi-item-value">
+        <div class="file-row">
+          <div class="file-main">
+            <input class="sdpi-item-value sdProperty sdFile"
+                   type="file"
+                   id="clickSound"
+                   accept=".wav"
+                   oninput="setSettings()"
+                   onchange="setSettings()">
+            <label class="sdpi-file-info" id="clickSoundFilename">No file...</label>
+          </div>
+          <div class="file-actions">
+            <label class="sdpi-file-label" for="clickSound">Choose file...</label>
+            <button class="sdpi-file-button-inline hidden" id="btnClearSound" onclick="clearClickSound()">Clear</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="sdpi-item hidden" id="dvClearSound">
-    <div class="sdpi-item-label"></div>
-    <button class="sdpi-item-value" onclick="clearClickSound()">Clear sound</button>
-  </div>
+  <div class="sdpi-section sdpi-section--details" id="section-how">
+    <div class="sdpi-item" type="group">
+      <div class="sdpi-item-label empty"></div>
+      <div class="sdpi-item-value">
+        <details style="font-size: 11px; color: #bbb; margin: 0;">
+          <summary>How it works</summary>
 
-  <div class="sdpi-item no-results hidden" id="noResults">
-    No functions match your search.
-  </div>
+          <div style="margin-top:8px;color:#ddd;line-height:1.35;">
+            <strong>Overview</strong>
+            <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+              <li>The button implements an "armed → execute → confirm → idle" flow to give you a safe cancel window before the action is sent.</li>
+            </ul>
 
+            <strong style="display:block;margin-top:8px;">Images / states</strong>
+            <ul style="margin:6px 0 0 18px;padding:0;color:#ccc;">
+              <li><strong>State 0</strong> — idle (default) image shown when nothing is pending.</li>
+              <li><strong>State 1</strong> — active/armed or confirmation image used for blinking while pending and briefly after execution.</li>
+            </ul>
+
+            <strong style="display:block;margin-top:8px;">Timing parameters</strong>
+            <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+              <li><strong>Execute after (ms)</strong> — how long the plugin waits after your tap before firing the selected function. Default in code: 800 ms. During this period the action is "armed" and can be canceled (if enabled).</li>
+
+              <li style="margin-top:6px;"><strong>Blink rate (ms)</strong> — while the action is armed the key alternates its image between State 0 and State 1 to indicate the pending state. Set this to control how fast the key blinks (default in code: 300 ms).</li>
+
+              <li style="margin-top:6px;"><strong>Confirm state (ms)</strong> — after the function is executed the key shows State 1 for this duration as a visual confirmation, then returns to State 0 (default in code: 500 ms).</li>
+            </ul>
+
+            <strong style="display:block;margin-top:8px;">Cancel behavior</strong>
+            <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+              <li>If <em>"Tap again to cancel"</em> is <strong>Enabled</strong>, tapping the key a second time while pending will abort the pending action. The key immediately reverts to the idle image (State 0) and <strong>no</strong> keybind or action is sent to the game.</li>
+              <li>If the cancel option is <strong>Disabled</strong>, a second tap while pending is ignored and the countdown continues to completion, whereupon the action is executed.</li>
+              <li>The implementation is race-safe: if a cancel and execution attempt happen at nearly the same time the plugin verifies the pending state before sending the key so canceled events are not sent.</li>
+            </ul>
+
+            <strong style="display:block;margin-top:8px;">Quick timeline example</strong>
+            <ul style="margin:6px 0 0 18px;padding:0;color:#ccc;">
+              <li>Settings: Execute after = 2000 ms, Blink rate = 250 ms, Confirm state = 800 ms.</li>
+              <li>User taps → button enters ARMED state and begins blinking every 250 ms.</li>
+              <li>If countdown reaches 2000 ms → the configured function is sent once, button shows confirm image for 800 ms, then returns to idle.</li>
+              <li>If user taps again before 2000 ms while cancel is Enabled → pending is aborted immediately, button returns to idle and nothing is sent to the game.</li>
+            </ul>
+
+            <div style="margin-top:8px;color:#999;font-size:11px;">Tip: keep blink rate visibly distinct from confirmation duration so you can clearly see the pending vs confirm visual states.</div>
+          </div>
+
+        </details>
+      </div>
+    </div>
   </div>
 
 </div>
 
 <script>
+  // State buckets shared across dropdown helpers
   let allOptions = [];
   let functionsLoaded = false;
   let savedFunctionValue = null;
+  let savedHoldToCancel = null;
 
+  // loadConfiguration shim: keep selection + defer to Stream Deck default
   const originalLoadConfiguration = loadConfiguration;
   loadConfiguration = function (payload) {
     if (payload && payload.function !== undefined) {
       savedFunctionValue = payload.function;
     }
+    if (payload && payload.holdToCancel !== undefined) {
+      savedHoldToCancel = payload.holdToCancel;
+    }
+
     originalLoadConfiguration(payload);
 
     if (functionsLoaded && savedFunctionValue) {
@@ -153,9 +225,18 @@
       }
     }
 
-    updateClearSoundVisibility();
+    // restore holdToCancel if payload provided
+    const cancelEl = document.getElementById('holdToCancel');
+    if (cancelEl) {
+      if (savedHoldToCancel !== null && savedHoldToCancel !== undefined) {
+        cancelEl.value = String(savedHoldToCancel);
+      }
+    }
+
+    updateClearButtons();
   };
 
+  // Build dropdown + optgroups from plugin payload
   function populateDropdown(functionsData) {
     const select = document.getElementById('function');
     select.innerHTML = '';
@@ -178,27 +259,26 @@
 
         optgroup.appendChild(option);
 
-        allOptions.push({
-          option,
-          optgroup,
-          search: option.dataset.search
-        });
+        allOptions.push({ option, optgroup, search: option.dataset.search });
       });
 
-      if (optgroup.children.length > 0) {
-        select.appendChild(optgroup);
-      }
+      if (optgroup.children.length > 0) select.appendChild(optgroup);
     });
 
     functionsLoaded = true;
 
-    if (savedFunctionValue) {
-      select.value = savedFunctionValue;
+    if (savedFunctionValue) select.value = savedFunctionValue;
+
+    // restore holdToCancel if previously saved
+    const cancelEl = document.getElementById('holdToCancel');
+    if (cancelEl && savedHoldToCancel !== null && savedHoldToCancel !== undefined) {
+      cancelEl.value = String(savedHoldToCancel);
     }
 
     filterOptions();
   }
 
+  // Debounced search handler keeps optgroups/summary text in sync
   function filterOptions() {
     const term = document.getElementById('functionSearch').value.toLowerCase().trim();
     const noResults = document.getElementById('noResults');
@@ -217,19 +297,24 @@
       if (hasVisible) visibleGroups++;
     });
 
-    const anyVisibleOption = allOptions.some(o => o.option.style.display !== 'none');
+    // show No results only when user searched and nothing matches
+    if (noResults) {
+      const showNoResults = term && visibleGroups === 0;
+      noResults.classList.toggle('hidden', !showNoResults);
+    }
 
-    noResults.classList.toggle('hidden', anyVisibleOption || !term);
     searchResults.textContent = term ? `Found ${visibleGroups} group${visibleGroups !== 1 ? 's' : ''}` : '';
   }
 
-  function updateClearSoundVisibility() {
+  // UI sugar: toggle visibility for the Clear button next to sound picker
+  function updateClearButtons() {
     const input = document.getElementById('clickSound');
-    const clearBtn = document.getElementById('dvClearSound');
+    const clearBtn = document.getElementById('btnClearSound');
     if (!input || !clearBtn) return;
     clearBtn.classList.toggle('hidden', !input.value);
   }
 
+  // Shared sound picker helper invoked from Clear button
   function clearClickSound() {
     const input = document.getElementById('clickSound');
     const label = document.getElementById('clickSoundFilename');
@@ -238,9 +323,10 @@
     if (label) label.textContent = 'No file...';
 
     setSettings({ clickSound: '' });
-    updateClearSoundVisibility();
+    updateClearButtons();
   }
 
+  // Bridge: listen for plugin messages and populate functions when ready
   document.addEventListener('websocketCreate', function () {
     const originalOnMessage = websocket.onmessage;
     websocket.onmessage = function (evt) {
@@ -256,14 +342,31 @@
     };
   });
 
+  // DOM hooks: search debounce reset + file picker housekeeping
   document.addEventListener('DOMContentLoaded', function () {
-    document.getElementById('functionSearch')
-      .addEventListener('input', function () {
+    const searchEl = document.getElementById('functionSearch');
+    if (searchEl) {
+      searchEl.addEventListener('input', function () {
         clearTimeout(this.searchTimeout);
         this.searchTimeout = setTimeout(filterOptions, 150);
       });
+    }
 
-    updateClearSoundVisibility();
+    const funcEl = document.getElementById('function');
+    if (funcEl) {
+      // Reset search UI when user picks a function
+      funcEl.addEventListener('change', function () {
+        const s = document.getElementById('functionSearch'); if (s) s.value = '';
+        const r = document.getElementById('searchResults'); if (r) r.textContent = '';
+      });
+    }
+
+    // Ensure clear button visibility state on load
+    // shared sound picker handlers in sdtools.common.js handle clear button visibility
+    updateClearButtons();
+
+    // When a file is selected, update filename text and clear button visibility
+    // file change handlers are initialized centrally by initSoundPickers()
   });
 </script>
 

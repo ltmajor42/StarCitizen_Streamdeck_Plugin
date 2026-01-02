@@ -48,65 +48,110 @@
 </head>
 
 <body>
-<div class="sdpi-wrapper">
+<div class="sdpi-wrapper sdpi-stack">
 
-    <!-- SEARCH -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Search</div>
-        <div class="sdpi-item-value search-row">
-            <input type="text"
-                   class="sdpi-item-value"
-                   id="functionSearch"
-                   placeholder="Type to search functions..."
-                   autocomplete="off">
+    <div class="sdpi-section" id="section-configuration">
+        <div class="sdpi-section-title">Configuration</div>
+
+        <!-- SEARCH moved into Configuration -->
+        <div class="sdpi-item">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value search-row">
+                <input type="text"
+                       class="sdpi-item-value"
+                       id="functionSearch"
+                       placeholder="Type to search functions..."
+                       autocomplete="off">
+            </div>
+            <div class="sdpi-item-value"
+                 id="searchResults"
+                 style="font-size: 11px; color: #999; margin-top: 0;"></div>
         </div>
-        <div class="sdpi-item-value"
-             id="searchResults"
-             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
-    </div>
 
-    <!-- FUNCTION -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Function</div>
-        <select class="sdpi-item-value select sdProperty"
-                id="function"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions...</option>
-        </select>
-    </div>
-
-    <!-- REPEAT RATE -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Repeat Rate (ms)</div>
-        <input type="number"
-               class="sdpi-item-value sdProperty"
-               id="repeatRate"
-               min="1"
-               oninput="setSettings()"
-               onchange="setSettings()">
-    </div>
-    <div class="sdpi-item">
-        <div class="sdpi-item-label"></div>
-        <div class="sdpi-item-value note">
-            Recommended: 60–80ms (fast), 100ms (default), 120–150ms (precise)
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Function</div>
+            <div class="sdpi-item-value">
+                <select class="sdpi-item-value select sdProperty"
+                        id="function"
+                        oninput="setSettings()"
+                        onchange="setSettings()">
+                    <option value="">Loading Star Citizen functions...</option>
+                </select>
+            </div>
         </div>
+
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Timing</div>
+            <div class="sdpi-item-value">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <div style="min-width:130px;color:#d0d0d0;">Repeat Rate (ms)</div>
+                        <input type="number"
+                               class="sdpi-item-value sdProperty"
+                               id="repeatRate"
+                               min="1"
+                               oninput="setSettings()"
+                               onchange="setSettings()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <div class="sdpi-item no-results hidden" id="noResults">
-        No functions match your search.
-    </div>
+    <div class="sdpi-section sdpi-section--details" id="section-how">
+        <div class="sdpi-item" type="group">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value">
+                <details style="font-size: 11px; color: #bbb; margin: 0;">
+                    <summary>How it works</summary>
 
-    <div class="sdpi-item">
-        <div class="sdpi-item-label"></div>
-        <div class="sdpi-item-value note">
-            Images are managed by Stream Deck (State 0 = idle, State 1 = active). Hold to repeat. Release to stop.
+                    <div style="margin-top:8px;color:#ddd;line-height:1.35;">
+                      <strong>Overview</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li>Repeat Action continuously sends the configured function while the Stream Deck key is held. The repeat interval is controlled by the Repeat Rate setting.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Images / states</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ccc;">
+                        <li><strong>State 0</strong> — idle/default image when not repeating.</li>
+                        <li><strong>State 1</strong> — active image shown while repeating (visual feedback during the hold).</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Timing parameters</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li><strong>Repeat Rate (ms)</strong> — interval between repeated keypresses while holding the key. Set lower for faster spam and higher for slower, more deliberate repeats.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Behavior details</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li><strong>On press</strong> — the plugin sends an immediate keypress (down/up) for the configured function and enters the repeating loop after a short initial delay.</li>
+
+                        <li style="margin-top:6px;"><strong>While held</strong> — the plugin sends repeated keypresses at the configured Repeat Rate until the key is released. Repeats are implemented as repeated down/up pulses to match one-shot bindings.</li>
+
+                        <li style="margin-top:6px;"><strong>On release</strong> — the plugin stops the repeating loop and the key returns to State 0.</li>
+
+                        <li style="margin-top:6px;">The implementation uses internal queuing and cancellation tokens to ensure repeats stop reliably when the key is released.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Examples</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ccc;">
+                        <li>Repeat Rate = 80 ms: hold the key to rapidly fire a weapon or send many consecutive inputs.</li>
+                        <li>Repeat Rate = 150 ms: hold for slower, more measured repeats (useful for skills with cooldowns).</li>
+                      </ul>
+
+                      <div style="margin-top:8px;color:#999;font-size:11px;">Tip: choose a Repeat Rate that balances responsiveness with the game's ability to register inputs; very low values may be ignored by some games.</div>
+                    </div>
+
+                </details>
+            </div>
         </div>
     </div>
 
 </div>
 
 <script>
+    // Shared state for dropdown filtering
     let allOptions = [];
     let functionsLoaded = false;
     let savedFunctionValue = null;
@@ -125,6 +170,7 @@
         }
     };
 
+    // Populate select/optgroup structure from plugin-provided functions array
     function populateDropdown(functions) {
         const select = document.getElementById('function');
         select.innerHTML = '';
@@ -166,6 +212,7 @@
         filterOptions();
     }
 
+    // Hide/show options + optgroups based on current search term
     function filterOptions() {
         if (!functionsLoaded) return;
 
@@ -188,7 +235,11 @@
             if (hasVisible) visibleGroups++;
         });
 
-        noResults.classList.toggle('hidden', visibleGroups > 0);
+        if (noResults) {
+            const showNoResults = term && visibleGroups === 0;
+            noResults.classList.toggle('hidden', !showNoResults);
+        }
+
         searchResults.textContent = term
             ? `Found ${visibleGroups} group${visibleGroups !== 1 ? 's' : ''}`
             : '';
@@ -214,6 +265,7 @@
         };
     });
 
+    // Debounced search + reset summary when user picks a function
     document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('functionSearch')
             .addEventListener('input', function () {
