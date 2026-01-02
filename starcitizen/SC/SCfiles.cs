@@ -9,7 +9,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using SCJMapper_V2.CryXMLlib;
 using SCJMapper_V2.p4kFile;
 using System.IO.Compression;
-using BarRaider.SdTools;
+using starcitizen.Core;
 using p4ktest;
 using TheUser = p4ktest.SC.TheUser;
 
@@ -79,11 +79,9 @@ namespace SCJMapper_V2.SC
         /// </summary>
         private void UpdateDefProfileFile()
         {
-            //Logger.Instance.LogMessage(TracingLevel.DEBUG, "UpdateDefProfileFile - Entry" );
-
             string retVal = "";
 
-            Logger.Instance.LogMessage(TracingLevel.INFO, SCPath.SCData_p4k);
+            PluginLog.Info(SCPath.SCData_p4k);
 
             if (File.Exists(SCPath.SCData_p4k))
             {
@@ -99,8 +97,7 @@ namespace SCJMapper_V2.SC
                     {
                         foreach (var c in candidates)
                         {
-                            Logger.Instance.LogMessage(TracingLevel.DEBUG,
-                                $"defaultProfile candidate: {c.Filename} (size={c.FileSize}, date={c.FileModifyDate:s})");
+                            PluginLog.Debug($"defaultProfile candidate: {c.Filename} (size={c.FileSize}, date={c.FileModifyDate:s})");
                         }
 
                         p4K = candidates
@@ -109,8 +106,7 @@ namespace SCJMapper_V2.SC
                             .ThenByDescending(f => f.FileModifyDate)
                             .FirstOrDefault();
 
-                        Logger.Instance.LogMessage(TracingLevel.INFO,
-                            $"defaultProfile.xml candidates: {candidates.Count}, chosen: {p4K?.Filename ?? "(none)"}");
+                        PluginLog.Info($"defaultProfile.xml candidates: {candidates.Count}, chosen: {p4K?.Filename ?? "(none)"}");
                     }
                     if (p4K != null)
                     {
@@ -131,18 +127,18 @@ namespace SCJMapper_V2.SC
                             m_defProfile.Filepath = Path.GetDirectoryName(p4K.Filename);
                             m_defProfile.FileDateTime = p4K.FileModifyDate;
                             m_defProfile.Filedata = retVal;
-                            //Logger.Instance.LogMessage(TracingLevel.DEBUG, "UpdateDefProfileFile - read from pak file" );
+                            // Read from pak file
                         }
                         else
                         {
-                            //Logger.Instance.LogMessage(TracingLevel.DEBUG,"UpdateDefProfileFile - Error in CryXmlBinReader: {0}",cbr.GetErrorDescription());
+                            // Error in CryXmlBinReader - clear retVal
                             //retVal = ""; // clear any remanents
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.LogMessage(TracingLevel.FATAL, $"UpdateDefProfileFile - Unexpected {ex}");
+                    PluginLog.Fatal($"UpdateDefProfileFile - Unexpected {ex}");
                 }
 
             }
@@ -154,7 +150,7 @@ namespace SCJMapper_V2.SC
 
             var normalized = filename.Replace('/', '\\').ToLowerInvariant();
             // Typical location observed inside Data.p4k:
-            // Data\Libs\Config\Profiles\default\defaultProfile.xml
+            // Data\\Libs\\Config\\Profiles\\default\\defaultProfile.xml
             return normalized.Contains("\\data\\libs\\config\\profiles\\default\\") &&
                    normalized.EndsWith("\\" + SCDefaultProfile.DefaultProfileName.ToLowerInvariant());
         }
@@ -164,14 +160,14 @@ namespace SCJMapper_V2.SC
         /// </summary>
         private void UpdateLangFiles()
         {
-            //Logger.Instance.LogMessage(TracingLevel.DEBUG,"UpdateLangFiles - Entry");
+            // UpdateLangFiles - Entry
 
             if (File.Exists(SCPath.SCData_p4k))
             {
                 try
                 {
                     var PD = new p4kDirectory();
-                    IList<p4kFile.p4kFile> fileList = PD.ScanDirectoryContaining(SCPath.SCData_p4k, @"\global.ini");
+                    IList<p4kFile.p4kFile> fileList = PD.ScanDirectoryContaining(SCPath.SCData_p4k, @"\\global.ini");
                     foreach (p4kFile.p4kFile file in fileList)
                     {
                         string retVal = "";
@@ -182,33 +178,27 @@ namespace SCJMapper_V2.SC
 
                             //File.WriteAllBytes(Path.Combine(TheUser.FileStoreDir, $"xxxx.txt"), fContent);
 
-                            using (TextReader sr = new StringReader(Encoding.UTF8.GetString(fContent)))
+                            using TextReader sr = new StringReader(Encoding.UTF8.GetString(fContent));
+                            string line = sr.ReadLine();
+                            while (line != null)
                             {
-                                string line = sr.ReadLine();
-                                while (line != null)
+                                // try to get only valid lines
+                                int epo = line.IndexOf('=');
+                                string tag = "";
+                                if (epo >= 0)
                                 {
-                                    // try to get only valid lines
-                                    int epo = line.IndexOf('=');
-                                    string tag = "";
-                                    string content = "";
-                                    if (epo >= 0)
+                                    tag = line.Substring(0, epo);
+                                    // content not needed here; we just append the raw line
+
+                                    if (tag.StartsWith("ui_", StringComparison.InvariantCultureIgnoreCase))
                                     {
-                                        tag = line.Substring(0, epo);
-                                        if (line.Length >= (epo + 1))
-                                        {
-                                            content = line.Substring(epo + 1);
-                                        }
-
-                                        if (tag.StartsWith("ui_", StringComparison.InvariantCultureIgnoreCase))
-                                        {
-                                            // seems all strings we may need are ui_Cxyz
-                                            retVal += string.Format("{0}\n", line);
-                                        }
+                                        // seems all strings we may need are ui_Cxyz
+                                        retVal += string.Format("{0}\n", line);
                                     }
+                                }
 
-                                    line = sr.ReadLine();
-                                } // while
-                            } //using
+                                line = sr.ReadLine();
+                            } // while
 
                             // make our file - only this one gets a new one
                             SCFile obj = new SCFile
@@ -224,14 +214,14 @@ namespace SCJMapper_V2.SC
                             if (m_langFiles.ContainsKey(obj.Filename))
                                 m_langFiles.Remove(obj.Filename);
                             m_langFiles.Add(obj.Filename, obj);
-                            //Logger.Instance.LogMessage(TracingLevel.DEBUG,"UpdateLangFiles - read from pak file {0}", obj.Filename);
+                            // UpdateLangFiles - read from pak file
                         }
 
                     } // all files
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.LogMessage(TracingLevel.FATAL, $"UpdateLangFiles - Unexpected {ex}");
+                    PluginLog.Fatal($"UpdateLangFiles - Unexpected {ex}");
                 }
             }
         }
@@ -259,33 +249,30 @@ namespace SCJMapper_V2.SC
                 {
                     SCFile obj = new SCFile();
 
-                    using (Stream stream = File.Open(file, FileMode.Open))
+                    using var stream = File.Open(file, FileMode.Open);
+                    using var gZipStream = new GZipStream(stream, CompressionMode.Decompress);
                     {
-                        using (var gZipStream = new GZipStream(stream, CompressionMode.Decompress))
-                        {
-                            BinaryFormatter binaryFormatter = new BinaryFormatter();
-                            obj = (SCFile) binaryFormatter.Deserialize(gZipStream);
-                        }
+                        BinaryFormatter binaryFormatter = new BinaryFormatter();
+                        obj = (SCFile)binaryFormatter.Deserialize(gZipStream);
+                    }
 
-                        stream.Close();
-                        if (obj.Filetype == SCFile.FileType.PakFile)
-                        {
-                            m_pakFile = obj;
-                        }
-                        else if (obj.Filetype == SCFile.FileType.DefProfile)
-                        {
-                            m_defProfile = obj;
-                        }
-                        else if (obj.Filetype == SCFile.FileType.LangFile)
-                        {
-                            m_langFiles.Add(obj.Filename, obj);
-                        }
+                    if (obj.Filetype == SCFile.FileType.PakFile)
+                    {
+                        m_pakFile = obj;
+                    }
+                    else if (obj.Filetype == SCFile.FileType.DefProfile)
+                    {
+                        m_defProfile = obj;
+                    }
+                    else if (obj.Filetype == SCFile.FileType.LangFile)
+                    {
+                        m_langFiles.Add(obj.Filename, obj);
                     }
                 }
             }
             catch (Exception e)
             {
-                Logger.Instance.LogMessage(TracingLevel.FATAL, $"LoadPack - deserialization error: {e}");
+                PluginLog.Fatal($"LoadPack - deserialization error: {e}");
                 return; // ERROR EXIT - cannot read
             }
 
@@ -298,8 +285,7 @@ namespace SCJMapper_V2.SC
         {
             if (m_pakFile.Filetype != SCFile.FileType.PakFile)
             {
-                //Logger.Instance.LogMessage(TracingLevel.DEBUG,"SavePack - no valid data to save?? ");
-                return; // nothing to save ??
+                return; // nothing to save
             }
 
             // make sure we have a folder to write to
@@ -310,7 +296,7 @@ namespace SCJMapper_V2.SC
             }
             catch (Exception e)
             {
-                Logger.Instance.LogMessage(TracingLevel.FATAL, $"SavePack - create dir error: {e}");
+                PluginLog.Fatal($"SavePack - create dir error: {e}");
                 return; // ERROR EXIT - cannot create a dir to write to
             }
 
@@ -318,32 +304,20 @@ namespace SCJMapper_V2.SC
             try
             {
                 // save p4k reference for the filedate
-                using (Stream stream =
-                    File.Open(Path.Combine(p4ktest.SC.TheUser.FileStoreDir, m_pakFile.Filename + ".scj"),
-                        FileMode.Create))
+                using var streamPak = File.Open(Path.Combine(p4ktest.SC.TheUser.FileStoreDir, m_pakFile.Filename + ".scj"), FileMode.Create);
+                using var gZipPak = new GZipStream(streamPak, CompressionMode.Compress);
                 {
-                    using (var gZipStream = new GZipStream(stream, CompressionMode.Compress))
-                    {
-                        BinaryFormatter binaryFormatter = new BinaryFormatter();
-                        binaryFormatter.Serialize(gZipStream, m_pakFile);
-                    }
-
-                    stream.Close();
+                    BinaryFormatter binaryFormatter = new BinaryFormatter();
+                    binaryFormatter.Serialize(gZipPak, m_pakFile);
                 }
 
                 if (m_defProfile.Filetype == SCFile.FileType.DefProfile)
                 {
-                    using (Stream stream = File.Open(
-                        Path.Combine(p4ktest.SC.TheUser.FileStoreDir, m_defProfile.Filename + ".scj"),
-                        FileMode.Create))
+                    using var streamDef = File.Open(Path.Combine(p4ktest.SC.TheUser.FileStoreDir, m_defProfile.Filename + ".scj"), FileMode.Create);
+                    using var gZipDef = new GZipStream(streamDef, CompressionMode.Compress);
                     {
-                        using (var gZipStream = new GZipStream(stream, CompressionMode.Compress))
-                        {
-                            BinaryFormatter binaryFormatter = new BinaryFormatter();
-                            binaryFormatter.Serialize(gZipStream, m_defProfile);
-                        }
-
-                        stream.Close();
+                        BinaryFormatter binaryFormatter = new BinaryFormatter();
+                        binaryFormatter.Serialize(gZipDef, m_defProfile);
                     }
 
                     File.WriteAllText(Path.Combine(p4ktest.SC.TheUser.FileStoreDir, m_defProfile.Filename),
@@ -354,23 +328,18 @@ namespace SCJMapper_V2.SC
                 {
                     if (kv.Value.Filetype == SCFile.FileType.LangFile)
                     {
-                        using (Stream stream = File.Open(Path.Combine(TheUser.FileStoreDir, kv.Value.Filename + ".scj"),
-                            FileMode.Create))
+                        using var streamLang = File.Open(Path.Combine(TheUser.FileStoreDir, kv.Value.Filename + ".scj"), FileMode.Create);
+                        using var gZipLang = new GZipStream(streamLang, CompressionMode.Compress);
                         {
-                            using (var gZipStream = new GZipStream(stream, CompressionMode.Compress))
-                            {
-                                BinaryFormatter binaryFormatter = new BinaryFormatter();
-                                binaryFormatter.Serialize(gZipStream, kv.Value);
-                            }
-
-                            stream.Close();
+                            BinaryFormatter binaryFormatter = new BinaryFormatter();
+                            binaryFormatter.Serialize(gZipLang, kv.Value);
                         }
                     }
                 }
             }
             catch (Exception e)
             {
-                Logger.Instance.LogMessage(TracingLevel.FATAL, $"SavePack - serialization error: {e}");
+                PluginLog.Fatal($"SavePack - serialization error: {e}");
                 return; // ERROR EXIT - cannot write
             }
         }
@@ -392,7 +361,7 @@ namespace SCJMapper_V2.SC
                     DateTime dateTime = File.GetLastWriteTime(SCPath.SCData_p4k);
                     pakUpdated = (dateTime > m_pakFile.FileDateTime);
 
-                    Logger.Instance.LogMessage(TracingLevel.INFO, $"{SCPath.SCData_p4k} needs update : {pakUpdated}");
+                    PluginLog.Info($"{SCPath.SCData_p4k} needs update : {pakUpdated}");
 
                 }
             }
@@ -415,7 +384,6 @@ namespace SCJMapper_V2.SC
 
             SavePack(); // save the latest collection
         }
-
 
 
 

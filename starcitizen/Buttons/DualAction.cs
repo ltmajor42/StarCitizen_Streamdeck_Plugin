@@ -95,22 +95,26 @@ namespace starcitizen.Buttons
                 return;
             }
 
-            StreamDeckCommon.SendKeypressDown(CommandTools.ConvertKeyString(action.Keyboard));
+            var converted = CommandTools.ConvertKeyString(action.Keyboard);
+            if (!string.IsNullOrWhiteSpace(converted))
+            {
+                // Send a one-shot when the key is pressed
+                StreamDeckCommon.SendKeypress(converted, 40);
+            }
         }
 
         private void SendUpAction()
         {
-            if (bindingService.TryGetBinding(settings.DownFunction, out var downAction))
-            {
-                StreamDeckCommon.SendKeypressUp(CommandTools.ConvertKeyString(downAction.Keyboard));
-            }
-
-            if (!bindingService.TryGetBinding(settings.UpFunction, out var upAction) || settings.UpFunction == settings.DownFunction)
+            if (!bindingService.TryGetBinding(settings.UpFunction, out var upAction))
             {
                 return;
             }
 
-            StreamDeckCommon.SendKeypress(CommandTools.ConvertKeyString(upAction.Keyboard), 40);
+            var converted = CommandTools.ConvertKeyString(upAction.Keyboard);
+            if (!string.IsNullOrWhiteSpace(converted))
+            {
+                StreamDeckCommon.SendKeypress(converted, 40);
+            }
         }
 
         public override void ReceivedSettings(ReceivedSettingsPayload payload)

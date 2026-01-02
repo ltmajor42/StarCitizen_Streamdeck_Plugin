@@ -56,6 +56,7 @@
                        id="functionSearch"
                        placeholder="Type to search functions..."
                        autocomplete="off">
+                <button id="btnClearSearch" class="sdpi-clear-button hidden" onclick="clearSearch()" title="Clear search" style="margin-left:6px;padding:3px 8px;height:28px;">&times;</button>
             </div>
             <div class="sdpi-item-value"
                  id="searchResults"
@@ -162,6 +163,22 @@
     let savedDownValue = null;
     let savedUpValue = null;
 
+    function clearSearch() {
+        const s = document.getElementById('functionSearch');
+        if (!s) return;
+        s.value = '';
+        try { filterOptions(); } catch (e) { }
+        s.focus();
+        updateClearSearchButton();
+    }
+
+    function updateClearSearchButton() {
+        const s = document.getElementById('functionSearch');
+        const b = document.getElementById('btnClearSearch');
+        if (!b || !s) return;
+        b.classList.toggle('hidden', !s.value);
+    }
+
     /* SAFE loadConfiguration — preserve payload */
     const originalLoadConfiguration = loadConfiguration;
     loadConfiguration = function (payload) {
@@ -241,6 +258,7 @@
         if (savedUpValue) upSel.value = savedUpValue;
 
         filterOptions();
+        updateClearSearchButton();
     }
 
     // Filter press/release options in tandem and toggle helper text/no-results state
@@ -281,6 +299,8 @@
         searchResults.textContent = term
             ? `Found ${visibleGroups} group${visibleGroups !== 1 ? 's' : ''}`
             : '';
+
+        updateClearSearchButton();
     }
 
     /* CLEAR SOUND HANDLER */
@@ -289,7 +309,7 @@
         const label = document.getElementById('clickSoundFilename');
 
         if (input) input.value = '';
-        if (label) label.textContent = 'No file…';
+        if (label) label.textContent = 'No file\u2026';
 
         setSettings({ clickSound: '' });
         updateClearButtons();
@@ -331,14 +351,20 @@
             .addEventListener('input', function () {
                 clearTimeout(this.searchTimeout);
                 this.searchTimeout = setTimeout(filterOptions, 150);
+                updateClearSearchButton();
             });
 
         ['downFunction', 'upFunction'].forEach(id => {
-            document.getElementById(id)
-                .addEventListener('change', function () {
-                    document.getElementById('functionSearch').value = '';
-                    document.getElementById('searchResults').textContent = '';
-                });
+            const el = document.getElementById(id);
+            el.addEventListener('change', function () {
+                document.getElementById('functionSearch').value = '';
+                document.getElementById('searchResults').textContent = '';
+                try { filterOptions(); } catch (e) { }
+            });
+
+            // Ensure dropdown refreshes when opened so an empty search shows all options
+            el.addEventListener('mousedown', function () { try { filterOptions(); } catch (e) { } });
+            el.addEventListener('focus', function () { try { filterOptions(); } catch (e) { } });
         });
 
         // file change handlers and clear-button visibility are handled by shared initSoundPickers/updateClearButtons

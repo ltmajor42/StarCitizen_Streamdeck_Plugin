@@ -9,6 +9,7 @@ using BarRaider.SdTools;
 using Microsoft.Win32;
 using p4ktest;
 using TheUser = p4ktest.SC.TheUser;
+using starcitizen.Core;
 
 //using SCJMapper_V2.Translation;
 
@@ -97,7 +98,7 @@ namespace SCJMapper_V2.SC
         /// </summary>
         static private string FindInstallationFromRSILauncher()
         {
-            Logger.Instance.LogMessage(TracingLevel.DEBUG, "FindInstallationFromRSILauncher - Entry");
+            PluginLog.Debug("FindInstallationFromRSILauncher - Entry");
 
             try
             {
@@ -108,7 +109,7 @@ namespace SCJMapper_V2.SC
                 string libraryFolderFile = Path.Combine(rsiLauncherPath, "library_folder.json");
                 if (File.Exists(libraryFolderFile))
                 {
-                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"FindInstallationFromRSILauncher - Found library_folder.json: {libraryFolderFile}");
+                    PluginLog.Debug($"FindInstallationFromRSILauncher - Found library_folder.json: {libraryFolderFile}");
                     string json = File.ReadAllText(libraryFolderFile);
                     // Simple JSON parsing - look for path in quotes
                     int pathStart = json.IndexOf('"');
@@ -117,11 +118,11 @@ namespace SCJMapper_V2.SC
                     {
                         string libraryPath = json.Substring(pathStart + 1, pathEnd - pathStart - 1);
                         libraryPath = libraryPath.Replace("\\\\", "\\").Replace("\\/", "/").Replace("/", "\\");
-                        Logger.Instance.LogMessage(TracingLevel.DEBUG, $"FindInstallationFromRSILauncher - Parsed library path: {libraryPath}");
+                        PluginLog.Debug($"FindInstallationFromRSILauncher - Parsed library path: {libraryPath}");
                         
                         if (Directory.Exists(libraryPath) && IsValidStarCitizenInstallation(libraryPath))
                         {
-                            Logger.Instance.LogMessage(TracingLevel.INFO, $"FindInstallationFromRSILauncher - Found via library_folder.json: {libraryPath}");
+                            PluginLog.Info($"FindInstallationFromRSILauncher - Found via library_folder.json: {libraryPath}");
                             return libraryPath;
                         }
                     }
@@ -131,7 +132,7 @@ namespace SCJMapper_V2.SC
                 string settingsFile = Path.Combine(rsiLauncherPath, "settings.json");
                 if (File.Exists(settingsFile))
                 {
-                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"FindInstallationFromRSILauncher - Found settings.json: {settingsFile}");
+                    PluginLog.Debug($"FindInstallationFromRSILauncher - Found settings.json: {settingsFile}");
                     string json = File.ReadAllText(settingsFile);
                     
                     // Look for "libraryFolder" or "installDir" in settings
@@ -151,11 +152,11 @@ namespace SCJMapper_V2.SC
                                 {
                                     string path = json.Substring(valueStart + 1, valueEnd - valueStart - 1);
                                     path = path.Replace("\\\\", "\\").Replace("\\/", "/").Replace("/", "\\");
-                                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"FindInstallationFromRSILauncher - Found path in settings.json: {path}");
+                                    PluginLog.Debug($"FindInstallationFromRSILauncher - Found path in settings.json: {path}");
                                     
                                     if (Directory.Exists(path) && IsValidStarCitizenInstallation(path))
                                     {
-                                        Logger.Instance.LogMessage(TracingLevel.INFO, $"FindInstallationFromRSILauncher - Found via settings.json: {path}");
+                                        PluginLog.Info($"FindInstallationFromRSILauncher - Found via settings.json: {path}");
                                         return path;
                                     }
                                 }
@@ -175,7 +176,7 @@ namespace SCJMapper_V2.SC
                         {
                             string logContent = File.ReadAllText(logFile);
                             // Look for paths containing StarCitizen
-                            var matches = System.Text.RegularExpressions.Regex.Matches(logContent, @"([A-Za-z]:\\[^""<>|\r\n]+?StarCitizen)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                            var matches = System.Text.RegularExpressions.Regex.Matches(logContent, @"([A-Za-z]:\\[^\""<>|\r\n]+?StarCitizen)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                             foreach (System.Text.RegularExpressions.Match match in matches)
                             {
                                 string path = match.Value;
@@ -183,24 +184,24 @@ namespace SCJMapper_V2.SC
                                 path = path.Replace("\\\\", "\\");
                                 if (Directory.Exists(path) && IsValidStarCitizenInstallation(path))
                                 {
-                                    Logger.Instance.LogMessage(TracingLevel.INFO, $"FindInstallationFromRSILauncher - Found via log file: {path}");
+                                    PluginLog.Info($"FindInstallationFromRSILauncher - Found via log file: {path}");
                                     return path;
                                 }
                             }
                         }
                         catch (Exception ex)
                         {
-                            Logger.Instance.LogMessage(TracingLevel.DEBUG, $"FindInstallationFromRSILauncher - Error reading log {logFile}: {ex.Message}");
+                            PluginLog.Debug($"FindInstallationFromRSILauncher - Error reading log {logFile}: {ex.Message}");
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Logger.Instance.LogMessage(TracingLevel.DEBUG, $"FindInstallationFromRSILauncher - Error: {ex.Message}");
+                PluginLog.Debug($"FindInstallationFromRSILauncher - Error: {ex.Message}");
             }
 
-            Logger.Instance.LogMessage(TracingLevel.DEBUG, "FindInstallationFromRSILauncher - No valid installation found");
+            PluginLog.Debug("FindInstallationFromRSILauncher - No valid installation found");
             return "";
         }
 
@@ -209,7 +210,7 @@ namespace SCJMapper_V2.SC
         /// </summary>
         static private string FindLauncherFromRegistry()
         {
-            Logger.Instance.LogMessage(TracingLevel.DEBUG, "FindLauncherFromRegistry - Entry");
+            PluginLog.Debug("FindLauncherFromRegistry - Entry");
 
             foreach (string regKey in KNOWN_REGISTRY_KEYS)
             {
@@ -221,35 +222,33 @@ namespace SCJMapper_V2.SC
                     else
                         localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
 
-                    using (RegistryKey key = localKey.OpenSubKey(regKey))
+                    using var key = localKey.OpenSubKey(regKey);
+                    if (key != null)
                     {
-                        if (key != null)
+                        object installLocation = key.GetValue("InstallLocation");
+                        if (installLocation != null)
                         {
-                            object installLocation = key.GetValue("InstallLocation");
-                            if (installLocation != null)
-                            {
-                                string scLauncher = installLocation.ToString();
-                                Logger.Instance.LogMessage(TracingLevel.DEBUG, $"FindLauncherFromRegistry - Found in {regKey}: {scLauncher}");
+                            string scLauncher = installLocation.ToString();
+                            PluginLog.Debug($"FindLauncherFromRegistry - Found in {regKey}: {scLauncher}");
 
-                                if (Directory.Exists(scLauncher))
-                                {
-                                    return scLauncher;
-                                }
-                                else
-                                {
-                                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"FindLauncherFromRegistry - Directory does not exist: {scLauncher}");
-                                }
+                            if (Directory.Exists(scLauncher))
+                            {
+                                return scLauncher;
+                            }
+                            else
+                            {
+                                PluginLog.Debug($"FindLauncherFromRegistry - Directory does not exist: {scLauncher}");
                             }
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"FindLauncherFromRegistry - Error checking {regKey}: {ex.Message}");
+                    PluginLog.Debug($"FindLauncherFromRegistry - Error checking {regKey}: {ex.Message}");
                 }
             }
 
-            Logger.Instance.LogMessage(TracingLevel.DEBUG, "FindLauncherFromRegistry - No valid launcher found in registry");
+            PluginLog.Debug("FindLauncherFromRegistry - No valid launcher found in registry");
             return "";
         }
 
@@ -258,24 +257,24 @@ namespace SCJMapper_V2.SC
         /// </summary>
         static private string FindInstallationFromCommonPaths()
         {
-            Logger.Instance.LogMessage(TracingLevel.DEBUG, "FindInstallationFromCommonPaths - Entry");
+            PluginLog.Debug("FindInstallationFromCommonPaths - Entry");
 
             foreach (string path in COMMON_INSTALL_PATHS)
             {
-                Logger.Instance.LogMessage(TracingLevel.DEBUG, $"FindInstallationFromCommonPaths - Checking: {path}");
+                PluginLog.Debug($"FindInstallationFromCommonPaths - Checking: {path}");
 
                 if (Directory.Exists(path))
                 {
                     // Check if this looks like a valid SC installation
                     if (IsValidStarCitizenInstallation(path))
                     {
-                        Logger.Instance.LogMessage(TracingLevel.INFO, $"FindInstallationFromCommonPaths - Found valid installation: {path}");
+                        PluginLog.Info($"FindInstallationFromCommonPaths - Found valid installation: {path}");
                         return path;
                     }
                 }
             }
 
-            Logger.Instance.LogMessage(TracingLevel.DEBUG, "FindInstallationFromCommonPaths - No valid installation found");
+            PluginLog.Debug("FindInstallationFromCommonPaths - No valid installation found");
             return "";
         }
 
@@ -299,7 +298,7 @@ namespace SCJMapper_V2.SC
                     string dataP4k = Path.Combine(livePath, "Data.p4k");
                     if (File.Exists(dataP4k))
                     {
-                        Logger.Instance.LogMessage(TracingLevel.DEBUG, $"IsValidStarCitizenInstallation - Found RSI style LIVE: {livePath}");
+                        PluginLog.Debug($"IsValidStarCitizenInstallation - Found RSI style LIVE: {livePath}");
                         return true;
                     }
                 }
@@ -309,7 +308,7 @@ namespace SCJMapper_V2.SC
                     string dataP4k = Path.Combine(ptuPath, "Data.p4k");
                     if (File.Exists(dataP4k))
                     {
-                        Logger.Instance.LogMessage(TracingLevel.DEBUG, $"IsValidStarCitizenInstallation - Found RSI style PTU: {ptuPath}");
+                        PluginLog.Debug($"IsValidStarCitizenInstallation - Found RSI style PTU: {ptuPath}");
                         return true;
                     }
                 }
@@ -323,7 +322,7 @@ namespace SCJMapper_V2.SC
                     string dataP4k = Path.Combine(directLivePath, "Data.p4k");
                     if (File.Exists(dataP4k))
                     {
-                        Logger.Instance.LogMessage(TracingLevel.DEBUG, $"IsValidStarCitizenInstallation - Found direct style LIVE: {directLivePath}");
+                        PluginLog.Debug($"IsValidStarCitizenInstallation - Found direct style LIVE: {directLivePath}");
                         return true;
                     }
                 }
@@ -333,7 +332,7 @@ namespace SCJMapper_V2.SC
                     string dataP4k = Path.Combine(directPtuPath, "Data.p4k");
                     if (File.Exists(dataP4k))
                     {
-                        Logger.Instance.LogMessage(TracingLevel.DEBUG, $"IsValidStarCitizenInstallation - Found direct style PTU: {directPtuPath}");
+                        PluginLog.Debug($"IsValidStarCitizenInstallation - Found direct style PTU: {directPtuPath}");
                         return true;
                     }
                 }
@@ -342,13 +341,13 @@ namespace SCJMapper_V2.SC
                 string directDataP4k = Path.Combine(path, "Data.p4k");
                 if (File.Exists(directDataP4k))
                 {
-                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"IsValidStarCitizenInstallation - Found direct Data.p4k: {directDataP4k}");
+                    PluginLog.Debug($"IsValidStarCitizenInstallation - Found direct Data.p4k: {directDataP4k}");
                     return true;
                 }
             }
             catch (Exception ex)
             {
-                Logger.Instance.LogMessage(TracingLevel.DEBUG, $"IsValidStarCitizenInstallation - Error checking {path}: {ex.Message}");
+                PluginLog.Debug($"IsValidStarCitizenInstallation - Error checking {path}: {ex.Message}");
             }
 
             return false;
@@ -359,24 +358,24 @@ namespace SCJMapper_V2.SC
         /// </summary>
         static private string FindInstallationFromSteamPaths()
         {
-            Logger.Instance.LogMessage(TracingLevel.DEBUG, "FindInstallationFromSteamPaths - Entry");
+            PluginLog.Debug("FindInstallationFromSteamPaths - Entry");
 
             foreach (string path in STEAM_LIBRARY_PATHS)
             {
-                Logger.Instance.LogMessage(TracingLevel.DEBUG, $"FindInstallationFromSteamPaths - Checking: {path}");
+                PluginLog.Debug($"FindInstallationFromSteamPaths - Checking: {path}");
 
                 if (Directory.Exists(path))
                 {
                     // Check if this looks like a valid SC installation
                     if (IsValidStarCitizenInstallation(path))
                     {
-                        Logger.Instance.LogMessage(TracingLevel.INFO, $"FindInstallationFromSteamPaths - Found valid installation: {path}");
+                        PluginLog.Info($"FindInstallationFromSteamPaths - Found valid installation: {path}");
                         return path;
                     }
                 }
             }
 
-            Logger.Instance.LogMessage(TracingLevel.DEBUG, "FindInstallationFromSteamPaths - No valid installation found");
+            PluginLog.Debug("FindInstallationFromSteamPaths - No valid installation found");
             return "";
         }
 
@@ -385,7 +384,7 @@ namespace SCJMapper_V2.SC
         /// </summary>
         static private string FindInstallationFromSteamConfig()
         {
-            Logger.Instance.LogMessage(TracingLevel.DEBUG, "FindInstallationFromSteamConfig - Entry");
+            PluginLog.Debug("FindInstallationFromSteamConfig - Entry");
 
             try
             {
@@ -404,7 +403,7 @@ namespace SCJMapper_V2.SC
 
                 if (!File.Exists(steamConfigPath))
                 {
-                    Logger.Instance.LogMessage(TracingLevel.DEBUG, "FindInstallationFromSteamConfig - Steam config not found");
+                    PluginLog.Debug("FindInstallationFromSteamConfig - Steam config not found");
                     return "";
                 }
 
@@ -414,21 +413,21 @@ namespace SCJMapper_V2.SC
                 foreach (string libraryPath in libraryPaths)
                 {
                     string scPath = Path.Combine(libraryPath, "steamapps", "common", "Star Citizen");
-                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"FindInstallationFromSteamConfig - Checking Steam library: {scPath}");
+                    PluginLog.Debug($"FindInstallationFromSteamConfig - Checking Steam library: {scPath}");
 
                     if (IsValidStarCitizenInstallation(scPath))
                     {
-                        Logger.Instance.LogMessage(TracingLevel.INFO, $"FindInstallationFromSteamConfig - Found valid installation: {scPath}");
+                        PluginLog.Info($"FindInstallationFromSteamConfig - Found valid installation: {scPath}");
                         return scPath;
                     }
                 }
             }
             catch (Exception ex)
             {
-                Logger.Instance.LogMessage(TracingLevel.DEBUG, $"FindInstallationFromSteamConfig - Error: {ex.Message}");
+                PluginLog.Debug($"FindInstallationFromSteamConfig - Error: {ex.Message}");
             }
 
-            Logger.Instance.LogMessage(TracingLevel.DEBUG, "FindInstallationFromSteamConfig - No valid installation found");
+            PluginLog.Debug("FindInstallationFromSteamConfig - No valid installation found");
             return "";
         }
 
@@ -461,8 +460,8 @@ namespace SCJMapper_V2.SC
                     else if (inSteamSection && trimmed.Contains("\"BaseInstallFolder\""))
                     {
                         // Extract the base install folder path
-                        int start = trimmed.IndexOf('"', trimmed.IndexOf('"') + 1) + 1;
-                        int end = trimmed.LastIndexOf('"');
+                        int start = trimmed.IndexOf('\'', trimmed.IndexOf('\'') + 1) + 1;
+                        int end = trimmed.LastIndexOf('\'');
                         if (start < end)
                         {
                             string path = trimmed.Substring(start, end - start);
@@ -486,9 +485,9 @@ namespace SCJMapper_V2.SC
                     else if (inLibraryFolders && trimmed.StartsWith("\"") && trimmed.Contains("\""))
                     {
                         // Extract library path
-                        int firstQuote = trimmed.IndexOf('"');
-                        int secondQuote = trimmed.IndexOf('"', firstQuote + 1);
-                        int thirdQuote = trimmed.IndexOf('"', secondQuote + 1);
+                        int firstQuote = trimmed.IndexOf('\"');
+                        int secondQuote = trimmed.IndexOf('\"', firstQuote + 1);
+                        int thirdQuote = trimmed.IndexOf('\"', secondQuote + 1);
 
                         if (thirdQuote > secondQuote)
                         {
@@ -500,7 +499,7 @@ namespace SCJMapper_V2.SC
             }
             catch (Exception ex)
             {
-                Logger.Instance.LogMessage(TracingLevel.DEBUG, $"ParseSteamConfigForLibraries - Error parsing config: {ex.Message}");
+                PluginLog.Debug($"ParseSteamConfigForLibraries - Error parsing config: {ex.Message}");
             }
 
             return libraryPaths;
@@ -529,9 +528,9 @@ namespace SCJMapper_V2.SC
 
         private static string ResolveBasePath()
         {
-            Logger.Instance.LogMessage(TracingLevel.DEBUG, "SCBasePath - Entry");
+            PluginLog.Debug("SCBasePath - Entry");
 
-            string scp = "";
+            string scp;
 
             // Method 1: Check appsettings config first (user override)
             if (File.Exists("appSettings.config"))
@@ -544,14 +543,14 @@ namespace SCJMapper_V2.SC
                         scp = config.AppSettings.Settings["SCBasePath"].Value;
                         if (!string.IsNullOrEmpty(scp) && Directory.Exists(scp) && IsValidStarCitizenInstallation(scp))
                         {
-                            Logger.Instance.LogMessage(TracingLevel.INFO, $"SCBasePath - Using user-specified path: {scp}");
+                            PluginLog.Info($"SCBasePath - Using user-specified path: {scp}");
                             return scp;
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"SCBasePath - Error reading config: {ex.Message}");
+                    PluginLog.Debug($"SCBasePath - Error reading config: {ex.Message}");
                 }
             }
 
@@ -559,7 +558,7 @@ namespace SCJMapper_V2.SC
             scp = FindInstallationFromRSILauncher();
             if (!string.IsNullOrEmpty(scp))
             {
-                Logger.Instance.LogMessage(TracingLevel.INFO, $"SCBasePath - Found via RSI Launcher config: {scp}");
+                PluginLog.Info($"SCBasePath - Found via RSI Launcher config: {scp}");
                 return scp;
             }
 
@@ -570,7 +569,7 @@ namespace SCJMapper_V2.SC
                 scp = Path.GetDirectoryName(scp); // Get parent directory
                 if (IsValidStarCitizenInstallation(scp))
                 {
-                    Logger.Instance.LogMessage(TracingLevel.INFO, $"SCBasePath - Found via registry: {scp}");
+                    PluginLog.Info($"SCBasePath - Found via registry: {scp}");
                     return scp;
                 }
             }
@@ -579,7 +578,7 @@ namespace SCJMapper_V2.SC
             scp = FindInstallationFromCommonPaths();
             if (!string.IsNullOrEmpty(scp))
             {
-                Logger.Instance.LogMessage(TracingLevel.INFO, $"SCBasePath - Found via common paths: {scp}");
+                PluginLog.Info($"SCBasePath - Found via common paths: {scp}");
                 return scp;
             }
 
@@ -587,7 +586,7 @@ namespace SCJMapper_V2.SC
             scp = FindInstallationFromSteamPaths();
             if (!string.IsNullOrEmpty(scp))
             {
-                Logger.Instance.LogMessage(TracingLevel.INFO, $"SCBasePath - Found via Steam: {scp}");
+                PluginLog.Info($"SCBasePath - Found via Steam: {scp}");
                 return scp;
             }
 
@@ -595,11 +594,11 @@ namespace SCJMapper_V2.SC
             scp = FindInstallationFromSteamConfig();
             if (!string.IsNullOrEmpty(scp))
             {
-                Logger.Instance.LogMessage(TracingLevel.INFO, $"SCBasePath - Found via Steam config: {scp}");
+                PluginLog.Info($"SCBasePath - Found via Steam config: {scp}");
                 return scp;
             }
 
-            Logger.Instance.LogMessage(TracingLevel.ERROR, "SCBasePath - Could not find Star Citizen installation. Please check your installation or set SCBasePath in appSettings.config");
+            PluginLog.Error("SCBasePath - Could not find Star Citizen installation. Please check your installation or set SCBasePath in appSettings.config");
             return "";
         }
 
@@ -626,7 +625,7 @@ namespace SCJMapper_V2.SC
                     }
                     catch (Exception ex)
                     {
-                        Logger.Instance.LogMessage(TracingLevel.DEBUG, $"Error reading UsePTU config: {ex.Message}");
+                        PluginLog.Debug($"Error reading UsePTU config: {ex.Message}");
                     }
                 }
 
@@ -665,8 +664,8 @@ namespace SCJMapper_V2.SC
                         return cachedClientPath;
                     }
 
-                    Logger.Instance.LogMessage(TracingLevel.DEBUG, "SCClientPath - Entry");
-                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"Using PTU: {usePTU}");
+                    PluginLog.Debug("SCClientPath - Entry");
+                    PluginLog.Debug($"Using PTU: {usePTU}");
 
                     cachedClientPath = ResolveClientPath(scp, usePTU);
                     cachedClientPathUsePtu = usePTU;
@@ -685,7 +684,7 @@ namespace SCJMapper_V2.SC
             string rsiStylePath = Path.Combine(scp, "StarCitizen", targetFolder);
             if (Directory.Exists(rsiStylePath) && File.Exists(Path.Combine(rsiStylePath, "Data.p4k")))
             {
-                Logger.Instance.LogMessage(TracingLevel.INFO, $"Using RSI style {targetFolder} installation: {rsiStylePath}");
+                PluginLog.Info($"Using RSI style {targetFolder} installation: {rsiStylePath}");
                 return rsiStylePath;
             }
 
@@ -693,20 +692,20 @@ namespace SCJMapper_V2.SC
             string directStylePath = Path.Combine(scp, targetFolder);
             if (Directory.Exists(directStylePath) && File.Exists(Path.Combine(directStylePath, "Data.p4k")))
             {
-                Logger.Instance.LogMessage(TracingLevel.INFO, $"Using direct style {targetFolder} installation: {directStylePath}");
+                PluginLog.Info($"Using direct style {targetFolder} installation: {directStylePath}");
                 return directStylePath;
             }
 
             // If PTU was requested but not found, try fallback to LIVE
             if (usePTU)
             {
-                Logger.Instance.LogMessage(TracingLevel.WARN, "PTU requested but not found, trying LIVE fallback");
+                PluginLog.Warn("PTU requested but not found, trying LIVE fallback");
 
                 // Try RSI style LIVE
                 rsiStylePath = Path.Combine(scp, "StarCitizen", "LIVE");
                 if (Directory.Exists(rsiStylePath) && File.Exists(Path.Combine(rsiStylePath, "Data.p4k")))
                 {
-                    Logger.Instance.LogMessage(TracingLevel.INFO, $"Fallback to RSI style LIVE: {rsiStylePath}");
+                    PluginLog.Info($"Fallback to RSI style LIVE: {rsiStylePath}");
                     return rsiStylePath;
                 }
 
@@ -714,7 +713,7 @@ namespace SCJMapper_V2.SC
                 directStylePath = Path.Combine(scp, "LIVE");
                 if (Directory.Exists(directStylePath) && File.Exists(Path.Combine(directStylePath, "Data.p4k")))
                 {
-                    Logger.Instance.LogMessage(TracingLevel.INFO, $"Fallback to direct style LIVE: {directStylePath}");
+                    PluginLog.Info($"Fallback to direct style LIVE: {directStylePath}");
                     return directStylePath;
                 }
 
@@ -722,12 +721,12 @@ namespace SCJMapper_V2.SC
                 string legacyPtuPath = Path.Combine(scp, "StarCitizenPTU", "LIVE");
                 if (Directory.Exists(legacyPtuPath) && File.Exists(Path.Combine(legacyPtuPath, "Data.p4k")))
                 {
-                    Logger.Instance.LogMessage(TracingLevel.INFO, $"Using legacy PTU: {legacyPtuPath}");
+                    PluginLog.Info($"Using legacy PTU: {legacyPtuPath}");
                     return legacyPtuPath;
                 }
             }
 
-            Logger.Instance.LogMessage(TracingLevel.ERROR, $"SCClientPath - Could not find Star Citizen {targetFolder} installation in: {scp}");
+            PluginLog.Error($"SCClientPath - Could not find Star Citizen {targetFolder} installation in: {scp}");
             return "";
         }
 
@@ -740,7 +739,7 @@ namespace SCJMapper_V2.SC
         {
             get
             {
-                //Logger.Instance.LogMessage(TracingLevel.DEBUG,"SCClientUSERPath - Entry");
+                // SCClientUSERPath - Entry
                 string scp = SCClientPath;
                 if (string.IsNullOrEmpty(scp)) return "";
                 //
@@ -757,7 +756,7 @@ namespace SCJMapper_V2.SC
 #endif
                 if (Directory.Exists(scpu)) return scpu;
 
-                //Logger.Instance.LogMessage(TracingLevel.DEBUG,@"SCClientUSERPath - StarCitizen\\LIVE\\USER[\Client\0] subfolder does not exist: {0}",scpu);
+                // SCClientUSERPath - StarCitizen\\LIVE\\USER[\\Client\\0] subfolder does not exist
                 return "";
             }
         }
@@ -770,12 +769,13 @@ namespace SCJMapper_V2.SC
                     ConfigurationManager.GetSection("appSettings") is NameValueCollection appSection)
                 {
                     if ((!string.IsNullOrEmpty(appSection["SCClientProfilePath"]) && !string.IsNullOrEmpty(Path.GetDirectoryName(appSection["SCClientProfilePath"]))))
+
                     {
                         return appSection["SCClientProfilePath"];
                     }
                 }
 
-                //Logger.Instance.LogMessage(TracingLevel.DEBUG,"SCClientProfilePath - Entry");
+                // SCClientProfilePath - Entry
                 string scp = SCClientUSERPath; 
                 if (string.IsNullOrEmpty(scp)) return "";
                 //
@@ -783,7 +783,7 @@ namespace SCJMapper_V2.SC
 
                 if (Directory.Exists(scp)) return scp;
 
-                //Logger.Instance.LogMessage(TracingLevel.DEBUG,@"SCClientProfilePath - StarCitizen\LIVE\USER\[Client\0\]Profiles\default subfolder does not exist: {0}",scp);
+                // SCClientProfilePath - Profiles default subfolder does not exist
                 return "";
             }
         }
@@ -821,7 +821,7 @@ namespace SCJMapper_V2.SC
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"ResolveActionMapsPath scan failed: {ex.Message}");
+                    PluginLog.Debug($"ResolveActionMapsPath scan failed: {ex.Message}");
                 }
             }
 
@@ -847,7 +847,7 @@ namespace SCJMapper_V2.SC
                     }
                 }
 
-                //Logger.Instance.LogMessage(TracingLevel.DEBUG,"SCDataXML_p4k - Entry");
+                // SCDataXML_p4k - Entry
                 string scp = SCClientPath;
                 if (string.IsNullOrEmpty(scp)) return "";
                 //
@@ -859,7 +859,7 @@ namespace SCJMapper_V2.SC
 #endif
                 if (File.Exists(scp)) return scp;
 
-                //Logger.Instance.LogMessage(TracingLevel.DEBUG,@"SCData_p4k - StarCitizen\LIVE or PTU\Data\Data.p4k file does not exist: {0}", scp);
+                // SCData_p4k - Data.p4k file does not exist
                 return "";
             }
         }
@@ -908,7 +908,15 @@ namespace SCJMapper_V2.SC
         /// </summary>
         public static bool EnableMouseOutput => ReadBoolAppSetting("EnableMouseOutput", true);
 
+        /// <summary>
+        /// Enable detailed input diagnostics logging (macro parsing, keystroke details, dispatcher previews).
+        /// Default: false.
+        /// </summary>
+        public static bool DetailedInputDiagnostics => ReadBoolAppSetting("DetailedInputDiagnostics", false);
 
-
+        /// <summary>
+        /// Enable mouse wheel coalescing to reduce log noise. Default: true.
+        /// </summary>
+        public static bool CoalesceMouseWheel => ReadBoolAppSetting("CoalesceMouseWheel", true);
     }
 }

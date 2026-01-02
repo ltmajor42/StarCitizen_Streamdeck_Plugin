@@ -53,6 +53,7 @@
                        id="functionSearch"
                        placeholder="Type to search functions."
                        autocomplete="off">
+                <button id="btnClearSearch" class="sdpi-clear-button hidden" onclick="clearSearch()" title="Clear search" style="margin-left:6px;padding:3px 8px;height:28px;">&times;</button>
             </div>
             <div class="sdpi-item-value"
                  id="searchResults"
@@ -201,10 +202,26 @@
 </div>
 
 <script>
-    // State holders for dropdown + previously stored selection
+    // State holders for dropdown + previously selected function
     let allOptions = [];
     let functionsLoaded = false;
     let savedFunctionValue = null;
+
+    function clearSearch() {
+        const s = document.getElementById('functionSearch');
+        if (!s) return;
+        s.value = '';
+        try { filterOptions(); } catch (e) { }
+        s.focus();
+        updateClearSearchButton();
+    }
+
+    function updateClearSearchButton() {
+        const s = document.getElementById('functionSearch');
+        const b = document.getElementById('btnClearSearch');
+        if (!b || !s) return;
+        b.classList.toggle('hidden', !s.value);
+    }
 
     // loadConfiguration shim: remember previously selected function and allow shared loader to populate other controls
     const originalLoadConfiguration = loadConfiguration;
@@ -263,6 +280,7 @@
         }
 
         filterOptions();
+        updateClearSearchButton();
     }
 
     // Toggle visibility of options/optgroups based on search field
@@ -296,6 +314,8 @@
         searchResults.textContent = term
             ? `Found ${visibleGroups} group${visibleGroups !== 1 ? 's' : ''}`
             : '';
+
+        updateClearSearchButton();
     }
 
     // Websocket glue: wait for sendToPropertyInspector message carrying function list
@@ -320,17 +340,28 @@
 
     // DOM wiring: debounce search + reset UI when selections change
     document.addEventListener('DOMContentLoaded', function () {
-        document.getElementById('functionSearch')
-            .addEventListener('input', function () {
+        const searchEl = document.getElementById('functionSearch');
+        if (searchEl) {
+            searchEl.addEventListener('input', function () {
                 clearTimeout(this.searchTimeout);
                 this.searchTimeout = setTimeout(filterOptions, 150);
+                updateClearSearchButton();
             });
+        }
 
-        document.getElementById('function')
-            .addEventListener('change', function () {
-                document.getElementById('functionSearch').value = '';
-                document.getElementById('searchResults').textContent = '';
+        const func = document.getElementById('function');
+        if (func) {
+            // Do not clear the search on selection change; leave user's query intact until explicitly cleared
+            // Ensure dropdown refreshes when opened so an empty search shows all options
+            const refreshFilter = function () { try { filterOptions(); } catch (e) { } try { setTimeout(filterOptions, 10); } catch (e) { } };
+            func.addEventListener('mousedown', refreshFilter);
+            func.addEventListener('click', refreshFilter);
+            func.addEventListener('focus', refreshFilter);
+
+            func.addEventListener('change', function () {
+                const r = document.getElementById('searchResults'); if (r) r.textContent = '';
             });
+        }
 
         updateClearButtons();
     });

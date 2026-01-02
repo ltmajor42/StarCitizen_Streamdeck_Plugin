@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
-using BarRaider.SdTools;
+using starcitizen.Core;
 
 namespace SCJMapper_V2.SC
 {
@@ -59,11 +59,11 @@ namespace SCJMapper_V2.SC
             resolvedPath = SCPath.ResolveActionMapsPath();
             if (string.IsNullOrWhiteSpace(resolvedPath))
             {
-                Logger.Instance.LogMessage(TracingLevel.WARN, "Could not resolve actionmaps.xml path.");
+                PluginLog.Warn("Could not resolve actionmaps.xml path.");
                 return "";
             }
 
-            Logger.Instance.LogMessage(TracingLevel.INFO, resolvedPath);
+            PluginLog.Info(resolvedPath);
 
             var path = resolvedPath;
             const int maxAttempts = 5;
@@ -75,7 +75,7 @@ namespace SCJMapper_V2.SC
                 {
                     if (!File.Exists(path))
                     {
-                        Logger.Instance.LogMessage(TracingLevel.WARN, $"actionmaps.xml missing at {path}");
+                        PluginLog.Warn($"actionmaps.xml missing at {path}");
                         return "";
                     }
 
@@ -99,24 +99,24 @@ namespace SCJMapper_V2.SC
 
                     if (firstWrite == secondWrite && firstLength == secondLength)
                     {
-                        Logger.Instance.LogMessage(TracingLevel.INFO, $"actionmaps.xml stabilized on attempt {attempt}: {path}");
+                        PluginLog.Info($"actionmaps.xml stabilized on attempt {attempt}: {path}");
                         return content;
                     }
 
-                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"actionmaps.xml changed between reads (attempt {attempt}/{maxAttempts}), retrying...");
+                    PluginLog.Debug($"actionmaps.xml changed between reads (attempt {attempt}/{maxAttempts}), retrying...");
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"actionmaps.xml read failed (attempt {attempt}/{maxAttempts}): {ex.Message}");
+                    PluginLog.Debug($"actionmaps.xml read failed (attempt {attempt}/{maxAttempts}): {ex.Message}");
                 }
 
                 Thread.Sleep(stabilizationDelayMs);
             }
 
-            Logger.Instance.LogMessage(TracingLevel.WARN, $"actionmaps.xml never stabilized after {maxAttempts} attempts.");
+            PluginLog.Warn($"actionmaps.xml never stabilized after {maxAttempts} attempts.");
             if (lastReadContent != null)
             {
-                Logger.Instance.LogMessage(TracingLevel.WARN, "Returning last actionmaps.xml read even though file was still changing.");
+                PluginLog.Warn("Returning last actionmaps.xml read even though file was still changing.");
                 return lastReadContent;
             }
 

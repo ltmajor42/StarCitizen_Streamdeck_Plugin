@@ -22,7 +22,27 @@ namespace WindowsInput
             if (inputs.Length == 0) throw new ArgumentException("The input array was empty", "inputs");
             var successful = NativeMethods.SendInput((UInt32)inputs.Length, inputs, Marshal.SizeOf(typeof (INPUT)));
             if (successful != inputs.Length)
-                throw new Exception("Some simulated input commands were not sent successfully. The most common reason for this happening are the security features of Windows including User Interface Privacy Isolation (UIPI). Your application can only send commands to applications of the same or lower elevation. Similarly certain commands are restricted to Accessibility/UIAutomation applications. Refer to the project home page and the code samples for more information.");
+            {
+                int last = Marshal.GetLastWin32Error();
+                // build a small summary of first few inputs
+                try
+                {
+                    int preview = Math.Min(inputs.Length, 6);
+                    var sb = new System.Text.StringBuilder();
+                    for (int i = 0; i < preview; i++)
+                    {
+                        var inp = inputs[i];
+                        sb.AppendFormat("[Type={0}]", inp.Type);
+                        if (i < preview - 1) sb.Append(',');
+                    }
+
+                    throw new Exception($"SendInput failed: requested={inputs.Length}, sent={successful}, lastError={last}. InputsPreview={sb}");
+                }
+                catch
+                {
+                    throw new Exception($"SendInput failed: requested={inputs.Length}, sent={successful}, lastError={last}.");
+                }
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Linq;
+using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using BarRaider.SdTools;
 using starcitizen.Core;
@@ -58,33 +59,27 @@ namespace starcitizen.Buttons
 
                 foreach (var group in actions)
                 {
-                    var duplicateKeys = group
+                    // Compute duplicate keys using the same normalization that will be shown to the user
+                    var duplicateKeyStrings = group
                         .Select(a =>
                         {
-                            var keyString = CommandTools.ConvertKeyStringToLocale(a.Keyboard, culture.Name);
-                            var primaryBinding = keyString
-                                .Replace("Dik", "")
-                                .Replace("}{", "+")
-                                .Replace("}", "")
-                                .Replace("{", "");
-
-                            return new
-                            {
-                                a.UILabel,
-                                PrimaryBinding = primaryBinding,
-                                BindingType = "keyboard"
-                            };
+                            var bindingInfo = GetBindingInfo(a.Keyboard, culture.Name);
+                            return $"{a.UILabel}||{bindingInfo.PrimaryBinding}||{bindingInfo.BindingType}";
                         })
-                        .GroupBy(x => x)
+                        .GroupBy(k => k)
                         .Where(g => g.Count() > 1)
-                        .Select(g => g.Key)
-                        .ToHashSet();
+                        .Select(g => g.Key);
+
+                    var duplicateKeys = new HashSet<string>(duplicateKeyStrings, StringComparer.OrdinalIgnoreCase);
 
                     var groupObj = new JObject
                     {
                         ["label"] = group.Key,
                         ["options"] = new JArray()
                     };
+
+                    // Track seen option identity to avoid adding exact duplicates to the dropdown
+                    var seenOptionKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                     foreach (var action in group.OrderBy(x => x.MapUICategory).ThenBy(x => x.UILabel))
                     {
@@ -99,7 +94,9 @@ namespace starcitizen.Buttons
                         string overruleIndicator = action.KeyboardOverRule || action.MouseOverRule ? " *" : "";
                         string uniqueSuffix = "";
 
-                        if (duplicateKeys.Contains(new { action.UILabel, PrimaryBinding = primaryBinding, BindingType = bindingType }))
+                        var duplicateKeyObj = $"{action.UILabel}||{primaryBinding}||{bindingType}";
+
+                        if (duplicateKeys.Contains(duplicateKeyObj))
                         {
                             var actionName = action.Name?.StartsWith($"{action.MapName}-", StringComparison.OrdinalIgnoreCase) == true
                                 ? action.Name.Substring(action.MapName.Length + 1)
@@ -107,10 +104,23 @@ namespace starcitizen.Buttons
                             uniqueSuffix = $" ({action.MapName}:{actionName})";
                         }
 
+                        var optionText = $"{action.UILabel}{bindingDisplay}{overruleIndicator}{uniqueSuffix}";
+
+                        // Build a stable key for de-duplication. If another action would produce the same
+                        // displayed text and represent the same binding type and primary binding, skip adding it.
+                        var optionKey = $"{action.UILabel}||{primaryBinding}||{bindingType}";
+                        if (seenOptionKeys.Contains(optionKey))
+                        {
+                            // skip duplicate option to avoid duplicates in the PI dropdown
+                            continue;
+                        }
+
+                        seenOptionKeys.Add(optionKey);
+
                         ((JArray)groupObj["options"]).Add(new JObject
                         {
                             ["value"] = action.Name,
-                            ["text"] = $"{action.UILabel}{bindingDisplay}{overruleIndicator}{uniqueSuffix}",
+                            ["text"] = optionText,
                             ["bindingType"] = bindingType,
                             ["searchText"] =
                                 $"{action.UILabel.ToLower()} " +

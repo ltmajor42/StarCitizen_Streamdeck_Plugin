@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Threading;
-using BarRaider.SdTools;
+using starcitizen.Core;
 
 namespace starcitizen.Core
 {
@@ -87,8 +87,8 @@ namespace starcitizen.Core
             }
             catch (Exception e)
             {
-                Logger.Instance.LogMessage(TracingLevel.ERROR, $"Error while stopping Status watcher: {e.Message}");
-                Logger.Instance.LogMessage(TracingLevel.INFO, e.StackTrace);
+                PluginLog.Error($"Error while stopping Status watcher: {e.Message}");
+                PluginLog.Info(e.StackTrace);
             }
         }
 
@@ -120,7 +120,7 @@ namespace starcitizen.Core
             }
             catch (Exception e)
             {
-                Logger.Instance.LogMessage(TracingLevel.WARN, $"Key binding update handler failed: {e.Message}");
+                PluginLog.Warn($"Key binding update handler failed: {e.Message}");
             }
         }
 
@@ -143,7 +143,7 @@ namespace starcitizen.Core
             }
             catch (Exception e)
             {
-                Logger.Instance.LogMessage(TracingLevel.WARN, $"Key binding poll failed: {e.Message}");
+                PluginLog.Warn($"Key binding poll failed: {e.Message}");
             }
         }
 
@@ -158,7 +158,7 @@ namespace starcitizen.Core
             }
             catch (Exception e)
             {
-                Logger.Instance.LogMessage(TracingLevel.WARN, $"Could not update key binding timestamp: {e.Message}");
+                PluginLog.Warn($"Could not update key binding timestamp: {e.Message}");
             }
         }
 
@@ -177,15 +177,13 @@ namespace starcitizen.Core
                 string hash = null;
                 try
                 {
-                    using (var stream = new FileStream(targetFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                    using (var sha = System.Security.Cryptography.SHA256.Create())
-                    {
-                        hash = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", string.Empty);
-                    }
+                    using var stream = new FileStream(targetFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    using var sha = System.Security.Cryptography.SHA256.Create();
+                    hash = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", string.Empty);
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.LogMessage(TracingLevel.DEBUG, $"Could not hash key binding file: {ex.Message}");
+                    PluginLog.Debug($"Could not hash key binding file: {ex.Message}");
                 }
 
                 return new FileSignature
@@ -197,7 +195,7 @@ namespace starcitizen.Core
             }
             catch (Exception e)
             {
-                Logger.Instance.LogMessage(TracingLevel.WARN, $"Could not read key binding file info: {e.Message}");
+                PluginLog.Warn($"Could not read key binding file info: {e.Message}");
                 return lastSignature ?? new FileSignature();
             }
         }

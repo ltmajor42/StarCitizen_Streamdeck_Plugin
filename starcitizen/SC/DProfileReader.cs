@@ -99,11 +99,13 @@ namespace SCJMapper_V2.SC
 
         private static string MergePrimaryBinding(string keyboard, string mouse)
         {
+            // Prefer keyboard binding when present. Do not copy mouse-only bindings into the Keyboard field.
             if (!string.IsNullOrWhiteSpace(keyboard))
             {
                 return keyboard;
             }
 
+            // Fall back to mouse binding when no keyboard binding exists (legacy behavior)
             return mouse;
         }
 
@@ -295,6 +297,7 @@ namespace SCJMapper_V2.SC
                     {
                         currentAction.Keyboard = normalized;
                     }
+                    // Do not copy mouse tokens into the Keyboard field unless necessary. Mark mouse overrule.
                     currentAction.MouseOverRule = true;
                 }
             }
@@ -451,6 +454,7 @@ namespace SCJMapper_V2.SC
                                     {
                                         map.Actions[actionName].Keyboard = normalized;
                                     }
+                                    // Do not copy mouse tokens into the Keyboard field unless necessary.
                                     map.Actions[actionName].MouseOverRule = true;
                                 }
                                 else if (SCPath.TreatBlankRebindAsUnbound)

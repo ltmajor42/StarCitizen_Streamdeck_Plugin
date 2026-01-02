@@ -56,6 +56,7 @@
                        id="functionSearch"
                        placeholder="Type to search functions..."
                        autocomplete="off">
+                <button id="btnClearSearch" class="sdpi-clear-button hidden" onclick="clearSearch()" title="Clear search" style="margin-left:6px;padding:3px 8px;height:28px;">&times;</button>
             </div>
             <div class="sdpi-item-value"
                  id="searchResults"
@@ -164,11 +165,7 @@
 
                 optgroup.appendChild(option);
 
-                allOptions.push({
-                    option,
-                    optgroup,
-                    search: option.dataset.search
-                });
+                allOptions.push({ option, optgroup, search: option.dataset.search });
             });
 
             select.appendChild(optgroup);
@@ -210,6 +207,22 @@
             : '';
     }
 
+    function clearSearch() {
+        const input = document.getElementById('functionSearch');
+        if (!input) return;
+        input.value = '';
+        input.focus();
+        try { filterOptions(); } catch (e) { }
+        updateClearSearchButton();
+    }
+
+    function updateClearSearchButton() {
+        const searchInput = document.getElementById('functionSearch');
+        const clearButton = document.getElementById('btnClearSearch');
+        if (!clearButton || !searchInput) return;
+        clearButton.classList.toggle('hidden', !searchInput.value.trim());
+    }
+
     /* Hook into websocket to receive function list */
     document.addEventListener('websocketCreate', function () {
         const originalOnMessage = websocket.onmessage;
@@ -234,14 +247,22 @@
         document.getElementById('functionSearch')
             .addEventListener('input', function () {
                 clearTimeout(this.searchTimeout);
-                this.searchTimeout = setTimeout(filterOptions, 150);
+                this.searchTimeout = setTimeout(function () { filterOptions(); updateClearSearchButton(); }, 150);
             });
 
         document.getElementById('function')
             .addEventListener('change', function () {
                 document.getElementById('functionSearch').value = '';
                 document.getElementById('searchResults').textContent = '';
+                try { filterOptions(); } catch (e) { }
+                updateClearSearchButton();
             });
+
+        const func = document.getElementById('function');
+        if (func) {
+            func.addEventListener('mousedown', function () { try { filterOptions(); } catch (e) { } });
+            func.addEventListener('focus', function () { try { filterOptions(); } catch (e) { } });
+        }
     });
 </script>
 

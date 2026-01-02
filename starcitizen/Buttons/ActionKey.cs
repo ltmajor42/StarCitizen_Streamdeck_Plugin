@@ -42,24 +42,19 @@ namespace starcitizen.Buttons
         }
 
 
-        PluginSettings settings;
-        private CachedSound _clickSound = null;
-        private readonly KeyBindingService bindingService = KeyBindingService.Instance;
+        private readonly PluginSettings settings;
+         private CachedSound _clickSound = null;
+         private readonly KeyBindingService bindingService = KeyBindingService.Instance;
 
         public ActionKey(SDConnection connection, InitialPayload payload) : base(connection, payload)
         {
             if (payload.Settings == null || payload.Settings.Count == 0)
             {
-                //Logger.Instance.LogMessage(TracingLevel.DEBUG, "Repeating Static Constructor #1");
-
                 settings = PluginSettings.CreateDefaultSettings();
                 Connection.SetSettingsAsync(JObject.FromObject(settings)).Wait();
-
             }
             else
             {
-                //Logger.Instance.LogMessage(TracingLevel.DEBUG, "Repeating Static Constructor #2");
-
                 settings = payload.Settings.ToObject<PluginSettings>();
                 HandleFileNames();
             }
@@ -88,9 +83,10 @@ namespace starcitizen.Buttons
 
             if (bindingService.TryGetBinding(settings.Function, out var action))
             {
-                Logger.Instance.LogMessage(TracingLevel.INFO, CommandTools.ConvertKeyString(action.Keyboard));
+                var keyInfo = CommandTools.ConvertKeyString(action.Keyboard);
+                PluginLog.Info(keyInfo);
 
-                StreamDeckCommon.SendKeypressDown(CommandTools.ConvertKeyString(action.Keyboard));
+                StreamDeckCommon.SendKeypressDown(keyInfo);
             }
 
             if (_clickSound != null)
@@ -101,7 +97,7 @@ namespace starcitizen.Buttons
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.LogMessage(TracingLevel.FATAL, $"PlaySound: {ex}");
+                    PluginLog.Fatal($"PlaySound: {ex}");
                 }
 
             }
@@ -121,9 +117,10 @@ namespace starcitizen.Buttons
 
             if (bindingService.TryGetBinding(settings.Function, out var action))
             {
-                Logger.Instance.LogMessage(TracingLevel.INFO, CommandTools.ConvertKeyString(action.Keyboard));
+                var keyInfo = CommandTools.ConvertKeyString(action.Keyboard);
+                PluginLog.Info(keyInfo);
 
-                StreamDeckCommon.SendKeypressUp(CommandTools.ConvertKeyString(action.Keyboard));
+                StreamDeckCommon.SendKeypressUp(keyInfo);
             }
 
         }
@@ -131,19 +128,19 @@ namespace starcitizen.Buttons
 
         public override void ReceivedSettings(ReceivedSettingsPayload payload)
         {
-            Logger.Instance.LogMessage(TracingLevel.INFO, $"ReceivedSettings - Function: {payload.Settings?["function"]?.ToString() ?? "null"}");
+            PluginLog.Info($"ReceivedSettings - Function: {payload.Settings?["function"]?.ToString() ?? "null"}");
 
             // New in StreamDeck-Tools v2.0:
             BarRaider.SdTools.Tools.AutoPopulateSettings(settings, payload.Settings);
             
-            Logger.Instance.LogMessage(TracingLevel.INFO, $"After AutoPopulateSettings - Function: {settings.Function ?? "null"}");
+            PluginLog.Info($"After AutoPopulateSettings - Function: {settings.Function ?? "null"}");
             
             HandleFileNames();
         }
 
         private void Connection_OnPropertyInspectorDidAppear(object sender, EventArgs e)
         {
-            Logger.Instance.LogMessage(TracingLevel.INFO, "Property Inspector appeared, sending functions data");
+            PluginLog.Info("Property Inspector appeared, sending functions data");
             UpdatePropertyInspector();
         }
 
@@ -157,7 +154,7 @@ namespace starcitizen.Buttons
             }
             catch (Exception ex)
             {
-                Logger.Instance.LogMessage(TracingLevel.ERROR, $"Error processing PI payload: {ex.Message}");
+                PluginLog.Error($"Error processing PI payload: {ex.Message}");
             }
 
             if (payload != null)
@@ -165,7 +162,7 @@ namespace starcitizen.Buttons
                 if (payload != null && payload.ContainsKey("jslog"))
                 {
                     var logMessage = payload["jslog"]?.ToString();
-                    Logger.Instance.LogMessage(TracingLevel.INFO, $"[JS-PI] {logMessage}");
+                    PluginLog.Info($"[JS-PI] {logMessage}");
                     return; // Handled, exit early
                 }
             }
@@ -187,7 +184,7 @@ namespace starcitizen.Buttons
 
             if (propertyInspectorStatus == "propertyInspectorConnected")
             {
-                Logger.Instance.LogMessage(TracingLevel.INFO, "Property Inspector connected message received, sending functions data");
+                PluginLog.Info("Property Inspector connected message received, sending functions data");
                 UpdatePropertyInspector();
             }
         }
@@ -203,7 +200,7 @@ namespace starcitizen.Buttons
                 }
                 catch (Exception ex)
                 {
-                    Logger.Instance.LogMessage(TracingLevel.FATAL, $"CachedSound: {settings.ClickSoundFilename} {ex}");
+                    PluginLog.Fatal($"CachedSound: {settings.ClickSoundFilename} {ex}");
 
                     _clickSound = null;
                     settings.ClickSoundFilename = null;
@@ -234,7 +231,7 @@ namespace starcitizen.Buttons
             {
                 if (bindingService.Reader == null)
                 {
-                    Logger.Instance.LogMessage(TracingLevel.WARN, "dpReader is null, cannot update Property Inspector");
+                    PluginLog.Warn("dpReader is null, cannot update Property Inspector");
                     return;
                 }
 
@@ -242,7 +239,7 @@ namespace starcitizen.Buttons
             }
             catch (Exception ex)
             {
-                Logger.Instance.LogMessage(TracingLevel.ERROR, $"Failed to update Property Inspector: {ex.Message}");
+                PluginLog.Error($"Failed to update Property Inspector: {ex.Message}");
             }
         }
 
