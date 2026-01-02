@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
@@ -42,75 +42,128 @@
 </head>
 
 <body>
-<div class="sdpi-wrapper">
+<div class="sdpi-wrapper sdpi-stack">
 
-    <!-- SEARCH -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Search</div>
-        <div class="sdpi-item-value search-row">
-            <input type="text"
-                   class="sdpi-item-value"
-                   id="functionSearch"
-                   placeholder="Type to search functions..."
-                   autocomplete="off">
+    <div class="sdpi-section" id="section-configuration">
+        <div class="sdpi-section-title">Configuration</div>
+
+        <!-- SEARCH moved here -->
+        <div class="sdpi-item">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value search-row">
+                <input type="text"
+                       class="sdpi-item-value"
+                       id="functionSearch"
+                       placeholder="Type to search functions..."
+                       autocomplete="off">
+            </div>
+            <div class="sdpi-item-value"
+                 id="searchResults"
+                 style="font-size: 11px; color: #999; margin-top: 0;"></div>
         </div>
-        <div class="sdpi-item-value"
-             id="searchResults"
-             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
-    </div>
 
-    <!-- FUNCTION -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Function</div>
-        <select class="sdpi-item-value select sdProperty"
-                id="function"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions…</option>
-        </select>
-    </div>
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Function</div>
+            <div class="sdpi-item-value">
+                <select class="sdpi-item-value select sdProperty"
+                        id="function"
+                        oninput="setSettings()"
+                        onchange="setSettings()">
+                    <option value="">Loading Star Citizen functions…</option>
+                </select>
+            </div>
+        </div>
 
-    <!-- DELAY -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Delay (ms)</div>
-        <input type="number"
-               class="sdpi-item-value sdProperty"
-               id="delay"
-               min="0"
-               oninput="setSettings()"
-               onchange="setSettings()">
-    </div>
-
-    <!-- CLICK SOUND -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Sound</div>
-        <div class="sdpi-item-group file">
-            <input class="sdpi-item-value sdProperty sdFile"
-                   type="file"
-                   id="clickSound"
-                   accept=".wav"
-                   oninput="setSettings(); updateClearSoundVisibility();"
-                   onchange="setSettings(); updateClearSoundVisibility();">
-            <label class="sdpi-file-info" id="clickSoundFilename">No file…</label>
-            <label class="sdpi-file-label" for="clickSound">Choose file…</label>
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Image delay</div>
+            <div class="sdpi-item-value">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <div style="min-width:130px;color:#d0d0d0;">Delay (ms)</div>
+                        <input type="number"
+                               class="sdpi-item-value sdProperty"
+                               id="delay"
+                               min="0"
+                               oninput="setSettings()"
+                               onchange="setSettings()">
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- CLEAR SOUND BUTTON -->
-    <div class="sdpi-item hidden" id="dvClearSound">
-        <div class="sdpi-item-label"></div>
-        <button class="sdpi-item-value" onclick="clearClickSound()">
-            Clear sound
-        </button>
+    <div class="sdpi-section sdpi-section--sound" id="section-sound">
+        <div class="sdpi-section-title">Sound</div>
+        <div class="sdpi-item">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value">
+                <div class="file-row">
+                    <div class="file-main">
+                        <input class="sdpi-item-value sdProperty sdFile"
+                               type="file"
+                               id="clickSound"
+                               accept=".wav"
+                               oninput="setSettings()"
+                               onchange="setSettings()">
+                        <label class="sdpi-file-info" id="clickSoundFilename">No file…</label>
+                    </div>
+                    <div class="file-actions">
+                        <label class="sdpi-file-label" for="clickSound">Choose file…</label>
+                        <button class="sdpi-file-button-inline hidden" id="btnClearSound" onclick="clearClickSound()">Clear</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="sdpi-item no-results hidden" id="noResults">
-        No functions match your search.
+    <div class="sdpi-section sdpi-section--details" id="section-how">
+        <div class="sdpi-item" type="group">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value">
+                <details style="font-size: 11px; color: #bbb; margin: 0;">
+                    <summary>How it works</summary>
+
+                    <div style="margin-top:8px;color:#ddd;line-height:1.35;">
+                      <strong>Overview</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li>Momentary sends a single short press (down/up) when tapped. It does not hold the input while the Stream Deck key remains pressed — the visual "pressed" state is only confirmation feedback.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Images / states</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ccc;">
+                        <li><strong>State 0</strong> — idle/default image when no action is occurring.</li>
+                        <li><strong>State 1</strong> — confirmation/active image briefly shown after the action is sent. This is visual feedback only and does not imply the input is held.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Timing parameters</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li><strong>Delay (ms)</strong> — how long the confirmation image (State 1) is shown after sending the short press. This controls only the visual duration and does not affect the actual input sent to the game.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Behavior details</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li><strong>Tap</strong> — sends a short down/up press to the game immediately and shows the confirmation image for the configured Delay.</li>
+
+                        <li style="margin-top:6px;">Holding the Stream Deck key does not keep the input held; Momentary is intended for one-shot confirmations with a visual cue.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Example</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ccc;">
+                        <li>Delay = 100 ms. Tap the key → plugin sends a short press; the button shows the confirmation image for ~100 ms, then returns to idle.</li>
+                      </ul>
+
+                      <div style="margin-top:8px;color:#999;font-size:11px;">Tip: Use Momentary when you need a quick confirmation pulse and clear visual feedback without holding the input in-game.</div>
+                    </div>
+
+                </details>
+            </div>
+        </div>
     </div>
 
 </div>
 
 <script>
+    // Dropdown state + last-known selection from payload
     let allOptions = [];
     let functionsLoaded = false;
     let savedFunctionValue = null;
@@ -130,9 +183,10 @@
             if (sel) sel.value = savedFunctionValue;
         }
 
-        updateClearSoundVisibility();
+        updateClearButtons();
     };
 
+    // Populate select element from plugin-provided groups/options
     function populateDropdown(functions) {
         const select = document.getElementById('function');
         select.innerHTML = '';
@@ -174,6 +228,7 @@
         filterOptions();
     }
 
+    // Apply search term to options + toggle helper text/no-results state
     function filterOptions() {
         if (!functionsLoaded) return;
 
@@ -196,7 +251,11 @@
             if (hasVisible) visibleGroups++;
         });
 
-        noResults.classList.toggle('hidden', visibleGroups > 0);
+        if (noResults) {
+            const showNoResults = term && visibleGroups === 0;
+            noResults.classList.toggle('hidden', !showNoResults);
+        }
+
         searchResults.textContent = term
             ? `Found ${visibleGroups} group${visibleGroups !== 1 ? 's' : ''}`
             : '';
@@ -211,21 +270,11 @@
         if (label) label.textContent = 'No file…';
 
         setSettings({ clickSound: '' });
-        updateClearSoundVisibility();
-    }
-
-    function updateClearSoundVisibility() {
-        const input = document.getElementById('clickSound');
-        const clearBtn = document.getElementById('dvClearSound');
-
-        if (!input || !clearBtn) return;
-
-        clearBtn.classList.toggle('hidden', !input.value);
+        updateClearButtons();
     }
 
     /* CORRECT BarRaider hook — SAME AS STATIC */
     document.addEventListener('websocketCreate', function () {
-
         const originalOnMessage = websocket.onmessage;
 
         websocket.onmessage = function (evt) {
@@ -245,7 +294,6 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-
         document.getElementById('functionSearch')
             .addEventListener('input', function () {
                 clearTimeout(this.searchTimeout);
@@ -258,7 +306,21 @@
                 document.getElementById('searchResults').textContent = '';
             });
 
-        updateClearSoundVisibility();
+        // Ensure clear-button visibility and label update work even if shared init is skipped
+        const fileInput = document.getElementById('clickSound');
+        if (fileInput) {
+            fileInput.addEventListener('change', function () {
+                const label = document.getElementById('clickSoundFilename');
+                if (label) {
+                    const fileName = (this.files && this.files.length) ? this.files[0].name : (this.value || 'No file…');
+                    label.textContent = fileName || 'No file…';
+                }
+                try { setSettings(); } catch (e) { }
+                try { updateClearButtons(); } catch (e) { }
+            });
+        }
+
+        try { updateClearButtons(); } catch (e) { }
     });
 </script>
 

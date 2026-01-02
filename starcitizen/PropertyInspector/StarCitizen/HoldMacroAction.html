@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
@@ -17,12 +17,6 @@
     <script src="../jquery.highlight-within-textarea.js"></script>
 
     <style>
-        .no-results {
-            padding: 10px;
-            color: #999;
-            font-style: italic;
-            text-align: center;
-        }
         .hidden {
             display: none !important;
         }
@@ -48,69 +42,90 @@
 </head>
 
 <body>
-<div class="sdpi-wrapper">
+<div class="sdpi-wrapper sdpi-stack">
 
-    <!-- SEARCH -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Search</div>
-        <div class="sdpi-item-value search-row">
-            <input type="text"
-                   class="sdpi-item-value"
-                   id="functionSearch"
-                   placeholder="Type to search functions..."
-                   autocomplete="off">
+    <div class="sdpi-section" id="section-function">
+        <div class="sdpi-section-title">Configuration</div>
+
+        <!-- SEARCH moved into Function section -->
+        <div class="sdpi-item">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value search-row">
+                <input type="text"
+                       class="sdpi-item-value"
+                       id="functionSearch"
+                       placeholder="Type to search functions..."
+                       autocomplete="off">
+            </div>
+            <div class="sdpi-item-value"
+                 id="searchResults"
+                 style="font-size: 11px; color: #999; margin-top: 0;"></div>
         </div>
-        <div class="sdpi-item-value"
-             id="searchResults"
-             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
-    </div>
 
-    <!-- FUNCTION -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Function</div>
-        <select class="sdpi-item-value select sdProperty"
-                id="function"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions...</option>
-        </select>
-    </div>
-
-    <!-- HOLD UNTIL RELEASE -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Hold Mode</div>
-        <div class="sdpi-item-value">
-            <label for="holdUntilRelease" class="sdpi-item-label" style="width: auto;">
-                <input type="checkbox"
-                       class="sdProperty"
-                       id="holdUntilRelease"
-                       oninput="setSettings(); toggleDuration();"
-                       onchange="setSettings(); toggleDuration();">
-                Hold until release
-            </label>
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Function</div>
+            <div class="sdpi-item-value">
+                <select class="sdpi-item-value select sdProperty"
+                        id="function"
+                        oninput="setSettings()"
+                        onchange="setSettings()">
+                    <option value="">Loading Star Citizen functions...</option>
+                </select>
+            </div>
         </div>
     </div>
 
-    <div class="sdpi-item no-results hidden" id="noResults">
-        No functions match your search.
-    </div>
+    <div class="sdpi-section sdpi-section--details" id="section-how">
+        <div class="sdpi-item" type="group">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value">
+                <details style="font-size: 11px; color: #bbb; margin: 0;">
+                    <summary>How it works</summary>
 
-    <div class="sdpi-item">
-        <div class="sdpi-item-label"></div>
-        <div class="sdpi-item-value note">
-            Images are managed by Stream Deck (State 0 = idle, State 1 = held). Supports keyboard and mouse tokens.
+                    <div style="margin-top:8px;color:#ddd;line-height:1.35;">
+                      <strong>Overview</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li>Hold Macro sends a key/mouse/joystick down when pressed and keeps it held until you release the Stream Deck key.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Images / states</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ccc;">
+                        <li><strong>State 0</strong> — idle/default image shown when the button is not pressed.</li>
+                        <li><strong>State 1</strong> — active/held image shown while the macro holds the input down.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Behavior details</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li><strong>On press</strong> — the plugin converts the selected function to a low-level input token and sends a key/mouse down event immediately, then switches the key to State 1. This mirrors a longpress in-game.</li>
+
+                        <li style="margin-top:6px;"><strong>While held</strong> — the input remains held; the plugin may send repeat down events only when necessary for certain macros, but the primary behavior is a sustained down state.</li>
+
+                        <li style="margin-top:6px;"><strong>On release</strong> — the plugin sends the corresponding key/mouse up event for the active input, clears any repeats, and returns the key to State 0.</li>
+
+                        <li style="margin-top:6px;">If the selected function contains no valid input token (keyboard/mouse/joystick), the plugin logs a warning and no input is sent.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Examples</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ccc;">
+                        <li>Press and hold the Stream Deck key to maintain aiming/ADS; release to stop.</li>
+                        <li>Use Hold Macro where the game expects a press-and-hold rather than a timed automatic release.</li>
+                      </ul>
+
+                      <div style="margin-top:8px;color:#999;font-size:11px;">Tip: prefer Hold Macro for precise manual control (longpress behavior). Use other actions if you need fixed-duration automatic releases.</div>
+                    </div>
+
+                </details>
+            </div>
         </div>
     </div>
 
 </div>
 
 <script>
+    // Dropdown cache + saved selection pulled from configuration payload
     let allOptions = [];
     let functionsLoaded = false;
     let savedFunctionValue = null;
-    let functionsRequested = false;
-    let requestRetryTimer = null;
-    const REQUEST_RETRY_INTERVAL_MS = 1000;
 
     /* Preserve selected function if payload arrives before functions list */
     const originalLoadConfiguration = loadConfiguration;
@@ -118,11 +133,6 @@
         if (payload && payload.function !== undefined) {
             savedFunctionValue = payload.function;
         }
-
-        if (payload && payload.functionsLoaded && Array.isArray(payload.functions)) {
-            populateDropdown(payload.functions);
-        }
-
         originalLoadConfiguration(payload);
 
         if (functionsLoaded && savedFunctionValue) {
@@ -131,29 +141,7 @@
         }
     };
 
-    function requestFunctions(force = false) {
-        if (functionsLoaded) return;
-        if (!force && functionsRequested) return;
-
-        if (websocket && websocket.readyState === 1) {
-            functionsRequested = true;
-            sendValueToPlugin(true, 'requestFunctions');
-            scheduleRequestRetry();
-        } else {
-            scheduleRequestRetry();
-        }
-    }
-
-    function scheduleRequestRetry() {
-        if (functionsLoaded) return;
-
-        clearTimeout(requestRetryTimer);
-        requestRetryTimer = setTimeout(() => {
-            functionsRequested = false; // allow the next retry to fire
-            requestFunctions();
-        }, REQUEST_RETRY_INTERVAL_MS);
-    }
-
+    // Build select options/optgroups from plugin-provided actions list
     function populateDropdown(functions) {
         const select = document.getElementById('function');
         select.innerHTML = '';
@@ -187,9 +175,6 @@
         });
 
         functionsLoaded = true;
-        functionsRequested = false;
-        clearTimeout(requestRetryTimer);
-        requestRetryTimer = null;
 
         if (savedFunctionValue) {
             select.value = savedFunctionValue;
@@ -198,11 +183,11 @@
         filterOptions();
     }
 
+    // Hide/show option rows and display no-results banner + helper text
     function filterOptions() {
         if (!functionsLoaded) return;
 
         const term = document.getElementById('functionSearch').value.toLowerCase().trim();
-        const noResults = document.getElementById('noResults');
         const searchResults = document.getElementById('searchResults');
 
         let visibleGroups = 0;
@@ -220,7 +205,6 @@
             if (hasVisible) visibleGroups++;
         });
 
-        noResults.classList.toggle('hidden', visibleGroups > 0);
         searchResults.textContent = term
             ? `Found ${visibleGroups} group${visibleGroups !== 1 ? 's' : ''}`
             : '';
@@ -229,19 +213,6 @@
     /* Hook into websocket to receive function list */
     document.addEventListener('websocketCreate', function () {
         const originalOnMessage = websocket.onmessage;
-        const originalOnOpen = websocket.onopen;
-
-        websocket.onopen = function (evt) {
-            if (originalOnOpen) {
-                originalOnOpen.call(this, evt);
-            }
-
-            requestFunctions();
-        };
-
-        requestFunctions();
-
-        requestFunctions();
 
         websocket.onmessage = function (evt) {
             const jsonObj = JSON.parse(evt.data);
@@ -250,13 +221,7 @@
                 && jsonObj.payload
                 && jsonObj.payload.functionsLoaded) {
 
-                clearTimeout(requestRetryTimer);
-                requestRetryTimer = null;
-                functionsLoaded = true;
                 populateDropdown(jsonObj.payload.functions);
-            }
-            else {
-                scheduleRequestRetry();
             }
 
             if (originalOnMessage) {
@@ -277,8 +242,6 @@
                 document.getElementById('functionSearch').value = '';
                 document.getElementById('searchResults').textContent = '';
             });
-
-        scheduleRequestRetry();
     });
 </script>
 

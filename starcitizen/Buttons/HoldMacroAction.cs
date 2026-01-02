@@ -108,6 +108,7 @@ namespace starcitizen.Buttons
             StartRepeat(keyInfo);
             _ = Connection.SetStateAsync(1);
 
+            // If configured to auto-release (HoldUntilRelease == false) schedule automatic release after configured duration
             if (!settings.HoldUntilRelease)
             {
                 var duration = Math.Max(0, Math.Min(settings.HoldDurationMs, MaxHoldDurationMs));

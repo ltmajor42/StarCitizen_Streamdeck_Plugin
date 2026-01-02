@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
@@ -39,136 +39,174 @@
 </head>
 
 <body>
-<div class="sdpi-wrapper">
+<div class="sdpi-wrapper sdpi-stack">
 
-    <!-- SEARCH -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Search</div>
-        <div class="sdpi-item-value search-row">
-            <input type="text"
-                   class="sdpi-item-value"
-                   id="functionSearch"
-                   placeholder="Type to search functions."
-                   autocomplete="off">
+    <div class="sdpi-section" id="section-configuration">
+        <div class="sdpi-section-title">Configuration</div>
+
+        <!-- SEARCH inserted at top of configuration so it appears first -->
+        <div class="sdpi-item">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value search-row">
+                <input type="text"
+                       class="sdpi-item-value"
+                       id="functionSearch"
+                       placeholder="Type to search functions."
+                       autocomplete="off">
+            </div>
+            <div class="sdpi-item-value"
+                 id="searchResults"
+                 style="font-size: 11px; color: #999; margin-top: 0;"></div>
         </div>
-        <div class="sdpi-item-value"
-             id="searchResults"
-             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
+
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Function</div>
+            <div class="sdpi-item-value">
+                <select class="sdpi-item-value select sdProperty"
+                        id="function"
+                        oninput="setSettings()"
+                        onchange="setSettings()">
+                    <option value="">Loading Star Citizen functions…</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Timing</div>
+            <div class="sdpi-item-value">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <div style="min-width:130px;color:#d0d0d0;">Long press (ms)</div>
+                        <input type="number"
+                               class="sdpi-item-value sdProperty"
+                               id="longPressMs"
+                               min="0"
+                               oninput="setSettings()"
+                               onchange="setSettings()">
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <div style="min-width:130px;color:#d0d0d0;">Keypress delay (ms)</div>
+                        <input type="number"
+                               class="sdpi-item-value sdProperty"
+                               id="keypressDelayMs"
+                               min="0"
+                               oninput="setSettings()"
+                               onchange="setSettings()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- FUNCTION -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Function</div>
-        <select class="sdpi-item-value select sdProperty"
-                id="function"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions…</option>
-        </select>
-    </div>
+    <div class="sdpi-section sdpi-section--sound" id="section-sound">
+        <div class="sdpi-section-title">Sound</div>
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Sound (short)</div>
+            <div class="sdpi-item-value">
+                <div class="file-row">
+                    <div class="file-main">
+                        <input class="sdpi-item-value sdProperty sdFile"
+                               type="file"
+                               id="shortPressSound"
+                               accept=".wav"
+                               oninput="setSettings()"
+                               onchange="setSettings()">
+                        <label class="sdpi-file-info" id="shortPressSoundFilename">No file…</label>
+                    </div>
+                    <div class="file-actions">
+                        <label class="sdpi-file-label" for="shortPressSound">Choose file…</label>
+                        <button class="sdpi-file-button-inline hidden"
+                                id="btnClearShort"
+                                onclick="clearSound('shortPressSound')">Clear</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <!-- MEMORY (compact) -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Memory</div>
-        <div class="sdpi-item-value">
-            <div class="inline-row">
-                <input type="checkbox"
-                       class="sdProperty"
-                       id="stateOn"
-                       onchange="setSettings()">
-                <div class="hint compact">
-                    Short press: sends key + flips memory.<br>
-                    Long press: flips memory only (no key sent).
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Sound (long)</div>
+            <div class="sdpi-item-value">
+                <div class="file-row">
+                    <div class="file-main">
+                        <input class="sdpi-item-value sdProperty sdFile"
+                               type="file"
+                               id="longPressSound"
+                               accept=".wav"
+                               oninput="setSettings()"
+                               onchange="setSettings()">
+                        <label class="sdpi-file-info" id="longPressSoundFilename">No file…</label>
+                    </div>
+                    <div class="file-actions">
+                        <label class="sdpi-file-label" for="longPressSound">Choose file…</label>
+                        <button class="sdpi-file-button-inline hidden"
+                                id="btnClearLong"
+                                onclick="clearSound('longPressSound')">Clear</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- SOFT SYNC -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Soft Sync</div>
-        <input type="checkbox"
-               class="sdpi-item-value sdProperty"
-               id="softSyncLongPress"
-               onchange="setSettings()">
-    </div>
+    <div class="sdpi-section sdpi-section--details" id="section-how">
+        <div class="sdpi-item" type="group">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value">
+                <details style="font-size: 11px; color: #bbb; margin: 0;">
+                    <summary>How it works</summary>
 
-    <!-- LONG PRESS MS -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Long press (ms)</div>
-        <input type="number"
-               class="sdpi-item-value sdProperty"
-               id="longPressMs"
-               min="0"
-               oninput="setSettings()"
-               onchange="setSettings()">
-    </div>
+                    <div style="margin-top:8px;color:#ddd;line-height:1.35;">
+                      <strong>Overview</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li>State Memory lets a key remember a binary state (on/off) and optionally send the associated function when toggled. It supports a short-press to fire+toggle and a long-press to toggle memory only (soft sync).</li>
+                      </ul>
 
-    <!-- KEYPRESS DELAY -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Keypress delay (ms)</div>
-        <input type="number"
-               class="sdpi-item-value sdProperty"
-               id="keypressDelayMs"
-               min="0"
-               oninput="setSettings()"
-               onchange="setSettings()">
-    </div>
+                      <strong style="display:block;margin-top:8px;">Images / states</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ccc;">
+                        <li><strong>State 0</strong> — idle/default image when memory is off.</li>
+                        <li><strong>State 1</strong> — active image shown when memory is on (visual indicator of stored state or recent activity).</li>
+                      </ul>
 
-    <!-- SOUND: SHORT PRESS -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Sound (short)</div>
-        <div class="sdpi-item-value">
-            <div class="sdpi-item-group file">
-                <input class="sdpi-item-value sdProperty sdFile"
-                       type="file"
-                       id="shortPressSound"
-                       accept=".wav"
-                       oninput="setSettings(); updateClearButtons();"
-                       onchange="setSettings(); updateClearButtons();">
-                <label class="sdpi-file-info" id="shortPressSoundFilename">No file…</label>
-                <label class="sdpi-file-label" for="shortPressSound">Choose file…</label>
+                      <strong style="display:block;margin-top:8px;">Timing parameters</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li><strong>Long press (ms)</strong> — threshold to distinguish a short tap from a long press. A press longer than this value triggers the long-press behavior (memory-only toggle).</li>
+                        <li style="margin-top:6px;"><strong>Keypress delay (ms)</strong> — delay used when sending the short press key event (down/up) to ensure the target application registers the press.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Behavior details</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li><strong>Short press</strong> — sends the configured function to the game (a short keypress) and then flips the stored memory state. Use this for toggles that should both act and remember.</li>
+
+                        <li style="margin-top:6px;"><strong>Long press</strong> — when the press exceeds the Long press threshold the plugin does NOT send the function; it only updates the memory state locally (Soft Sync). This is useful to change stored state without sending in-game actions.</li>
+
+                        <li style="margin-top:6px;"><strong>Soft Sync</strong> — toggling memory with a long press updates the plugin's local state without sending the binding to the game. Use Soft Sync for UI-only flips or to correct memory without affecting gameplay.</li>
+
+                        <li style="margin-top:6px;">The plugin provides visual feedback by switching between State 0 and State 1; the memory value persists until changed by a subsequent action.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Example</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ccc;">
+                        <li>Short press: press the key quickly → plugin sends the configured function (short keypress) and toggles memory from off to on; button shows State 1.</li>
+                        <li>Long press: hold the key beyond the Long press threshold → plugin updates memory only (Soft Sync) and does not send the function; useful for preparing state without firing actions.</li>
+                      </ul>
+
+                      <div style="margin-top:8px;color:#999;font-size:11px;">Tip: choose a Long press threshold that is noticeably longer than your normal tap to avoid accidental soft-syncs. Use Keypress delay to improve reliability with games that miss very short pulses.</div>
+                    </div>
+
+                </details>
             </div>
-            <button class="sdpi-item-value small-btn hidden"
-                    id="btnClearShort"
-                    onclick="clearSound('shortPressSound')">
-                Clear
-            </button>
         </div>
     </div>
 
-    <!-- SOUND: LONG PRESS -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Sound (long)</div>
-        <div class="sdpi-item-value">
-            <div class="sdpi-item-group file">
-                <input class="sdpi-item-value sdProperty sdFile"
-                       type="file"
-                       id="longPressSound"
-                       accept=".wav"
-                       oninput="setSettings(); updateClearButtons();"
-                       onchange="setSettings(); updateClearButtons();">
-                <label class="sdpi-file-info" id="longPressSoundFilename">No file…</label>
-                <label class="sdpi-file-label" for="longPressSound">Choose file…</label>
-            </div>
-            <button class="sdpi-item-value small-btn hidden"
-                    id="btnClearLong"
-                    onclick="clearSound('longPressSound')">
-                Clear
-            </button>
-        </div>
-    </div>
-
-    <div class="sdpi-item no-results hidden" id="noResults">
-        No functions match your search.
-    </div>
 </div>
 
 <script>
+    // State holders for dropdown + previously stored selection
     let allOptions = [];
     let functionsLoaded = false;
     let savedFunctionValue = null;
 
+    // loadConfiguration shim: remember previously selected function and allow shared loader to populate other controls
     const originalLoadConfiguration = loadConfiguration;
     loadConfiguration = function (payload) {
         if (payload && payload.function !== undefined) {
@@ -176,17 +214,6 @@
         }
 
         originalLoadConfiguration(payload);
-
-        if (payload) {
-            if (typeof payload.stateOn === 'boolean') {
-                const el = document.getElementById('stateOn');
-                if (el) el.checked = payload.stateOn;
-            }
-            if (typeof payload.softSyncLongPress === 'boolean') {
-                const el = document.getElementById('softSyncLongPress');
-                if (el) el.checked = payload.softSyncLongPress;
-            }
-        }
 
         if (functionsLoaded && savedFunctionValue) {
             const sel = document.getElementById('function');
@@ -196,6 +223,7 @@
         updateClearButtons();
     };
 
+    // Populate select list + optgroups with plugin-provided functions
     function populateDropdown(functionsData) {
         const select = document.getElementById('function');
         select.innerHTML = '';
@@ -237,6 +265,7 @@
         filterOptions();
     }
 
+    // Toggle visibility of options/optgroups based on search field
     function filterOptions() {
         if (!functionsLoaded) return;
 
@@ -259,37 +288,17 @@
             if (hasVisible) visibleGroups++;
         });
 
-        noResults.classList.toggle('hidden', visibleGroups > 0);
+        if (noResults) {
+            const showNoResults = term && visibleGroups === 0;
+            noResults.classList.toggle('hidden', !showNoResults);
+        }
+
         searchResults.textContent = term
             ? `Found ${visibleGroups} group${visibleGroups !== 1 ? 's' : ''}`
             : '';
     }
 
-    function clearSound(inputId) {
-        const input = document.getElementById(inputId);
-        const label = document.getElementById(inputId + "Filename");
-
-        if (input) input.value = '';
-        if (label) label.textContent = 'No file…';
-
-        const patch = {};
-        patch[inputId] = '';
-        setSettings(patch);
-
-        updateClearButtons();
-    }
-
-    function updateClearButtons() {
-        const shortInput = document.getElementById('shortPressSound');
-        const longInput = document.getElementById('longPressSound');
-
-        const btnShort = document.getElementById('btnClearShort');
-        const btnLong = document.getElementById('btnClearLong');
-
-        if (btnShort && shortInput) btnShort.classList.toggle('hidden', !shortInput.value);
-        if (btnLong && longInput) btnLong.classList.toggle('hidden', !longInput.value);
-    }
-
+    // Websocket glue: wait for sendToPropertyInspector message carrying function list
     document.addEventListener('websocketCreate', function () {
         const originalOnMessage = websocket.onmessage;
 
@@ -309,6 +318,7 @@
         };
     });
 
+    // DOM wiring: debounce search + reset UI when selections change
     document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('functionSearch')
             .addEventListener('input', function () {

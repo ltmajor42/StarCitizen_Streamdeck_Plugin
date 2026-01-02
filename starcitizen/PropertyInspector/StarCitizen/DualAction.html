@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
@@ -42,80 +42,119 @@
 </head>
 
 <body>
-<div class="sdpi-wrapper">
+<div class="sdpi-wrapper sdpi-stack">
 
-    <!-- SEARCH -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Search</div>
-        <div class="sdpi-item-value search-row">
-            <input type="text"
-                   class="sdpi-item-value"
-                   id="functionSearch"
-                   placeholder="Type to search functions..."
-                   autocomplete="off">
+    <div class="sdpi-section" id="section-configuration">
+        <div class="sdpi-section-title">Configuration</div>
+
+        <!-- SEARCH moved into Configuration -->
+        <div class="sdpi-item">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value search-row">
+                <input type="text"
+                       class="sdpi-item-value"
+                       id="functionSearch"
+                       placeholder="Type to search functions..."
+                       autocomplete="off">
+            </div>
+            <div class="sdpi-item-value"
+                 id="searchResults"
+                 style="font-size: 11px; color: #999; margin-top: 0;"></div>
         </div>
-        <div class="sdpi-item-value"
-             id="searchResults"
-             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
-    </div>
 
-    <!-- PRESS FUNCTION -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Press action</div>
-        <select class="sdpi-item-value select sdProperty"
-                id="downFunction"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions…</option>
-        </select>
-    </div>
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Press action</div>
+            <div class="sdpi-item-value">
+                <select class="sdpi-item-value select sdProperty"
+                        id="downFunction"
+                        oninput="setSettings()"
+                        onchange="setSettings()">
+                    <option value="">Loading Star Citizen functions…</option>
+                </select>
+            </div>
+        </div>
 
-    <!-- RELEASE FUNCTION -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Release action</div>
-        <select class="sdpi-item-value select sdProperty"
-                id="upFunction"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">Loading Star Citizen functions…</option>
-        </select>
-        <details style="margin-top: 4px; font-size: 11px; color: #999;">
-            <summary>How it works</summary>
-            Press action is held down until you release the key. When released,
-            the press action is released and the optional release action is tapped.
-        </details>
-    </div>
-
-    <!-- CLICK SOUND -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Sound</div>
-        <div class="sdpi-item-group file">
-            <input class="sdpi-item-value sdProperty sdFile"
-                   type="file"
-                   id="clickSound"
-                   accept=".wav"
-                   oninput="setSettings(); updateClearSoundVisibility();"
-                   onchange="setSettings(); updateClearSoundVisibility();">
-            <label class="sdpi-file-info" id="clickSoundFilename">No file…</label>
-            <label class="sdpi-file-label" for="clickSound">Choose file…</label>
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Release action</div>
+            <div class="sdpi-item-value">
+                <select class="sdpi-item-value select sdProperty"
+                        id="upFunction"
+                        oninput="setSettings()"
+                        onchange="setSettings()">
+                    <option value="">Loading Star Citizen functions…</option>
+                </select>
+            </div>
         </div>
     </div>
 
-    <!-- CLEAR SOUND BUTTON -->
-    <div class="sdpi-item hidden" id="dvClearSound">
-        <div class="sdpi-item-label"></div>
-        <button class="sdpi-item-value" onclick="clearClickSound()">
-            Clear sound
-        </button>
+    <div class="sdpi-section sdpi-section--sound" id="section-sound">
+        <div class="sdpi-section-title">Sound</div>
+        <div class="sdpi-item">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value">
+                <div class="sdpi-item-group file">
+                    <input class="sdpi-item-value sdProperty sdFile"
+                           type="file"
+                           id="clickSound"
+                           accept=".wav"
+                           oninput="setSettings()"
+                           onchange="setSettings()">
+                    <label class="sdpi-file-info" id="clickSoundFilename">No file…</label>
+                    <div class="file-actions">
+                        <label class="sdpi-file-label" for="clickSound">Choose file…</label>
+                        <button class="sdpi-file-button-inline hidden" id="btnClearSound" onclick="clearClickSound()">Clear</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="sdpi-item no-results hidden" id="noResults">
-        No functions match your search.
+    <div class="sdpi-section sdpi-section--details" id="section-how">
+        <div class="sdpi-item" type="group">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value">
+                <details style="font-size: 11px; color: #bbb; margin: 0;">
+                    <summary>How it works</summary>
+
+                    <div style="margin-top:8px;color:#ddd;line-height:1.35;">
+                      <strong>Overview</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li>The Dual Action provides separate behaviors for the button press (down) and release (up) events so you can map two different Star Citizen functions to a single key.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Images / states</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ccc;">
+                        <li><strong>State 0</strong> — idle/default image shown when the key is not pressed.</li>
+                        <li><strong>State 1</strong> — active/pressed image shown while the key is held down (visual feedback for the press action).</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Behavior details</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li><strong>Press action (Down)</strong> — when you press the Stream Deck key the configured "Press action" function is sent as a key down (or mouse down) and the plugin sets the button to State 1. This allows actions that require holding the input.</li>
+
+                        <li style="margin-top:6px;"><strong>Release action (Up)</strong> — when you release the Stream Deck key the plugin sends the corresponding key up for the press action and then triggers the configured "Release action" as a short one-shot (down/up) if defined.</li>
+
+                        <li style="margin-top:6px;">Both press and release functions use the plugin's key/mouse/joystick conversion. If a function has no valid input token it will be skipped.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Example</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ccc;">
+                        <li>Configure Press action = "FireDown" and Release action = "FireUp" → pressing the key sends FireDown (held) and releasing sends FireUp (and returns the image to idle).</li>
+                        <li>Or configure Press action = "ThrottleHold" and Release action = "ThrottleTap" to combine a hold-and-tap behavior in one physical key.</li>
+                      </ul>
+
+                      <div style="margin-top:8px;color:#999;font-size:11px;">Tip: use Dual Action for behaviors that naturally split into a hold while pressed and a separate action on release (e.g., charge/spool, temporary modes).</div>
+                    </div>
+
+                </details>
+            </div>
+        </div>
     </div>
 
 </div>
 
 <script>
+    // Dropdown caches for press/release selects
     let downOptions = [];
     let upOptions = [];
     let optionGroups = [];
@@ -145,9 +184,10 @@
             if (upSel && savedUpValue) upSel.value = savedUpValue;
         }
 
-        updateClearSoundVisibility();
+        updateClearButtons();
     };
 
+    // Build down/up selects simultaneously so filtering can hide parallel optgroups
     function populateDropdown(functions) {
         const downSel = document.getElementById('downFunction');
         const upSel = document.getElementById('upFunction');
@@ -203,6 +243,7 @@
         filterOptions();
     }
 
+    // Filter press/release options in tandem and toggle helper text/no-results state
     function filterOptions() {
         if (!functionsLoaded) return;
 
@@ -231,7 +272,12 @@
             if (hasVisible) visibleGroups++;
         });
 
-        noResults.classList.toggle('hidden', visibleGroups > 0);
+        // show noResults only when user typed a search term and no groups remain
+        if (noResults) {
+            const showNoResults = term && visibleGroups === 0;
+            noResults.classList.toggle('hidden', !showNoResults);
+        }
+
         searchResults.textContent = term
             ? `Found ${visibleGroups} group${visibleGroups !== 1 ? 's' : ''}`
             : '';
@@ -246,12 +292,13 @@
         if (label) label.textContent = 'No file…';
 
         setSettings({ clickSound: '' });
-        updateClearSoundVisibility();
+        updateClearButtons();
     }
 
-    function updateClearSoundVisibility() {
+    // Toggle visibility of Clear button based on file input value
+    function updateClearButtons() {
         const input = document.getElementById('clickSound');
-        const clearBtn = document.getElementById('dvClearSound');
+        const clearBtn = document.getElementById('btnClearSound');
 
         if (!input || !clearBtn) return;
 
@@ -280,7 +327,6 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-
         document.getElementById('functionSearch')
             .addEventListener('input', function () {
                 clearTimeout(this.searchTimeout);
@@ -295,7 +341,7 @@
                 });
         });
 
-        updateClearSoundVisibility();
+        // file change handlers and clear-button visibility are handled by shared initSoundPickers/updateClearButtons
     });
 </script>
 

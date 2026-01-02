@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
-    <title>Mhwlng's Star Citizen</title>
+    <title>Star Citizen - Action Key</title>
 
     <link rel="stylesheet" href="../sdpi.css">
     <link rel="stylesheet" href="../jquery.highlight-within-textarea.css">
@@ -18,7 +18,7 @@
 
     <style>
         .no-results {
-            padding: 10px;
+            padding: 8px;
             color: #999;
             font-style: italic;
             text-align: center;
@@ -26,95 +26,158 @@
         .hidden {
             display: none !important;
         }
-    .search-row {
-        display: flex;
-        gap: 6px;
-        align-items: stretch;
-        min-height: 23px;
-    }
-    .search-row input.sdpi-item-value {
-        flex: 1;
-        height: 100%;
-        min-height: 23px;
-        box-sizing: border-box;
-    }
+        .search-row {
+            display: flex;
+            gap: 6px;
+            align-items: stretch;
+            min-height: 23px;
+        }
+        .search-row input.sdpi-item-value {
+            flex: 1;
+            height: 100%;
+            min-height: 23px;
+            box-sizing: border-box;
+        }
+        /* Layout is controlled by shared `sdpi.css` via `.sdpi-wrapper.sdpi-stack` */
     </style>
 </head>
 
 <body>
-<div class="sdpi-wrapper">
-
-    <!-- SEARCH -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Search</div>
-        <div class="sdpi-item-value search-row">
-            <input type="text"
-                   class="sdpi-item-value"
-                   id="functionSearch"
-                   placeholder="Type to search functions..."
-                   autocomplete="off">
-        </div>
-        <div class="sdpi-item-value"
-             id="searchResults"
-             style="font-size: 11px; color: #999; margin-top: 4px;"></div>
-    </div>
+<div class="sdpi-wrapper sdpi-stack">
 
     <!-- FUNCTION -->
-    <div class="sdpi-item">
-        <div class="sdpi-item-label">Function</div>
-        <select class="sdpi-item-value select sdProperty"
-                id="function"
-                oninput="setSettings()"
-                onchange="setSettings()">
-            <option value="">
-                Loading Star Citizen functions...
-            </option>
-        </select>
+    <!--
+        Section: Function selector
+        Controls: <select> with id `function` populated by `populateDropdown()`.
+        Notes: contains optgroups and options representing available Star Citizen functions. Changing selection calls `setSettings()` via inline handlers.
+    -->
+    <div class="sdpi-section sdpi-section--function" id="section-function">
+        <div class="sdpi-section-title">Configuration</div>
+
+        <!-- SEARCH inserted at top of configuration so it appears first -->
+        <div class="sdpi-item">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value search-row">
+                <input type="text"
+                       class="sdpi-item-value"
+                       id="functionSearch"
+                       placeholder="Type to search functions..."
+                       autocomplete="off">
+            </div>
+            <div class="sdpi-item-value"
+                 id="searchResults"
+                 style="font-size: 11px; color: #999; margin-top: 0;"></div>
+        </div>
+
+        <div class="sdpi-item">
+            <div class="sdpi-item-label">Function</div>
+            <div class="sdpi-item-value">
+                <select class="sdpi-item-value select sdProperty"
+                        id="function"
+                        oninput="setSettings()"
+                        onchange="setSettings()">
+                    <option value="">
+                        Loading Star Citizen functions...
+                    </option>
+                </select>
+            </div>
+        </div>
     </div>
 
     <!-- CLICK SOUND -->
-    <div class="sdpi-item" id="dvClickSound">
-        <div class="sdpi-item-label">Sound</div>
-        <div class="sdpi-item-group file">
-            <input class="sdpi-item-value sdProperty sdFile"
-                   type="file"
-                   id="clickSound"
-                   accept=".wav"
-                   oninput="setSettings(); updateClearSoundVisibility();"
-                   onchange="setSettings(); updateClearSoundVisibility();">
-            <label class="sdpi-file-info"
-                   id="clickSoundFilename">No file...</label>
-            <label class="sdpi-file-label"
-                   for="clickSound">Choose file...</label>
+    <!--
+        Section: Click sound file picker
+        Controls: hidden <input type="file"> with id `clickSound`, a label `clickSoundFilename` showing the selected file name, and action buttons positioned under the preview on the left.
+        Notes: When a file is chosen the JS updates the filename label and shows the Clear button. The custom "Choose file..." label is linked to the hidden file input via `for` attribute.
+    -->
+    <div class="sdpi-section sdpi-section--sound" id="section-sound">
+        <div class="sdpi-section-title">Sound</div>
+        <div class="sdpi-item" id="dvClickSound">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value">
+                <div class="file-row">
+                    <div class="file-main">
+                        <!-- hidden native file input; label triggers it -->
+                        <input class="sdpi-item-value sdProperty sdFile"
+                               type="file"
+                               id="clickSound"
+                               accept=".wav"
+                               oninput="setSettings()"
+                               onchange="setSettings()">
+                        <label class="sdpi-file-info" id="clickSoundFilename">No file...</label>
+                    </div>
+                    <div class="file-actions">
+                        <label class="sdpi-file-label" for="clickSound">Choose file...</label>
+                        <button class="sdpi-file-button-inline hidden" id="btnClearSound" onclick="clearClickSound()">Clear</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- CLEAR SOUND -->
-    <div class="sdpi-item hidden" id="dvClearSound">
-        <div class="sdpi-item-label"></div>
-        <button class="sdpi-item-value" onclick="clearClickSound()">
-            Clear sound
-        </button>
+    <!-- HOW IT WORKS: placed as its own grouped row directly under Sound -->
+    <div class="sdpi-section sdpi-section--details" id="section-how">
+        <!-- header removed: details summary is the visible trigger -->
+        <div class="sdpi-item" type="group">
+            <div class="sdpi-item-label empty"></div>
+            <div class="sdpi-item-value">
+                <details style="font-size: 11px; color: #bbb; margin: 0;">
+                    <summary>How it works</summary>
+
+                    <div style="margin-top:8px;color:#ddd;line-height:1.35;">
+                      <strong>Overview</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li>The Action Key sends the selected Star Citizen function (keyboard/mouse/joystick binding) as a single action when you tap the button.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Images / states</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ccc;">
+                        <li><strong>State 0</strong> - idle/default image (no action occurring).</li>
+                        <li><strong>State 1</strong> - active/confirm image briefly shown after the action is sent (visual feedback).</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Behavior details</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li>Tapping the key sends the configured binding once. The plugin converts the configured function into a low-level key/mouse/joystick token and forwards it to the input simulator.</li>
+                        <li>If a click sound is configured it plays immediately after the binding is sent to give audible feedback.</li>
+                        <li>The action does not maintain any persistent state; it is a one-shot fire-and-forget action.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Troubleshooting</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ddd;">
+                        <li>If nothing happens when you press the button, ensure the selected function has a valid keyboard, mouse, or joystick binding. Gamepad-only bindings are not supported.</li>
+                      </ul>
+
+                      <strong style="display:block;margin-top:8px;">Example</strong>
+                      <ul style="margin:6px 0 0 18px;padding:0;color:#ccc;">
+                        <li>User taps the Action Key: the configured key/mouse/joystick binding is sent once. An optional sound plays and the button briefly shows the confirm image.</li>
+                      </ul>
+
+                      <div style="margin-top:8px;color:#999;font-size:11px;">Tip: use Action Key for simple single-press bindings or as steps inside a multi-action where a single immediate bind is required.</div>
+                    </div>
+
+                </details>
+            </div>
+        </div>
     </div>
 
-    <div class="sdpi-item no-results hidden" id="noResults">
-        No functions match your search.
-    </div>
+    <!-- removed previous content -->
 
-</div>
+    <!-- ensure state descriptions use ASCII hyphen to avoid encoding issues -->
+    <!-- ...remaining file unchanged... -->
 
 <script>
+    // Dropdown cache + saved selection pulled from configuration payload
     let allOptions = [];
     let functionsLoaded = false;
     let savedFunctionValue = null;
 
-    /* Preserve function value while dropdown loads */
+    /* Preserve selected function if payload arrives before functions list */
     const originalLoadConfiguration = loadConfiguration;
     loadConfiguration = function (payload) {
         if (payload && payload.function !== undefined) {
             savedFunctionValue = payload.function;
         }
-
         originalLoadConfiguration(payload);
 
         if (functionsLoaded && savedFunctionValue) {
@@ -122,10 +185,12 @@
             if (sel) sel.value = savedFunctionValue;
         }
 
-        updateClearSoundVisibility();
+        // Ensure file clear buttons update if sdtools init was skipped
+        try { updateClearButtons(); } catch (e) { }
     };
 
-    function populateDropdown(functionsData) {
+    // Build select options/optgroups from plugin-provided actions list
+    function populateDropdown(functions) {
         const select = document.getElementById('function');
         select.innerHTML = '';
         allOptions = [];
@@ -135,42 +200,36 @@
         empty.textContent = '-- Select a function --';
         select.appendChild(empty);
 
-        functionsData.forEach(group => {
+        (functions || []).forEach(group => {
             const optgroup = document.createElement('optgroup');
             optgroup.label = group.label;
 
-            group.options.forEach(opt => {
+            (group.options || []).forEach(opt => {
                 const option = document.createElement('option');
                 option.value = opt.value;
                 option.textContent = opt.text;
-                option.dataset.search = opt.searchText || opt.text.toLowerCase();
+                option.dataset.search = (opt.searchText || opt.text || '').toLowerCase();
 
                 optgroup.appendChild(option);
 
-                allOptions.push({
-                    option,
-                    optgroup,
-                    search: option.dataset.search
-                });
+                allOptions.push({ option, optgroup, search: option.dataset.search });
             });
 
-            select.appendChild(optgroup);
+            if (optgroup.children.length > 0) select.appendChild(optgroup);
         });
 
         functionsLoaded = true;
 
-        if (savedFunctionValue) {
-            select.value = savedFunctionValue;
-        }
+        if (savedFunctionValue) select.value = savedFunctionValue;
 
         filterOptions();
     }
 
+    // Hide/show option rows and display no-results banner + helper text
     function filterOptions() {
         if (!functionsLoaded) return;
 
         const term = document.getElementById('functionSearch').value.toLowerCase().trim();
-        const noResults = document.getElementById('noResults');
         const searchResults = document.getElementById('searchResults');
 
         let visibleGroups = 0;
@@ -183,44 +242,30 @@
         document.querySelectorAll('#function optgroup').forEach(group => {
             const hasVisible = Array.from(group.children)
                 .some(o => o.style.display !== 'none');
+
             group.style.display = hasVisible ? '' : 'none';
             if (hasVisible) visibleGroups++;
         });
 
-        noResults.classList.toggle('hidden', visibleGroups > 0);
         searchResults.textContent = term
             ? `Found ${visibleGroups} group${visibleGroups !== 1 ? 's' : ''}`
             : '';
     }
 
-    function clearClickSound() {
-        const input = document.getElementById('clickSound');
-        const label = document.getElementById('clickSoundFilename');
-
-        if (input) input.value = '';
-        if (label) label.textContent = 'No file...';
-
-        setSettings({ clickSound: '' });
-        updateClearSoundVisibility();
-    }
-
-    function updateClearSoundVisibility() {
-        const input = document.getElementById('clickSound');
-        const clearBtn = document.getElementById('dvClearSound');
-        if (!input || !clearBtn) return;
-        clearBtn.classList.toggle('hidden', !input.value);
-    }
-
-    /* Receive function list from plugin */
+    /* Hook into websocket to receive function list */
     document.addEventListener('websocketCreate', function () {
         const originalOnMessage = websocket.onmessage;
+
         websocket.onmessage = function (evt) {
             const jsonObj = JSON.parse(evt.data);
+
             if (jsonObj.event === 'sendToPropertyInspector'
                 && jsonObj.payload
                 && jsonObj.payload.functionsLoaded) {
+
                 populateDropdown(jsonObj.payload.functions);
             }
+
             if (originalOnMessage) {
                 originalOnMessage.call(this, evt);
             }
@@ -228,19 +273,37 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        document.getElementById('functionSearch')
-            .addEventListener('input', function () {
+        const searchEl = document.getElementById('functionSearch');
+        if (searchEl) {
+            searchEl.addEventListener('input', function () {
                 clearTimeout(this.searchTimeout);
                 this.searchTimeout = setTimeout(filterOptions, 150);
             });
+        }
 
-        document.getElementById('function')
-            .addEventListener('change', function () {
-                document.getElementById('functionSearch').value = '';
-                document.getElementById('searchResults').textContent = '';
+        const funcEl = document.getElementById('function');
+        if (funcEl) {
+            funcEl.addEventListener('change', function () {
+                const s = document.getElementById('functionSearch'); if (s) s.value = '';
+                const r = document.getElementById('searchResults'); if (r) r.textContent = '';
             });
+        }
 
-        updateClearSoundVisibility();
+        // Ensure clear-button visibility and filename label update work even if shared init is skipped
+        const fileInput = document.getElementById('clickSound');
+        if (fileInput) {
+            fileInput.addEventListener('change', function () {
+                const label = document.getElementById('clickSoundFilename');
+                if (label) {
+                    const fileName = (this.files && this.files.length) ? this.files[0].name : (this.value || 'No file...');
+                    label.textContent = fileName || 'No file...';
+                }
+                try { setSettings(); } catch (e) { }
+                try { updateClearButtons(); } catch (e) { }
+            });
+        }
+
+        try { updateClearButtons(); } catch (e) { }
     });
 </script>
 

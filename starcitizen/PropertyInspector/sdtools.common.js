@@ -7,6 +7,9 @@ var websocket = null,
     runningApps = [],
     isQT = navigator.appVersion.includes('QtWebEngine');
 
+// Idempotent init guard for sound pickers
+var __sdpiSoundPickersInited = false;
+
 function connectElgatoStreamDeckSocket(inPort, inUUID, inRegisterEvent, inInfo, inActionInfo) {
     uuid = inUUID;
     registerEventName = inRegisterEvent;
@@ -189,12 +192,6 @@ function openWebsite() {
     }
 }
 
-if (!isQT) {
-    document.addEventListener('DOMContentLoaded', function () {
-        initPropertyInspector();
-    });
-}
-
 window.addEventListener('beforeunload', function (e) {
     e.preventDefault();
 
@@ -205,9 +202,85 @@ window.addEventListener('beforeunload', function (e) {
 });
 
 function initPropertyInspector() {
-    // Place to add functions
+    // initialize shared sound pickers and clear buttons
+    initSoundPickers();
 }
 
+
+function initSoundPickers() {
+    if (__sdpiSoundPickersInited) { try { updateClearButtons(); } catch (e) { } return; }
+    __sdpiSoundPickersInited = true;
+
+    // Attach change handlers to every file input with class sdFile
+    const inputs = document.querySelectorAll('input.sdFile');
+    inputs.forEach(input => {
+        // Hide native input visually (sdpi.css should also contain rule)
+        input.style.position = input.style.position || '';
+
+        input.addEventListener('change', function () {
+            const label = document.getElementById(input.id + 'Filename');
+            if (label) {
+                const fileName = (input.files && input.files.length) ? input.files[0].name : (input.value || 'No file…');
+                label.textContent = fileName || 'No file…';
+            }
+            // Persist settings
+            try { setSettings(); } catch (e) { /* ignore */ }
+            // Update clear buttons visibility
+            try { updateClearButtons(); } catch (e) { /* ignore */ }
+        });
+    });
+
+    // Initial pass to set visibility
+    updateClearButtons();
+}
+
+// Ensure clear buttons update after any settings save (works under Qt too)
+document.addEventListener('settingsUpdated', function () {
+    try { updateClearButtons(); } catch (e) { /* ignore */ }
+});
+
+function updateClearButtons() {
+    const inputs = document.querySelectorAll('input.sdFile');
+    inputs.forEach(input => {
+        // Find the nearest ancestor .sdpi-item-value (not the input itself)
+        let container = input.parentElement;
+        while (container && !container.classList.contains('sdpi-item-value')) {
+            container = container.parentElement;
+        }
+        if (!container) return;
+
+        const btn = container.querySelector("button[id*='btnClear'], button.sdpi-file-button-inline, button.small-btn");
+        if (!btn) return;
+
+        let shouldShow = false;
+        if (input.value) {
+            shouldShow = true;
+        } else {
+            const filenameLabel = document.getElementById(input.id + 'Filename') || container.querySelector('.sdpi-file-info');
+            if (filenameLabel && filenameLabel.textContent) {
+                const txt = filenameLabel.textContent.trim();
+                if (txt !== '' && !/no\s*file/i.test(txt)) {
+                    shouldShow = true;
+                }
+            }
+        }
+
+        if (shouldShow) btn.classList.remove('hidden'); else btn.classList.add('hidden');
+    });
+}
+
+function clearSound(inputId) {
+    // Backwards-compatible function used by pages
+    clearFileName(inputId);
+    // update UI
+    const label = document.getElementById(inputId + 'Filename');
+    if (label) label.textContent = 'No file…';
+    try { updateClearButtons(); } catch (e) { }
+}
+
+function clearClickSound() {
+    clearSound('clickSound');
+}
 
 function addDynamicStyles(clrs) {
     const node = document.getElementById('#sdpi-dynamic-styles') || document.createElement('style');
@@ -285,3 +358,8 @@ function fadeColor(col, amt) {
     const b = min(255, max(((num >> 8) & 0x00FF) + amt, 0));
     return '#' + (g | (b << 8) | (r << 16)).toString(16).padStart(6, 0);
 }
+
+// Always initialize PI helpers once DOM is ready (Qt builds skip the block above)
+document.addEventListener('DOMContentLoaded', function () {
+    initPropertyInspector();
+});
