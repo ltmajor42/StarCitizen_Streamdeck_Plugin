@@ -194,11 +194,11 @@
     }
   ],
   "Author": "Ltmajor42",
-  "Description": "Star Citizen Buttons",
+  "Description": "Star Citizen Buttons - v2.0.9: PI dropdowns now reflect in-game function list",
   "Name": "Star Citizen",
   "Icon": "Images/pluginIcon",
   "URL": "https://github.com/ltmajor42/StarCitizen_Streamdeck_Plugin",
-  "Version": "2.0.8",
+  "Version": "2.0.9",
   "CodePath": "com.ltmajor42.starcitizen.exe",
   "Category": "Star Citizen",
   "CategoryIcon": "Images/categoryIcon",

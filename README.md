@@ -9,6 +9,12 @@
 
 ---
 
+## Version
+
+- Current release: **2.0.9** — see `CHANGELOG.md` for full details.
+
+---
+
 ## 📚 Documentation
 
 | Document | Description |
@@ -27,6 +33,8 @@
 3. **Drag a button** from the Star Citizen category to your deck
 4. **Select a function** from the dropdown
 5. **Press the button** in-game!
+
+**Note (v2.0.9):** The Property Inspector dropdowns now reflect the in-game function list (merged from `defaultProfile.xml` and any live `actionmaps.xml` overrides). Keyboard and mouse bindings are shown and the dropdown honors user overrides so the PI matches the game's current bindings.
 
 **Troubleshooting?** Check the log file:
 ```

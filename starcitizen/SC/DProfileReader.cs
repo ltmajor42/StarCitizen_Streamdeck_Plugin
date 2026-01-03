@@ -84,9 +84,10 @@ public class DProfileReader
     // ============================================================
     private static string NormalizeKeyboardBinding(string keyboard)
     {
-        if (string.IsNullOrWhiteSpace(keyboard)) return null;
+        // Treat null, empty, or whitespace (including single space) as null
+        if (string.IsNullOrWhiteSpace(keyboard) || keyboard.Trim() == "") return null;
         if (keyboard.StartsWith("HMD_", StringComparison.OrdinalIgnoreCase)) return null;
-        return keyboard;
+        return keyboard.Trim();
     }
 
     private static string NormalizeMouseBinding(string mouse)
@@ -97,7 +98,8 @@ public class DProfileReader
 
     private static string MergePrimaryBinding(string keyboard, string mouse)
     {
-        if (!string.IsNullOrWhiteSpace(keyboard)) return keyboard;
+        // Prefer keyboard if not null/empty/whitespace, else use mouse
+        if (!string.IsNullOrWhiteSpace(keyboard) && keyboard.Trim() != "") return keyboard.Trim();
         return mouse;
     }
 
@@ -167,6 +169,12 @@ public class DProfileReader
         var keyboard = NormalizeKeyboardBinding((string)action.Attribute("keyboard"));
         var mouse = NormalizeMouseBinding((string)action.Attribute("mouse"));
 
+        // CRITICAL FIX: If keyboard is blank/whitespace/null, but mouse is set, use mouse as keyboard
+        if (string.IsNullOrWhiteSpace(keyboard) && !string.IsNullOrWhiteSpace(mouse))
+        {
+            keyboard = mouse;
+        }
+
         return new Action
         {
             MapName = actionMap.Name,
@@ -176,7 +184,7 @@ public class DProfileReader
             UILabel = uiLabel,
             UIDescription = uiDescription,
             ActivationMode = ResolveActivationMode(action),
-            Keyboard = MergePrimaryBinding(keyboard, mouse),
+            Keyboard = keyboard,
             Mouse = mouse,
             Joystick = (string)action.Attribute("joystick"),
             Gamepad = (string)action.Attribute("gamepad")
