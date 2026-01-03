@@ -70,7 +70,7 @@
                         id="downFunction"
                         oninput="setSettings()"
                         onchange="setSettings()">
-                    <option value="">Loading Star Citizen functions…</option>
+                    <option value="">Loading Star Citizen keybinds...</option>
                 </select>
             </div>
         </div>
@@ -82,7 +82,7 @@
                         id="upFunction"
                         oninput="setSettings()"
                         onchange="setSettings()">
-                    <option value="">Loading Star Citizen functions…</option>
+                    <option value="">Loading Star Citizen keybinds...</option>
                 </select>
             </div>
         </div>
@@ -194,7 +194,16 @@
 
         originalLoadConfiguration(payload);
 
-        if (functionsLoaded) {
+        // If functions aren't loaded yet, restore the loading text for both dropdowns
+        if (!functionsLoaded) {
+            ['downFunction', 'upFunction'].forEach(id => {
+                const select = document.getElementById(id);
+                if (select && select.options.length === 1 && select.options[0].value === '') {
+                    select.options[0].textContent = 'Loading Star Citizen keybinds...';
+                    select.value = '';
+                }
+            });
+        } else {
             const downSel = document.getElementById('downFunction');
             const upSel = document.getElementById('upFunction');
             if (downSel && savedDownValue) downSel.value = savedDownValue;
@@ -333,11 +342,20 @@
         websocket.onmessage = function (evt) {
             const jsonObj = JSON.parse(evt.data);
 
-            if (jsonObj.event === 'sendToPropertyInspector'
-                && jsonObj.payload
-                && jsonObj.payload.functionsLoaded) {
-
-                populateDropdown(jsonObj.payload.functions);
+            if (jsonObj.event === 'sendToPropertyInspector' && jsonObj.payload) {
+                // Handle loading state
+                if (jsonObj.payload.loading && !jsonObj.payload.functionsLoaded) {
+                    ['downFunction', 'upFunction'].forEach(id => {
+                        const select = document.getElementById(id);
+                        if (select && select.options.length <= 1) {
+                            select.options[0].textContent = jsonObj.payload.message || 'Loading Star Citizen keybinds...';
+                        }
+                    });
+                }
+                // Handle functions loaded
+                else if (jsonObj.payload.functionsLoaded) {
+                    populateDropdown(jsonObj.payload.functions);
+                }
             }
 
             if (originalOnMessage) {

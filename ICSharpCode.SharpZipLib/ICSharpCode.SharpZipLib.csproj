@@ -13,6 +13,10 @@
     <PackageReleaseNotes>SharpZipLib for .NET 8</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/icsharpcode/SharpZipLib</PackageProjectUrl>
     
+    <!-- .NET 8 Performance Optimizations -->
+    <TieredCompilation>true</TieredCompilation>
+    <TieredPGO>true</TieredPGO>
+    
     <!-- Suppress obsolete crypto warnings (maintained for backwards compatibility) -->
     <NoWarn>$(NoWarn);SYSLIB0021;SYSLIB0041</NoWarn>
   </PropertyGroup>

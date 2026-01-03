@@ -17,6 +17,11 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     
+    <!-- .NET 8 Performance Optimizations -->
+    <TieredCompilation>true</TieredCompilation>
+    <TieredPGO>true</TieredPGO>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    
     <!-- Suppress warnings -->
     <!-- SYSLIB0011: BinaryFormatter is obsolete (used for local cache, not untrusted input) -->
     <!-- CA1416: Platform compatibility warnings (we target Windows only) -->

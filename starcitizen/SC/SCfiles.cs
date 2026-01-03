@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.IO.Compression;
+using System.Text.Json;
 using SCJMapper_V2.CryXMLlib;
 using SCJMapper_V2.p4kFile;
 using starcitizen.Core;
+using P4kFileClass = SCJMapper_V2.p4kFile.p4kFile;
 
-namespace SCJMapper_V2.SC
+namespace starcitizen.SC
 {
     /// <summary>
     /// Manages Star Citizen asset files extracted from Data.p4k.
@@ -55,7 +56,21 @@ namespace SCJMapper_V2.SC
         public void UpdatePack()
         {
             LoadPack();
-            if (!NeedsUpdate()) return;
+            
+            // Force update if:
+            // 1. No valid cache exists (filetype is still Unknown)
+            // 2. Cache exists but profile data is empty
+            bool cacheInvalid = m_defProfile.Filetype == SCFile.FileType.UnknownFile;
+            bool cacheEmpty = m_defProfile.Filetype == SCFile.FileType.DefProfile && 
+                              string.IsNullOrEmpty(m_defProfile.Filedata);
+            bool forceUpdate = cacheInvalid || cacheEmpty;
+            
+            if (forceUpdate)
+            {
+                PluginLog.Warn($"Cache invalid (type={m_defProfile.Filetype}, empty={string.IsNullOrEmpty(m_defProfile.Filedata)}), forcing re-extraction from p4k");
+            }
+            
+            if (!forceUpdate && !NeedsUpdate()) return;
 
             UpdatePakFile();
             UpdateDefProfileFile();
@@ -79,51 +94,161 @@ namespace SCJMapper_V2.SC
 
         private void UpdateDefProfileFile()
         {
-            PluginLog.Info(SCPath.SCData_p4k);
+            PluginLog.Info($"UpdateDefProfileFile - Data.p4k path: {SCPath.SCData_p4k}");
 
-            if (!File.Exists(SCPath.SCData_p4k)) return;
+            if (!File.Exists(SCPath.SCData_p4k))
+            {
+                PluginLog.Error($"Data.p4k file not found at: {SCPath.SCData_p4k}");
+                return;
+            }
 
             try
             {
                 var PD = new p4kDirectory();
                 var candidates = PD.ScanDirectoryForAllEndsWith(SCPath.SCData_p4k, SCDefaultProfile.DefaultProfileName);
 
-                p4kFile.p4kFile p4K = null;
-                if (candidates != null && candidates.Count > 0)
+                if (candidates == null || candidates.Count == 0)
                 {
-                    foreach (var c in candidates)
-                    {
-                        PluginLog.Debug($"defaultProfile candidate: {c.Filename} (size={c.FileSize}, date={c.FileModifyDate:s})");
-                    }
-
-                    // Prefer canonical path, then largest file, then most recent
-                    p4K = candidates
-                        .OrderByDescending(f => IsCanonicalDefaultProfilePath(f.Filename) ? 1 : 0)
-                        .ThenByDescending(f => f.FileSize)
-                        .ThenByDescending(f => f.FileModifyDate)
-                        .FirstOrDefault();
-
-                    PluginLog.Info($"defaultProfile.xml candidates: {candidates.Count}, chosen: {p4K?.Filename ?? "(none)"}");
+                    PluginLog.Error($"No defaultProfile.xml files found in {SCPath.SCData_p4k}");
+                    return;
                 }
 
-                if (p4K == null) return;
+                PluginLog.Info($"Found {candidates.Count} defaultProfile.xml candidate(s):");
+                foreach (var c in candidates)
+                {
+                    bool isCanonical = IsCanonicalDefaultProfilePath(c.Filename);
+                    PluginLog.Info($"  - {c.Filename} (size={c.FileSize}, date={c.FileModifyDate:s}, canonical={isCanonical})");
+                }
+
+                // Prefer canonical path, then largest file, then most recent
+                var p4K = candidates
+                    .OrderByDescending(f => IsCanonicalDefaultProfilePath(f.Filename) ? 1 : 0)
+                    .ThenByDescending(f => f.FileSize)
+                    .ThenByDescending(f => f.FileModifyDate)
+                    .FirstOrDefault();
+
+                PluginLog.Info($"Selected: {p4K?.Filename ?? "(none)"}");
+
+                if (p4K == null)
+                {
+                    PluginLog.Warn("No defaultProfile.xml candidates found in p4k");
+                    return;
+                }
 
                 byte[] fContent = PD.GetFile(SCPath.SCData_p4k, p4K);
-
-                // Parse binary XML
-                var cbr = new CryXmlBinReader();
-                var ROOT = cbr.LoadFromBuffer(fContent, out var readResult);
                 
-                if (readResult == CryXmlBinReader.EResult.Success)
+                if (fContent == null || fContent.Length == 0)
                 {
-                    var tree = new XmlTree();
-                    tree.BuildXML(ROOT);
+                    PluginLog.Error($"Failed to extract defaultProfile.xml from p4k (empty content)");
+                    return;
+                }
+                
+                PluginLog.Debug($"Extracted defaultProfile.xml: {fContent.Length} bytes, first 8 bytes: {BitConverter.ToString(fContent, 0, Math.Min(8, fContent.Length))}");
+
+                string xmlContent = null;
+
+                // Check if it's binary CryXML (starts with exactly "CryXmlB\0")
+                bool isCryXmlBinary = fContent.Length > 8 && 
+                    fContent[0] == 'C' && fContent[1] == 'r' && fContent[2] == 'y' && 
+                    fContent[3] == 'X' && fContent[4] == 'm' && fContent[5] == 'l' && 
+                    fContent[6] == 'B' && fContent[7] == 0;
+
+                // Check if it starts with XML declaration or root element
+                bool isPlainXml = fContent.Length > 1 && 
+                    (fContent[0] == '<' || 
+                     (fContent[0] == 0xEF && fContent[1] == 0xBB && fContent[2] == 0xBF && fContent.Length > 3 && fContent[3] == '<')); // UTF-8 BOM
+
+                PluginLog.Debug($"File format detection: isCryXmlBinary={isCryXmlBinary}, isPlainXml={isPlainXml}");
+
+                if (isCryXmlBinary)
+                {
+                    PluginLog.Debug("Detected binary CryXML format");
                     
+                    // Try CryXmlBinReader first (proven to work in old build)
+                    try
+                    {
+                        var cbr = new CryXmlBinReader();
+                        var root = cbr.LoadFromBuffer(fContent, out var readResult);
+                        
+                        if (readResult == CryXmlBinReader.EResult.Success && root != null)
+                        {
+                            var tree = new XmlTree();
+                            tree.BuildXML(root);
+                            xmlContent = tree.XML_string;
+                            
+                            if (!string.IsNullOrEmpty(xmlContent))
+                            {
+                                PluginLog.Info($"CryXmlBinReader succeeded: {xmlContent.Length} chars");
+                            }
+                        }
+                        else
+                        {
+                            PluginLog.Warn($"CryXmlBinReader failed: {cbr.GetErrorDescription()}");
+                        }
+                    }
+                    catch (Exception cryEx)
+                    {
+                        PluginLog.Warn($"CryXmlBinReader exception: {cryEx.GetType().Name}: {cryEx.Message}");
+                    }
+                    
+                    // Fallback to new simple parser if CryXmlBinReader failed
+                    if (string.IsNullOrEmpty(xmlContent))
+                    {
+                        PluginLog.Info("Trying CryXmlParser fallback...");
+                        try
+                        {
+                            xmlContent = CryXmlParser.Parse(fContent);
+                            
+                            if (!string.IsNullOrEmpty(xmlContent))
+                            {
+                                PluginLog.Info($"CryXmlParser succeeded: {xmlContent.Length} chars");
+                            }
+                        }
+                        catch (Exception cryEx)
+                        {
+                            PluginLog.Warn($"CryXmlParser failed: {cryEx.GetType().Name}: {cryEx.Message}");
+                        }
+                    }
+                    
+                    if (string.IsNullOrEmpty(xmlContent))
+                    {
+                        PluginLog.Error("Both CryXML parsers failed to produce output");
+                    }
+                }
+                else if (isPlainXml)
+                {
+                    // It's plain XML text (possibly with BOM)
+                    PluginLog.Debug("Detected plain XML format");
+                    xmlContent = System.Text.Encoding.UTF8.GetString(fContent);
+                }
+                else
+                {
+                    // Unknown format - try as plain text anyway
+                    PluginLog.Warn($"Unknown file format, attempting to parse as XML");
+                    xmlContent = System.Text.Encoding.UTF8.GetString(fContent);
+                    
+                    // Validate it looks like XML
+                    if (!xmlContent.TrimStart().StartsWith("<"))
+                    {
+                        PluginLog.Error($"Extracted content doesn't appear to be valid XML. First chars: {xmlContent.Substring(0, Math.Min(50, xmlContent.Length))}");
+                        xmlContent = null;
+                    }
+                }
+
+                PluginLog.Debug($"Parsed defaultProfile.xml: {xmlContent?.Length ?? 0} chars");
+                
+                if (!string.IsNullOrEmpty(xmlContent))
+                {
                     m_defProfile.Filetype = SCFile.FileType.DefProfile;
                     m_defProfile.Filename = Path.GetFileName(p4K.Filename);
                     m_defProfile.Filepath = Path.GetDirectoryName(p4K.Filename);
                     m_defProfile.FileDateTime = p4K.FileModifyDate;
-                    m_defProfile.Filedata = tree.XML_string;
+                    m_defProfile.Filedata = xmlContent;
+                    PluginLog.Info($"Successfully loaded defaultProfile.xml ({xmlContent.Length} chars)");
+                }
+                else
+                {
+                    PluginLog.Error("Parsed defaultProfile.xml but content is empty");
                 }
             }
             catch (Exception ex)
@@ -137,8 +262,18 @@ namespace SCJMapper_V2.SC
             if (string.IsNullOrWhiteSpace(filename)) return false;
 
             var normalized = filename.Replace('/', '\\').ToLowerInvariant();
-            return normalized.Contains("\\data\\libs\\config\\profiles\\default\\") &&
-                   normalized.EndsWith("\\" + SCDefaultProfile.DefaultProfileName.ToLowerInvariant());
+            var profileName = SCDefaultProfile.DefaultProfileName.ToLowerInvariant();
+            
+            // Must end with the profile filename
+            if (!normalized.EndsWith(profileName)) return false;
+            
+            // Check for canonical paths (order by preference - newer structure first)
+            // Structure 1 (Current): Data\Libs\Config\defaultProfile.xml
+            // Structure 2 (Legacy): Data\Libs\Config\Profiles\default\defaultProfile.xml
+            // Structure 3 (Very old): data\libs\config\profiles\default\defaultProfile.xml
+            return normalized.Contains("\\libs\\config\\defaultprofile.xml") ||
+                   normalized.Contains("\\libs\\config\\profiles\\default\\") ||
+                   normalized.Contains("\\data\\libs\\config\\");
         }
 
         private void UpdateLangFiles()
@@ -148,15 +283,37 @@ namespace SCJMapper_V2.SC
             try
             {
                 var PD = new p4kDirectory();
-                var fileList = PD.ScanDirectoryContaining(SCPath.SCData_p4k, @"\\global.ini");
+                // Note: p4k paths use forward slashes internally, so search for /global.ini
+                var fileList = PD.ScanDirectoryContaining(SCPath.SCData_p4k, "global.ini");
+                
+                PluginLog.Info($"UpdateLangFiles - Found {fileList?.Count ?? 0} global.ini file(s)");
+                
+                if (fileList == null || fileList.Count == 0)
+                {
+                    PluginLog.Warn("UpdateLangFiles - No global.ini files found in p4k");
+                    return;
+                }
                 
                 foreach (var file in fileList)
                 {
-                    string lang = Path.GetFileNameWithoutExtension(Path.GetDirectoryName(file.Filename));
-                    if (!Enum.TryParse(lang, out SCUiText.Languages fileLang)) continue;
+                    // Extract language from path like "Data/Localization/english/global.ini"
+                    string dirPath = Path.GetDirectoryName(file.Filename)?.Replace('\\', '/');
+                    string lang = dirPath?.Split('/').LastOrDefault(s => !string.IsNullOrEmpty(s));
+                    
+                    PluginLog.Debug($"UpdateLangFiles - Processing: {file.Filename} -> lang={lang}");
+                    
+                    if (string.IsNullOrEmpty(lang)) continue;
+                    if (!Enum.TryParse(lang, true, out SCUiText.Languages fileLang)) continue;
 
                     byte[] fContent = PD.GetFile(SCPath.SCData_p4k, file);
+                    if (fContent == null || fContent.Length == 0)
+                    {
+                        PluginLog.Warn($"UpdateLangFiles - Empty content for {file.Filename}");
+                        continue;
+                    }
+                    
                     var content = ExtractUiStrings(System.Text.Encoding.UTF8.GetString(fContent));
+                    PluginLog.Info($"UpdateLangFiles - Extracted {content.Split('\n').Length} UI strings for {lang}");
 
                     var obj = new SCFile
                     {
@@ -213,11 +370,18 @@ namespace SCJMapper_V2.SC
 
             try
             {
-                var filelist = Directory.EnumerateFiles(p4ktest.SC.TheUser.FileStoreDir, "*.scj");
+                var filelist = Directory.EnumerateFiles(p4ktest.SC.TheUser.FileStoreDir, "*.scj").ToList();
+                var filesToDelete = new List<string>();
+                
                 foreach (var file in filelist)
                 {
                     var obj = DeserializeFile(file);
-                    if (obj == null) continue;
+                    if (obj == null)
+                    {
+                        // Mark incompatible cache files for deletion (likely old BinaryFormatter format)
+                        filesToDelete.Add(file);
+                        continue;
+                    }
 
                     switch (obj.Filetype)
                     {
@@ -231,6 +395,25 @@ namespace SCJMapper_V2.SC
                             m_langFiles[obj.Filename] = obj;
                             break;
                     }
+                }
+                
+                // Clean up incompatible cache files (old BinaryFormatter format from pre-.NET 8)
+                foreach (var file in filesToDelete)
+                {
+                    try
+                    {
+                        File.Delete(file);
+                        PluginLog.Info($"Deleted incompatible cache file: {Path.GetFileName(file)}");
+                    }
+                    catch (Exception ex)
+                    {
+                        PluginLog.Warn($"Could not delete incompatible cache file {file}: {ex.Message}");
+                    }
+                }
+                
+                if (filesToDelete.Count > 0)
+                {
+                    PluginLog.Info($"Cleaned up {filesToDelete.Count} incompatible cache file(s). Cache will be rebuilt from p4k.");
                 }
             }
             catch (Exception e)
@@ -296,27 +479,52 @@ namespace SCJMapper_V2.SC
         // ============================================================
         // REGION: Serialization Helpers
         // ============================================================
-        // NOTE: BinaryFormatter is deprecated in .NET 5+ due to security concerns, but is 
-        // retained here for backward compatibility with existing .scj cache files. This is 
-        // a local cache of trusted game data, not untrusted user input, so the risk is minimal.
+        // Migrated from BinaryFormatter (deprecated/blocked in .NET 8) to System.Text.Json
+        
+        private static readonly JsonSerializerOptions s_jsonOptions = new JsonSerializerOptions
+        {
+            WriteIndented = false,
+            PropertyNameCaseInsensitive = true
+        };
         
         private static void SerializeFile(string path, SCFile obj)
         {
-            using (var stream = File.Open(path, FileMode.Create))
-            using (var gZip = new GZipStream(stream, CompressionMode.Compress))
+            try
             {
-                var formatter = new BinaryFormatter();
-                formatter.Serialize(gZip, obj);
+                var json = JsonSerializer.Serialize(obj, s_jsonOptions);
+                var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+                
+                using (var stream = File.Open(path, FileMode.Create))
+                using (var gZip = new GZipStream(stream, CompressionMode.Compress))
+                {
+                    gZip.Write(bytes, 0, bytes.Length);
+                }
+            }
+            catch (Exception ex)
+            {
+                PluginLog.Error($"SerializeFile failed for {path}: {ex.Message}");
+                throw;
             }
         }
 
         private static SCFile DeserializeFile(string path)
         {
-            using (var stream = File.Open(path, FileMode.Open))
-            using (var gZip = new GZipStream(stream, CompressionMode.Decompress))
+            try
             {
-                var formatter = new BinaryFormatter();
-                return (SCFile)formatter.Deserialize(gZip);
+                using (var stream = File.Open(path, FileMode.Open))
+                using (var gZip = new GZipStream(stream, CompressionMode.Decompress))
+                using (var memoryStream = new MemoryStream())
+                {
+                    gZip.CopyTo(memoryStream);
+                    var json = System.Text.Encoding.UTF8.GetString(memoryStream.ToArray());
+                    return JsonSerializer.Deserialize<SCFile>(json, s_jsonOptions);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log but don't throw - caller will handle null gracefully
+                PluginLog.Warn($"DeserializeFile failed for {path}: {ex.Message}. Cache will be refreshed.");
+                return null;
             }
         }
     }

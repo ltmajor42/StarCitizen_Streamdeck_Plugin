@@ -13,6 +13,7 @@ This document provides a comprehensive overview of the plugin's architecture, co
 5. [Star Citizen Integration](#star-citizen-integration)
 6. [Data Flow](#data-flow)
 7. [Key Concepts](#key-concepts)
+8. [Design Patterns](#design-patterns)
 
 ---
 
@@ -41,6 +42,16 @@ This document provides a comprehensive overview of the plugin's architecture, co
         ?                 ?                 ?
         ?????????????????????????????????????
                           ?
+                          ?
+???????????????????????????????????????????????????????????????????
+?                StarCitizenKeypadBase (Shared Infrastructure)     ?
+?  - Property Inspector event wiring                               ?
+?  - Sound loading/playback utilities                              ?
+?  - Key binding lookup helpers                                    ?
+?  - Common lifecycle management                                   ?
+???????????????????????????????????????????????????????????????????
+                          ?
+                          ?
 ???????????????????????????????????????????????????????????????????
 ?                    KeyBindingService                             ?
 ?  - Loads bindings from Data.p4k (defaultProfile.xml)            ?
@@ -65,19 +76,19 @@ This document provides a comprehensive overview of the plugin's architecture, co
 ```
 starcitizen/
 ??? Program.cs              # Entry point - initializes KeyBindingService
-??? CommandTools.cs         # SC key token ? DirectInput conversion
-??? MouseTokenHelper.cs     # Mouse token normalization (mouse1, mwheelup, etc.)
-??? KeyboardLayouts.cs      # Keyboard locale detection for display
-??? FifoExecution.cs        # Thread-safe work queue for binding reloads
 ?
 ??? Core/                   # Core services and infrastructure
 ?   ??? KeyBindingService.cs      # Singleton - manages binding lifecycle
 ?   ??? KeyBindingWatcher.cs      # FileSystemWatcher for actionmaps.xml
 ?   ??? PluginLog.cs              # Centralized logging to pluginlog.log
 ?   ??? PropertyInspectorMessenger.cs  # Sends function list to PI
+?   ??? CommandTools.cs           # SC key token ? DirectInput conversion
+?   ??? MouseTokenHelper.cs       # Mouse token normalization
+?   ??? KeyboardLayouts.cs        # Keyboard locale detection
+?   ??? FifoExecution.cs          # Thread-safe work queue
 ?
 ??? Buttons/                # Stream Deck button action implementations
-?   ??? StarCitizenKeypadBase.cs  # Base class for keypad buttons
+?   ??? StarCitizenKeypadBase.cs  # Base class with shared infrastructure
 ?   ??? StarCitizenDialBase.cs    # Base class for SD+ dial encoders
 ?   ??? ActionKey.cs              # Simple key-down/key-up on press/release
 ?   ??? Momentary.cs              # One-shot with visual feedback
@@ -88,6 +99,7 @@ starcitizen/
 ?   ??? HoldMacroAction.cs        # Hold behavior (key stays down)
 ?   ??? CosmeticKey.cs            # Visual-only, no action
 ?   ??? Dial.cs                   # Stream Deck+ dial encoder
+?   ??? LegacyActionKey.cs        # Backward compatibility wrapper
 ?   ??? StreamDeckCommon.cs       # Input simulation utilities
 ?   ??? StreamDeckEventArgsExtensions.cs  # Helper for PI payload extraction
 ?   ??? FunctionListBuilder.cs    # Builds dropdown data for PI
@@ -120,9 +132,6 @@ starcitizen/
 ?
 ??? PropertyInspector/      # Web-based settings UI (HTML/CSS/JS)
 ?   ??? StarCitizen/              # Per-action HTML pages
-?   ?   ??? ActionKey.html
-?   ?   ??? Momentary.html
-?   ?   ??? (others)
 ?   ??? sdpi.css                  # Stream Deck PI stylesheet
 ?   ??? sdtools.common.js         # Shared PI JavaScript
 ?
@@ -168,7 +177,7 @@ Centralized logging that writes to both Stream Deck's log and a plugin-specific 
 PluginLog.Info("Starting key binding load...");
 PluginLog.Warn("actionmaps.xml not found, using defaults");
 PluginLog.Error($"Failed to parse: {ex.Message}");
-PluginLog.Debug("Detailed trace information");  // Only in debug builds
+PluginLog.Debug("Detailed trace information");
 ```
 
 **Log file location:**
@@ -203,44 +212,173 @@ StreamDeckCommon.SendKeypressUp(keyInfo);
 
 ## Button Actions
 
-All button actions derive from either:
-- `StarCitizenKeypadBase` - For regular keypad buttons
-- `StarCitizenDialBase` - For Stream Deck+ dial encoders
+### Base Class Hierarchy
 
-### Common Pattern
+All button actions derive from shared base classes that provide common infrastructure:
+
+```
+KeypadBase (BarRaider SDK)
+    ??? StarCitizenKeypadBase
+            ??? ActionKey
+            ??? Momentary
+            ??? StateMemory
+            ??? DualAction
+            ??? Repeataction
+            ??? ActionDelay
+            ??? HoldMacroAction
+
+EncoderBase (BarRaider SDK)
+    ??? StarCitizenDialBase
+            ??? Dial
+```
+
+### StarCitizenKeypadBase Features
+
+The base class provides shared infrastructure to reduce code duplication:
 
 ```csharp
-[PluginActionId("com.ltmajor42.starcitizen.actionname")]
+public abstract class StarCitizenKeypadBase : KeypadBase
+{
+    // Services
+    protected readonly KeyBindingService BindingService;
+
+    // Property Inspector Infrastructure
+    protected void WirePropertyInspectorEvents();
+    protected void UnwirePropertyInspectorEvents();
+    protected virtual void SendFunctionsToPropertyInspector();
+
+    // Sound Playback Infrastructure
+    protected bool LoadClickSound(string soundPath);
+    protected void LoadClickSoundFromSettings<T>(T settings) where T : ISoundSettings;
+    protected void PlayClickSound();
+    protected void PlaySound(CachedSound sound);
+    protected CachedSound TryLoadSound(string filePath, out string normalizedPath);
+
+    // Key Binding Helpers
+    protected bool TryGetKeyBinding(string functionName, out string keyInfo);
+    protected bool EnsureBindingsReady();
+}
+```
+
+### Settings Interfaces
+
+Button settings implement these interfaces for consistent behavior:
+
+```csharp
+// For actions with a single function binding
+public interface IFunctionSettings
+{
+    string Function { get; set; }
+}
+
+// For actions with click sound support
+public interface ISoundSettings
+{
+    string ClickSoundFilename { get; set; }
+}
+
+// Base class combining common settings
+public abstract class PluginSettingsBase : IFunctionSettings, ISoundSettings
+{
+    public virtual string Function { get; set; }
+    public virtual string ClickSoundFilename { get; set; }
+}
+```
+
+### Settings Best Practices
+
+**Important:** All numeric settings from Property Inspector should be stored as `string` and parsed manually to handle empty values gracefully:
+
+```csharp
+protected class PluginSettings : PluginSettingsBase
+{
+    // ? Correct: Use string for PI numeric values
+    [JsonProperty(PropertyName = "delay")]
+    public string Delay { get; set; } = "1000";
+
+    // ? Avoid: int can crash on empty string from PI
+    // public int Delay { get; set; } = 1000;
+}
+
+// Parse in settings handler
+private void ParseSettings()
+{
+    if (int.TryParse(settings.Delay, out var parsed) && parsed >= 0)
+        currentDelay = parsed;
+    else
+        currentDelay = DefaultDelay;
+}
+```
+
+### Common Action Pattern
+
+```csharp
+[PluginActionId("com.ltmajor42.starcitizen.myaction")]
 public class MyAction : StarCitizenKeypadBase
 {
-    private readonly KeyBindingService bindingService = KeyBindingService.Instance;
+    #region Settings
+    protected class PluginSettings : PluginSettingsBase
+    {
+        public static PluginSettings CreateDefaultSettings() => new();
+    }
+    #endregion
 
+    #region State
+    private readonly PluginSettings settings;
+    #endregion
+
+    #region Initialization
     public MyAction(SDConnection connection, InitialPayload payload) : base(connection, payload)
     {
-        // 1. Load settings
-        // 2. Subscribe to events
-        Connection.OnPropertyInspectorDidAppear += ...;
-        bindingService.KeyBindingsLoaded += ...;
-    }
+        settings = PluginSettings.CreateDefaultSettings();
+        if (payload.Settings?.Count > 0)
+        {
+            Tools.AutoPopulateSettings(settings, payload.Settings);
+            LoadClickSoundFromSettings(settings);
+        }
 
+        WirePropertyInspectorEvents();
+        SendFunctionsToPropertyInspector();
+    }
+    #endregion
+
+    #region Key Events
     public override void KeyPressed(KeyPayload payload)
     {
-        if (bindingService.TryGetBinding(settings.Function, out var action))
+        if (!EnsureBindingsReady()) return;
+
+        if (TryGetKeyBinding(settings.Function, out var keyInfo))
         {
-            var keyString = CommandTools.ConvertKeyString(action.Keyboard);
-            StreamDeckCommon.SendKeypressDown(keyString);
+            StreamDeckCommon.SendKeypressDown(keyInfo);
         }
+        PlayClickSound();
     }
 
     public override void KeyReleased(KeyPayload payload)
     {
-        // Handle release
-    }
+        if (!EnsureBindingsReady()) return;
 
+        if (TryGetKeyBinding(settings.Function, out var keyInfo))
+        {
+            StreamDeckCommon.SendKeypressUp(keyInfo);
+        }
+    }
+    #endregion
+
+    #region Settings Management
+    public override void ReceivedSettings(ReceivedSettingsPayload payload)
+    {
+        Tools.AutoPopulateSettings(settings, payload.Settings);
+        LoadClickSoundFromSettings(settings);
+    }
+    #endregion
+
+    #region Disposal
     public override void Dispose()
     {
-        // Unsubscribe from events
+        base.Dispose();
     }
+    #endregion
 }
 ```
 
@@ -278,28 +416,28 @@ The plugin automatically finds Star Citizen using multiple methods:
 Data.p4k (Game Archive)
     ?
     ? Extract via p4kFile/
-???????????????????????????????
-?  defaultProfile.xml         ?  Base layer (all default bindings)
-?  (binary CryXML format)     ?
-???????????????????????????????
+?????????????????????????????
+?  defaultProfile.xml       ?  Base layer (all default bindings)
+?  (binary CryXML format)   ?
+?????????????????????????????
               ? Parse via DProfileReader
               ?
-???????????????????????????????
-?  In-memory ActionMap        ?  Dictionary<string, Action>
-?  Dictionary                 ?
-???????????????????????????????
+?????????????????????????????
+?  In-memory ActionMap      ?  Dictionary<string, Action>
+?  Dictionary               ?
+?????????????????????????????
               ?
               ? Merge with
-???????????????????????????????
-?  actionmaps.xml             ?  User customizations (override layer)
-?  (USER/Client/.../Profiles) ?
-???????????????????????????????
+?????????????????????????????
+?  actionmaps.xml           ?  User customizations (override layer)
+?  (USER/Client/.../Profiles)?
+?????????????????????????????
               ?
               ?
-???????????????????????????????
-?  Final Binding Dictionary   ?  Ready for button lookups
-?  actions["flight-v_pitch"]  ?
-???????????????????????????????
+?????????????????????????????
+?  Final Binding Dictionary ?  Ready for button lookups
+?  actions["flight-v_pitch"]?
+?????????????????????????????
 ```
 
 ### Binding Structure
@@ -313,7 +451,6 @@ public class Action
     public string Mouse { get; set; }         // "mouse1" or null
     public string Joystick { get; set; }      // Joystick binding (not used)
     public bool KeyboardOverRule { get; set; } // True if user customized
-    // ...
 }
 ```
 
@@ -330,9 +467,9 @@ public class Action
    ?
 3. KeyPressed() called on button action
    ?
-4. bindingService.TryGetBinding(functionName) ? Action
+4. EnsureBindingsReady() + TryGetKeyBinding()
    ?
-5. CommandTools.ConvertKeyString(action.Keyboard) ? "{DikW}"
+5. CommandTools.ConvertKeyString() ? "{DikW}"
    ?
 6. StreamDeckCommon.SendKeypressDown("{DikW}")
    ?
@@ -372,9 +509,9 @@ public class Action
 Internal representation of keypresses:
 
 ```
-"lalt+f"  ?  "{DikLalt}{DikF}"
-"np_enter" ?  "{DikNumpadenter}"
-"mouse1"  ?  "{mouse1}"
+"lalt+f"   ? "{DikLalt}{DikF}"
+"np_enter" ? "{DikNumpadenter}"
+"mouse1"   ? "{mouse1}"
 ```
 
 ### DirectInput Keycodes
@@ -418,6 +555,39 @@ WebSocket JSON messages between plugin and HTML settings UI:
 
 ---
 
+## Design Patterns
+
+### Singleton Pattern
+
+Used for services that should have exactly one instance:
+
+- `KeyBindingService.Instance` - Binding management
+- `AudioPlaybackEngine.Instance` - Sound playback
+
+### Template Method Pattern
+
+`StarCitizenKeypadBase` provides the skeleton with hooks:
+
+- `WirePropertyInspectorEvents()` - Call in constructor
+- `SendFunctionsToPropertyInspector()` - Override for custom behavior
+- `Dispose()` - Cleanup hooks
+
+### Strategy Pattern
+
+Different button actions implement the same interface with different behaviors:
+
+- `KeyPressed()` / `KeyReleased()` - Customized per action type
+
+### Observer Pattern
+
+Event-based notifications for state changes:
+
+- `KeyBindingsLoaded` - Bindings refreshed
+- `OnPropertyInspectorDidAppear` - PI opened
+- `OnSendToPlugin` - Message from PI
+
+---
+
 ## Troubleshooting
 
 ### Log File
@@ -432,6 +602,7 @@ Check `%appdata%\Elgato\StreamDeck\Plugins\com.ltmajor42.starcitizen.sdPlugin\pl
 | Keys don't work in-game | SC not focused | Click game window first |
 | Wrong keys sent | Locale mismatch | Check keyboard layout |
 | Bindings stale | actionmaps.xml locked | Restart plugin after SC closes |
+| Button crashes on load | Empty string in settings | Use string types for PI numeric fields |
 
 ### Debug CSV Files
 

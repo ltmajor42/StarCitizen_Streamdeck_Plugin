@@ -7,7 +7,7 @@ using System.Threading;
 using WindowsInput;
 using WindowsInput.Native;
 using BarRaider.SdTools;
-using SCJMapper_V2.SC;
+using starcitizen.SC;
 using starcitizen.Core;
 using System.Diagnostics;
 
@@ -17,11 +17,12 @@ namespace starcitizen.Buttons
     /// Common utilities for Stream Deck button input handling.
     /// Provides keyboard and mouse input simulation for Star Citizen bindings.
     /// </summary>
-    static class StreamDeckCommon
+    internal static partial class StreamDeckCommon
     {
         // ============================================================
         // REGION: Win32 Imports for Window Focus Management
         // ============================================================
+#pragma warning disable SYSLIB1054 // Use LibraryImportAttribute - keeping DllImport for compatibility with out parameters
         [DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
         private static extern IntPtr GetForegroundWindow();
 
@@ -37,18 +38,25 @@ namespace starcitizen.Buttons
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool IsWindowVisible(IntPtr hWnd);
+#pragma warning restore SYSLIB1054
 
         // ============================================================
         // REGION: State and Configuration
         // ============================================================
         public static bool ForceStop = false;
 
-        private static readonly Regex SubCommandRegex = new Regex(CommandTools.REGEX_SUB_COMMAND, RegexOptions.Compiled);
-        private static readonly InputSimulator s_inputSimulator = new InputSimulator();
-        private static readonly AsyncLocal<string> CurrentCorrelation = new AsyncLocal<string>();
+        // Reusable separator array for string splitting
+        private static readonly char[] PlusSeparator = ['+'];
+
+        // Generated regex for sub-command extraction
+        [GeneratedRegex(CommandTools.REGEX_SUB_COMMAND)]
+        private static partial Regex SubCommandRegex();
+
+        private static readonly InputSimulator s_inputSimulator = new();
+        private static readonly AsyncLocal<string> CurrentCorrelation = new();
 
         // Mouse wheel coalescing state
-        private static readonly object _wheelLock = new object();
+        private static readonly object _wheelLock = new();
         private static int _wheelAccum = 0;
         private static DateTime _wheelLastLog = DateTime.MinValue;
 
@@ -147,7 +155,7 @@ namespace starcitizen.Buttons
                 }
 
                 idx += macro.Length - 1;
-                macro = macro.Substring(1, macro.Length - 2);
+                macro = macro[1..^1];
                 PluginLog.Debug($"[{CorrelationOrDash}] ProcessMacros handling: {macro}");
                 handler(macro);
             }
@@ -218,7 +226,7 @@ namespace starcitizen.Buttons
                 PluginLog.Warn($"[{CorrelationOrDash}] Keystroke send failed: {ex}. Retrying with fresh simulator.");
                 try
                 {
-                    SendKeyStrokesCore(new InputSimulator(), new List<DirectInputKeyCode>(keyStrokes), delay, mode);
+                    SendKeyStrokesCore(new InputSimulator(), [.. keyStrokes], delay, mode);
                 }
                 catch (Exception ex2)
                 {
@@ -271,7 +279,7 @@ namespace starcitizen.Buttons
 
             try
             {
-                var matches = SubCommandRegex.Matches(macroText);
+                var matches = SubCommandRegex().Matches(macroText);
                 if (matches.Count == 0) return false;
 
                 var modifiers = new List<DirectInputKeyCode>();
@@ -331,9 +339,9 @@ namespace starcitizen.Buttons
         private static void ExecuteMouseAction(InputSimulator iis, string mouseToken, bool isDown, bool isUp)
         {
             // Handle composite tokens like "mouse1+mouse2"
-            var parts = mouseToken.Contains("+") 
-                ? mouseToken.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries)
-                : new[] { mouseToken };
+            var parts = mouseToken.Contains('+') 
+                ? mouseToken.Split(PlusSeparator, StringSplitOptions.RemoveEmptyEntries)
+                : [mouseToken];
 
             foreach (var part in parts)
             {
@@ -376,10 +384,10 @@ namespace starcitizen.Buttons
                     HandleMouseWheel(iis, -1);
                     break;
                 case "mwheelleft":
-                    iis.Mouse.HorizontalScroll(-1);
+                    _ = iis.Mouse.HorizontalScroll(-1);
                     break;
                 case "mwheelright":
-                    iis.Mouse.HorizontalScroll(1);
+                    _ = iis.Mouse.HorizontalScroll(1);
                     break;
             }
         }
@@ -410,7 +418,7 @@ namespace starcitizen.Buttons
                         if (_wheelAccum != 0)
                         {
                             PluginLog.Debug($"[{CorrelationOrDash}] Mouse: VerticalScroll({_wheelAccum}) (coalesced)");
-                            iis.Mouse.VerticalScroll(_wheelAccum);
+                            _ = iis.Mouse.VerticalScroll(_wheelAccum);
                         }
                         _wheelAccum = 0;
                         _wheelLastLog = now;
@@ -421,7 +429,7 @@ namespace starcitizen.Buttons
             {
                 if (SCPath.DetailedInputDiagnostics)
                     PluginLog.Debug($"[{CorrelationOrDash}] Mouse: VerticalScroll({amount})");
-                iis.Mouse.VerticalScroll(amount);
+                _ = iis.Mouse.VerticalScroll(amount);
             }
         }
 
@@ -445,7 +453,7 @@ namespace starcitizen.Buttons
             {
                 var hwnd = GetForegroundWindow();
                 if (hwnd == IntPtr.Zero) return "hwnd=0";
-                GetWindowThreadProcessId(hwnd, out var pid);
+                _ = GetWindowThreadProcessId(hwnd, out var pid);
                 string proc;
                 try { proc = Process.GetProcessById(pid).ProcessName; }
                 catch { proc = pid.ToString(); }
@@ -461,7 +469,7 @@ namespace starcitizen.Buttons
                 var hwnd = GetForegroundWindow();
                 if (hwnd == IntPtr.Zero) return;
 
-                GetWindowThreadProcessId(hwnd, out var pid);
+                _ = GetWindowThreadProcessId(hwnd, out var pid);
                 try
                 {
                     var p = Process.GetProcessById(pid);
@@ -483,7 +491,7 @@ namespace starcitizen.Buttons
                     {
                         if (IsWindowVisible(prev))
                         {
-                            GetWindowThreadProcessId(prev, out var prevPid);
+                            _ = GetWindowThreadProcessId(prev, out var prevPid);
                             try
                             {
                                 var prevProc = Process.GetProcessById(prevPid);

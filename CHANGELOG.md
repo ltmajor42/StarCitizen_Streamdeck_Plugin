@@ -13,6 +13,23 @@ All notable changes to this repository are documented below. Unreleased changes 
   - Modern SDK-style project files
   - Long-term support until November 2026
 
+### New Features
+- **Backward Compatibility for Legacy Profiles**: Added support for old `com.mhwlng.starcitizen.static` action UUID
+  - Users with profiles from the original mhwlng plugin no longer need to reconfigure their buttons
+  - Legacy action is hidden from the action list but existing buttons continue to work
+  - Created `LegacyActionKey.cs` that inherits from `ActionKey` with the old UUID
+
+### UI Improvements
+- **Loading State Indicator**: Property Inspector dropdowns now show "Loading Star Citizen keybinds..." while the plugin fetches keybinds
+  - Provides clear visual feedback during plugin initialization
+  - Text persists until functions are fully loaded and populated
+  - **Note:** The function menu is stable but still needs further improvements in future releases
+
+### Bug Fixes
+- Fixed Momentary button Property Inspector having different scroll behavior due to broken CSS style attribute
+- Fixed `loadConfiguration` override to preserve loading text in dropdowns until functions arrive
+- Fixed issue where dropdowns appeared empty during loading
+
 ### Technical Changes
 - Converted all project files to SDK-style format
 - Updated NuGet packages to latest compatible versions:
@@ -33,6 +50,11 @@ All notable changes to this repository are documented below. Unreleased changes 
   - Fixed exception throwing in finally block (CA2219)
   - Used target-typed `new` expressions
 - Suppressed platform compatibility warnings (Windows-only target)
+- All button classes now call `SendFunctionsAsync` unconditionally (messenger handles loading state internally)
+- Added `LegacyActionKey.cs` for backward compatibility with old mhwlng profiles
+- Updated `manifest.json` with hidden legacy action entry (`VisibleInActionsList: false`)
+- Standardized loading message text across all Property Inspector HTML files
+- Updated `PropertyInspectorMessenger` to send loading state when bindings aren't ready yet
 
 
 ## [2.0.7]

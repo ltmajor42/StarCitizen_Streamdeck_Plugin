@@ -46,7 +46,7 @@
             <div class="sdpi-item-label">Dial CW</div>
             <div class="sdpi-item-value">
                 <select class="sdpi-item-value select sdProperty function-select" id="functioncw" oninput="setSettings()" onchange="setSettings()">
-                    <option value="">Loading Star Citizen functions...</option>
+                    <option value="">Loading Star Citizen keybinds...</option>
                 </select>
             </div>
         </div>
@@ -55,7 +55,7 @@
             <div class="sdpi-item-label">Dial CCW</div>
             <div class="sdpi-item-value">
                 <select class="sdpi-item-value select sdProperty function-select" id="functionccw" oninput="setSettings()" onchange="setSettings()">
-                    <option value="">Loading Star Citizen functions...</option>
+                    <option value="">Loading Star Citizen keybinds...</option>
                 </select>
             </div>
         </div>
@@ -64,7 +64,7 @@
             <div class="sdpi-item-label">Dial Press</div>
             <div class="sdpi-item-value">
                 <select class="sdpi-item-value select sdProperty function-select" id="functionpress" oninput="setSettings()" onchange="setSettings()">
-                    <option value="">Loading Star Citizen functions...</option>
+                    <option value="">Loading Star Citizen keybinds...</option>
                 </select>
             </div>
         </div>
@@ -77,7 +77,7 @@
             <div class="sdpi-item-label">Touch Press</div>
             <div class="sdpi-item-value">
                 <select class="sdpi-item-value select sdProperty function-select" id="functiontouchpress" oninput="setSettings()" onchange="setSettings()">
-                    <option value="">Loading Star Citizen functions...</option>
+                    <option value="">Loading Star Citizen keybinds...</option>
                 </select>
             </div>
         </div>
@@ -86,7 +86,7 @@
             <div class="sdpi-item-label">Touch Longpress</div>
             <div class="sdpi-item-value">
                 <select class="sdpi-item-value select sdProperty function-select" id="functiontouchlongpress" oninput="setSettings()" onchange="setSettings()">
-                    <option value="">Loading Star Citizen functions...</option>
+                    <option value="">Loading Star Citizen keybinds...</option>
                 </select>
             </div>
         </div>
@@ -174,7 +174,17 @@
 
         originalLoadConfiguration(payload);
 
-        if (functionsLoaded) restoreSelections();
+        // If functions aren't loaded yet, restore the loading text for all function dropdowns
+        if (!functionsLoaded) {
+            document.querySelectorAll('.function-select').forEach(select => {
+                if (select.options.length === 1 && select.options[0].value === '') {
+                    select.options[0].textContent = 'Loading Star Citizen keybinds...';
+                    select.value = '';
+                }
+            });
+        } else {
+            restoreSelections();
+        }
     };
 
     function populateDropdowns(functionsData) {
@@ -267,9 +277,22 @@
         const originalOnMessage = websocket.onmessage;
         websocket.onmessage = function (evt) {
             const jsonObj = JSON.parse(evt.data);
-            if (jsonObj.event === 'sendToPropertyInspector' && jsonObj.payload && jsonObj.payload.functionsLoaded) {
-                populateDropdowns(jsonObj.payload.functions);
+
+            if (jsonObj.event === 'sendToPropertyInspector' && jsonObj.payload) {
+                // Handle loading state
+                if (jsonObj.payload.loading && !jsonObj.payload.functionsLoaded) {
+                    document.querySelectorAll('.function-select').forEach(select => {
+                        if (select.options.length <= 1) {
+                            select.options[0].textContent = jsonObj.payload.message || 'Loading Star Citizen keybinds...';
+                        }
+                    });
+                }
+                // Handle functions loaded
+                else if (jsonObj.payload.functionsLoaded) {
+                    populateDropdowns(jsonObj.payload.functions);
+                }
             }
+
             if (originalOnMessage) originalOnMessage.call(this, evt);
         };
     });

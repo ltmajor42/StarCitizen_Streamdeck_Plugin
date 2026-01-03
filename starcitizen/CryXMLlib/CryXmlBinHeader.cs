@@ -19,9 +19,10 @@ namespace SCJMapper_V2.CryXMLlib
   /// kind of typedef (curtesy http://www.codeproject.com/Questions/141385/typedef-in-C)
   ///  A wrapper around <see cref="System.UInt32"/>.
   /// </summary>
+  [StructLayout(LayoutKind.Sequential, Pack = 1)]
   internal struct CryXMLNodeIndex
   {
-    static public UInt32 MySize( ) { return ( UInt32 )Marshal.SizeOf( typeof( CryXMLNodeIndex ) ); }
+    static public UInt32 MySize( ) { return sizeof(UInt32); }
 
     private UInt32 value;
 
@@ -32,7 +33,7 @@ namespace SCJMapper_V2.CryXMLlib
     }
     private CryXMLNodeIndex( int value )
     {
-      this.value = ( CryXMLNodeIndex )value;
+      this.value = (UInt32)value;
     }
 
     /// <summary>

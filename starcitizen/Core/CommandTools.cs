@@ -1,14 +1,13 @@
-Ôªøusing BarRaider.SdTools;
-using SCJMapper_V2.SC;
+using BarRaider.SdTools;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using WindowsInput.Native;
-using starcitizen.Core;
 using System.Configuration;
+using starcitizen.SC;
 
-namespace starcitizen
+namespace starcitizen.Core
 {
     /// <summary>
     /// Utility class for converting Star Citizen key binding strings to DirectInput keycodes
@@ -56,6 +55,24 @@ namespace starcitizen
                 ["rshift"] = DirectInputKeyCode.DikRshift,
                 ["lctrl"] = DirectInputKeyCode.DikLcontrol,
                 ["rctrl"] = DirectInputKeyCode.DikRcontrol,
+                
+                // Modifier aliases
+                ["left_alt"] = DirectInputKeyCode.DikLalt,
+                ["right_alt"] = DirectInputKeyCode.DikRalt,
+                ["left_shift"] = DirectInputKeyCode.DikLshift,
+                ["right_shift"] = DirectInputKeyCode.DikRshift,
+                ["left_ctrl"] = DirectInputKeyCode.DikLcontrol,
+                ["right_ctrl"] = DirectInputKeyCode.DikRcontrol,
+                ["leftalt"] = DirectInputKeyCode.DikLalt,
+                ["rightalt"] = DirectInputKeyCode.DikRalt,
+                ["leftshift"] = DirectInputKeyCode.DikLshift,
+                ["rightshift"] = DirectInputKeyCode.DikRshift,
+                ["leftctrl"] = DirectInputKeyCode.DikLcontrol,
+                ["rightctrl"] = DirectInputKeyCode.DikRcontrol,
+                ["alt"] = DirectInputKeyCode.DikLalt,
+                ["shift"] = DirectInputKeyCode.DikLshift,
+                ["ctrl"] = DirectInputKeyCode.DikLcontrol,
+                ["control"] = DirectInputKeyCode.DikLcontrol,
 
                 // Function keys
                 ["f1"] = DirectInputKeyCode.DikF1, ["f2"] = DirectInputKeyCode.DikF2, ["f3"] = DirectInputKeyCode.DikF3,
@@ -63,6 +80,9 @@ namespace starcitizen
                 ["f7"] = DirectInputKeyCode.DikF7, ["f8"] = DirectInputKeyCode.DikF8, ["f9"] = DirectInputKeyCode.DikF9,
                 ["f10"] = DirectInputKeyCode.DikF10, ["f11"] = DirectInputKeyCode.DikF11, ["f12"] = DirectInputKeyCode.DikF12,
                 ["f13"] = DirectInputKeyCode.DikF13, ["f14"] = DirectInputKeyCode.DikF14, ["f15"] = DirectInputKeyCode.DikF15,
+                ["f16"] = DirectInputKeyCode.DikF16, ["f17"] = DirectInputKeyCode.DikF17, ["f18"] = DirectInputKeyCode.DikF18,
+                ["f19"] = DirectInputKeyCode.DikF19, ["f20"] = DirectInputKeyCode.DikF20, ["f21"] = DirectInputKeyCode.DikF21,
+                ["f22"] = DirectInputKeyCode.DikF22, ["f23"] = DirectInputKeyCode.DikF23, ["f24"] = DirectInputKeyCode.DikF24,
 
                 // Numpad
                 ["numlock"] = DirectInputKeyCode.DikNumlock,
@@ -73,6 +93,25 @@ namespace starcitizen
                 ["np_3"] = DirectInputKeyCode.DikNumpad3, ["np_4"] = DirectInputKeyCode.DikNumpad4, ["np_5"] = DirectInputKeyCode.DikNumpad5,
                 ["np_6"] = DirectInputKeyCode.DikNumpad6, ["np_7"] = DirectInputKeyCode.DikNumpad7, ["np_8"] = DirectInputKeyCode.DikNumpad8,
                 ["np_9"] = DirectInputKeyCode.DikNumpad9,
+                
+                // Numpad aliases (Star Citizen may use different naming)
+                ["numpad_divide"] = DirectInputKeyCode.DikDivide, ["numpad_multiply"] = DirectInputKeyCode.DikMultiply,
+                ["numpad_subtract"] = DirectInputKeyCode.DikSubtract, ["numpad_add"] = DirectInputKeyCode.DikAdd,
+                ["numpad_period"] = DirectInputKeyCode.DikDecimal, ["numpad_enter"] = DirectInputKeyCode.DikNumpadenter,
+                ["numpad_0"] = DirectInputKeyCode.DikNumpad0, ["numpad_1"] = DirectInputKeyCode.DikNumpad1, ["numpad_2"] = DirectInputKeyCode.DikNumpad2,
+                ["numpad_3"] = DirectInputKeyCode.DikNumpad3, ["numpad_4"] = DirectInputKeyCode.DikNumpad4, ["numpad_5"] = DirectInputKeyCode.DikNumpad5,
+                ["numpad_6"] = DirectInputKeyCode.DikNumpad6, ["numpad_7"] = DirectInputKeyCode.DikNumpad7, ["numpad_8"] = DirectInputKeyCode.DikNumpad8,
+                ["numpad_9"] = DirectInputKeyCode.DikNumpad9,
+                ["numpad0"] = DirectInputKeyCode.DikNumpad0, ["numpad1"] = DirectInputKeyCode.DikNumpad1, ["numpad2"] = DirectInputKeyCode.DikNumpad2,
+                ["numpad3"] = DirectInputKeyCode.DikNumpad3, ["numpad4"] = DirectInputKeyCode.DikNumpad4, ["numpad5"] = DirectInputKeyCode.DikNumpad5,
+                ["numpad6"] = DirectInputKeyCode.DikNumpad6, ["numpad7"] = DirectInputKeyCode.DikNumpad7, ["numpad8"] = DirectInputKeyCode.DikNumpad8,
+                ["numpad9"] = DirectInputKeyCode.DikNumpad9,
+                ["npdivide"] = DirectInputKeyCode.DikDivide, ["npmultiply"] = DirectInputKeyCode.DikMultiply,
+                ["npsubtract"] = DirectInputKeyCode.DikSubtract, ["npadd"] = DirectInputKeyCode.DikAdd,
+                ["npperiod"] = DirectInputKeyCode.DikDecimal, ["npenter"] = DirectInputKeyCode.DikNumpadenter,
+                ["npdecimal"] = DirectInputKeyCode.DikDecimal, ["np_decimal"] = DirectInputKeyCode.DikDecimal,
+                ["numpadcomma"] = DirectInputKeyCode.DikNumpadcomma, ["np_comma"] = DirectInputKeyCode.DikNumpadcomma,
+                ["numpadequals"] = DirectInputKeyCode.DikNumpadequals, ["np_equals"] = DirectInputKeyCode.DikNumpadequals,
 
                 // Digits
                 ["0"] = DirectInputKeyCode.Dik0, ["1"] = DirectInputKeyCode.Dik1, ["2"] = DirectInputKeyCode.Dik2,
@@ -85,10 +124,25 @@ namespace starcitizen
                 ["end"] = DirectInputKeyCode.DikEnd, ["pgup"] = DirectInputKeyCode.DikPageUp, ["pgdown"] = DirectInputKeyCode.DikPageDown,
                 ["pgdn"] = DirectInputKeyCode.DikPageDown, ["print"] = DirectInputKeyCode.DikPrintscreen, ["scrolllock"] = DirectInputKeyCode.DikScroll,
                 ["pause"] = DirectInputKeyCode.DikPause,
+                
+                // Navigation aliases
+                ["pageup"] = DirectInputKeyCode.DikPageUp, ["pagedown"] = DirectInputKeyCode.DikPageDown,
+                ["page_up"] = DirectInputKeyCode.DikPageUp, ["page_down"] = DirectInputKeyCode.DikPageDown,
+                ["ins"] = DirectInputKeyCode.DikInsert, ["del"] = DirectInputKeyCode.DikDelete,
+                ["printscreen"] = DirectInputKeyCode.DikPrintscreen, ["prtsc"] = DirectInputKeyCode.DikPrintscreen,
+                ["prtscn"] = DirectInputKeyCode.DikPrintscreen, ["sysrq"] = DirectInputKeyCode.DikSysrq,
+                ["scroll"] = DirectInputKeyCode.DikScroll, ["scroll_lock"] = DirectInputKeyCode.DikScroll,
+                ["break"] = DirectInputKeyCode.DikPause,
 
                 // Arrows
                 ["up"] = DirectInputKeyCode.DikUp, ["down"] = DirectInputKeyCode.DikDown, 
                 ["left"] = DirectInputKeyCode.DikLeft, ["right"] = DirectInputKeyCode.DikRight,
+                
+                // Arrow aliases
+                ["uparrow"] = DirectInputKeyCode.DikUp, ["downarrow"] = DirectInputKeyCode.DikDown,
+                ["leftarrow"] = DirectInputKeyCode.DikLeft, ["rightarrow"] = DirectInputKeyCode.DikRight,
+                ["up_arrow"] = DirectInputKeyCode.DikUp, ["down_arrow"] = DirectInputKeyCode.DikDown,
+                ["left_arrow"] = DirectInputKeyCode.DikLeft, ["right_arrow"] = DirectInputKeyCode.DikRight,
 
                 // Punctuation and special keys
                 ["escape"] = DirectInputKeyCode.DikEscape, ["minus"] = DirectInputKeyCode.DikMinus, ["equals"] = DirectInputKeyCode.DikEquals,
@@ -97,7 +151,83 @@ namespace starcitizen
                 ["enter"] = DirectInputKeyCode.DikReturn, ["capslock"] = DirectInputKeyCode.DikCapital, ["colon"] = DirectInputKeyCode.DikColon,
                 ["backslash"] = DirectInputKeyCode.DikBackslash, ["comma"] = DirectInputKeyCode.DikComma, ["period"] = DirectInputKeyCode.DikPeriod,
                 ["slash"] = DirectInputKeyCode.DikSlash, ["space"] = DirectInputKeyCode.DikSpace, ["semicolon"] = DirectInputKeyCode.DikSemicolon,
-                ["apostrophe"] = DirectInputKeyCode.DikApostrophe
+                ["apostrophe"] = DirectInputKeyCode.DikApostrophe,
+                
+                // Punctuation aliases
+                ["esc"] = DirectInputKeyCode.DikEscape,
+                ["tilde"] = DirectInputKeyCode.DikGrave, ["backtick"] = DirectInputKeyCode.DikGrave, ["accent"] = DirectInputKeyCode.DikGrave,
+                ["dash"] = DirectInputKeyCode.DikMinus, ["hyphen"] = DirectInputKeyCode.DikMinus,
+                ["equal"] = DirectInputKeyCode.DikEquals, ["plus"] = DirectInputKeyCode.DikEquals,
+                ["leftbracket"] = DirectInputKeyCode.DikLbracket, ["rightbracket"] = DirectInputKeyCode.DikRbracket,
+                ["left_bracket"] = DirectInputKeyCode.DikLbracket, ["right_bracket"] = DirectInputKeyCode.DikRbracket,
+                ["openbracket"] = DirectInputKeyCode.DikLbracket, ["closebracket"] = DirectInputKeyCode.DikRbracket,
+                ["return"] = DirectInputKeyCode.DikReturn, ["ret"] = DirectInputKeyCode.DikReturn,
+                ["caps"] = DirectInputKeyCode.DikCapital, ["capslock"] = DirectInputKeyCode.DikCapital, ["caps_lock"] = DirectInputKeyCode.DikCapital,
+                ["bksp"] = DirectInputKeyCode.DikBackspace, ["back"] = DirectInputKeyCode.DikBackspace,
+                ["bslash"] = DirectInputKeyCode.DikBackslash, ["backsl"] = DirectInputKeyCode.DikBackslash,
+                ["fslash"] = DirectInputKeyCode.DikSlash, ["forwardslash"] = DirectInputKeyCode.DikSlash,
+                ["spacebar"] = DirectInputKeyCode.DikSpace,
+                ["semi"] = DirectInputKeyCode.DikSemicolon,
+                ["quote"] = DirectInputKeyCode.DikApostrophe, ["singlequote"] = DirectInputKeyCode.DikApostrophe,
+                ["dot"] = DirectInputKeyCode.DikPeriod, ["fullstop"] = DirectInputKeyCode.DikPeriod,
+
+                // OEM102 - Extra key on non-US keyboards (between left shift and Z)
+                ["oem102"] = DirectInputKeyCode.DikOem102, ["oem_102"] = DirectInputKeyCode.DikOem102,
+                ["intl1"] = DirectInputKeyCode.DikOem102, ["extra"] = DirectInputKeyCode.DikOem102,
+                ["lessthan"] = DirectInputKeyCode.DikOem102, ["less"] = DirectInputKeyCode.DikOem102,
+                ["greaterthan"] = DirectInputKeyCode.DikOem102,
+
+                // Windows keys
+                ["lwin"] = DirectInputKeyCode.DikLwin, ["rwin"] = DirectInputKeyCode.DikRwin,
+                ["leftwin"] = DirectInputKeyCode.DikLwin, ["rightwin"] = DirectInputKeyCode.DikRwin,
+                ["left_win"] = DirectInputKeyCode.DikLwin, ["right_win"] = DirectInputKeyCode.DikRwin,
+                ["lwindows"] = DirectInputKeyCode.DikLwin, ["rwindows"] = DirectInputKeyCode.DikRwin,
+                ["win"] = DirectInputKeyCode.DikLwin, ["windows"] = DirectInputKeyCode.DikLwin,
+                ["super"] = DirectInputKeyCode.DikLwin, ["meta"] = DirectInputKeyCode.DikLwin,
+
+                // Application/Menu key
+                ["apps"] = DirectInputKeyCode.DikApps, ["menu"] = DirectInputKeyCode.DikApps,
+                ["appmenu"] = DirectInputKeyCode.DikApps, ["contextmenu"] = DirectInputKeyCode.DikApps,
+
+                // Power keys
+                ["power"] = DirectInputKeyCode.DikPower, ["sleep"] = DirectInputKeyCode.DikSleep, ["wake"] = DirectInputKeyCode.DikWake,
+
+                // Media keys
+                ["mute"] = DirectInputKeyCode.DikMute, ["volumedown"] = DirectInputKeyCode.DikVolumedown, ["volumeup"] = DirectInputKeyCode.DikVolumeup,
+                ["volume_down"] = DirectInputKeyCode.DikVolumedown, ["volume_up"] = DirectInputKeyCode.DikVolumeup,
+                ["voldown"] = DirectInputKeyCode.DikVolumedown, ["volup"] = DirectInputKeyCode.DikVolumeup,
+                ["playpause"] = DirectInputKeyCode.DikPlaypause, ["play_pause"] = DirectInputKeyCode.DikPlaypause,
+                ["mediastop"] = DirectInputKeyCode.DikMediastop, ["media_stop"] = DirectInputKeyCode.DikMediastop,
+                ["stop"] = DirectInputKeyCode.DikMediastop,
+                ["nexttrack"] = DirectInputKeyCode.DikNexttrack, ["next_track"] = DirectInputKeyCode.DikNexttrack,
+                ["prevtrack"] = DirectInputKeyCode.DikPrevtrack, ["prev_track"] = DirectInputKeyCode.DikPrevtrack,
+                ["previoustrack"] = DirectInputKeyCode.DikPrevtrack,
+                ["mediaselect"] = DirectInputKeyCode.DikMediaselect, ["media_select"] = DirectInputKeyCode.DikMediaselect,
+                ["calculator"] = DirectInputKeyCode.DikCalculator, ["calc"] = DirectInputKeyCode.DikCalculator,
+                ["mail"] = DirectInputKeyCode.DikMail, ["email"] = DirectInputKeyCode.DikMail,
+                ["mycomputer"] = DirectInputKeyCode.DikMycomputer, ["computer"] = DirectInputKeyCode.DikMycomputer,
+
+                // Web/Browser keys
+                ["webhome"] = DirectInputKeyCode.DikWebhome, ["web_home"] = DirectInputKeyCode.DikWebhome,
+                ["websearch"] = DirectInputKeyCode.DikWebsearch, ["web_search"] = DirectInputKeyCode.DikWebsearch,
+                ["webfavorites"] = DirectInputKeyCode.DikWebfavorites, ["web_favorites"] = DirectInputKeyCode.DikWebfavorites,
+                ["webrefresh"] = DirectInputKeyCode.DikWebrefresh, ["web_refresh"] = DirectInputKeyCode.DikWebrefresh,
+                ["webstop"] = DirectInputKeyCode.DikWebstop, ["web_stop"] = DirectInputKeyCode.DikWebstop,
+                ["webforward"] = DirectInputKeyCode.DikWebforward, ["web_forward"] = DirectInputKeyCode.DikWebforward,
+                ["webback"] = DirectInputKeyCode.DikWebback, ["web_back"] = DirectInputKeyCode.DikWebback,
+
+                // Japanese keyboard keys
+                ["kana"] = DirectInputKeyCode.DikKana, ["kanji"] = DirectInputKeyCode.DikKanji,
+                ["convert"] = DirectInputKeyCode.DikConvert, ["noconvert"] = DirectInputKeyCode.DikNoconvert,
+                ["yen"] = DirectInputKeyCode.DikYen,
+
+                // Brazilian keyboard keys
+                ["abnt_c1"] = DirectInputKeyCode.DikAbntC1, ["abnt_c2"] = DirectInputKeyCode.DikAbntC2,
+
+                // Misc keys
+                ["at"] = DirectInputKeyCode.DikAt, ["ax"] = DirectInputKeyCode.DikAx,
+                ["help"] = DirectInputKeyCode.DikHelp, ["zoom"] = DirectInputKeyCode.DikZoom,
+                ["unlabeled"] = DirectInputKeyCode.DikUnlabeled
             };
             return map;
         }
@@ -459,74 +589,74 @@ namespace starcitizen
             },
             ["de-CH"] = new Dictionary<DirectInputKeyCode, string>
             {
-                [DirectInputKeyCode.DikGrave] = "Dik¬ß", [DirectInputKeyCode.DikMinus] = "Dik'",
+                [DirectInputKeyCode.DikGrave] = "Dikß", [DirectInputKeyCode.DikMinus] = "Dik'",
                 [DirectInputKeyCode.DikEquals] = "Dik^", [DirectInputKeyCode.DikY] = "DikZ",
-                [DirectInputKeyCode.DikLbracket] = "Dik√ú", [DirectInputKeyCode.DikRbracket] = "Dik¬®",
-                [DirectInputKeyCode.DikBackslash] = "Dik$", [DirectInputKeyCode.DikSemicolon] = "Dik√ñ",
-                [DirectInputKeyCode.DikApostrophe] = "Dik√Ñ", [DirectInputKeyCode.DikZ] = "DikY",
+                [DirectInputKeyCode.DikLbracket] = "Dik‹", [DirectInputKeyCode.DikRbracket] = "Dik®",
+                [DirectInputKeyCode.DikBackslash] = "Dik$", [DirectInputKeyCode.DikSemicolon] = "Dik÷",
+                [DirectInputKeyCode.DikApostrophe] = "Dikƒ", [DirectInputKeyCode.DikZ] = "DikY",
                 [DirectInputKeyCode.DikComma] = "Dik,", [DirectInputKeyCode.DikPeriod] = "Dik.",
                 [DirectInputKeyCode.DikSlash] = "Dik-",
             },
             ["es-ES"] = new Dictionary<DirectInputKeyCode, string>
             {
-                [DirectInputKeyCode.DikGrave] = "Dik¬∫", [DirectInputKeyCode.DikMinus] = "Dik'",
-                [DirectInputKeyCode.DikEquals] = "Dik¬°", [DirectInputKeyCode.DikLbracket] = "Dik`",
+                [DirectInputKeyCode.DikGrave] = "Dik∫", [DirectInputKeyCode.DikMinus] = "Dik'",
+                [DirectInputKeyCode.DikEquals] = "Dik°", [DirectInputKeyCode.DikLbracket] = "Dik`",
                 [DirectInputKeyCode.DikRbracket] = "Dik+",
-                [DirectInputKeyCode.DikBackslash] = "Dik√ß", [DirectInputKeyCode.DikSemicolon] = "Dik√±",
-                [DirectInputKeyCode.DikApostrophe] = "Dik¬¥", [DirectInputKeyCode.DikComma] = "Dik,",
+                [DirectInputKeyCode.DikBackslash] = "DikÁ", [DirectInputKeyCode.DikSemicolon] = "DikÒ",
+                [DirectInputKeyCode.DikApostrophe] = "Dik¥", [DirectInputKeyCode.DikComma] = "Dik,",
                 [DirectInputKeyCode.DikPeriod] = "Dik.", [DirectInputKeyCode.DikSlash] = "Dik-",
             },
             ["da-DK"] = new Dictionary<DirectInputKeyCode, string>
             {
-                [DirectInputKeyCode.DikGrave] = "Dik¬Ω", [DirectInputKeyCode.DikMinus] = "Dik+",
-                [DirectInputKeyCode.DikEquals] = "Dik¬¥", [DirectInputKeyCode.DikLbracket] = "Dik√Ö",
-                [DirectInputKeyCode.DikRbracket] = "Dik¬®", [DirectInputKeyCode.DikBackslash] = "Dik'",
-                [DirectInputKeyCode.DikSemicolon] = "Dik√Ü", [DirectInputKeyCode.DikApostrophe] = "Dik√ò",
+                [DirectInputKeyCode.DikGrave] = "DikΩ", [DirectInputKeyCode.DikMinus] = "Dik+",
+                [DirectInputKeyCode.DikEquals] = "Dik¥", [DirectInputKeyCode.DikLbracket] = "Dik≈",
+                [DirectInputKeyCode.DikRbracket] = "Dik®", [DirectInputKeyCode.DikBackslash] = "Dik'",
+                [DirectInputKeyCode.DikSemicolon] = "Dik∆", [DirectInputKeyCode.DikApostrophe] = "Dikÿ",
                 [DirectInputKeyCode.DikComma] = "Dik,", [DirectInputKeyCode.DikPeriod] = "Dik.",
                 [DirectInputKeyCode.DikSlash] = "Dik-",
             },
             ["it-IT"] = new Dictionary<DirectInputKeyCode, string>
             {
                 [DirectInputKeyCode.DikGrave] = "Dik\\", [DirectInputKeyCode.DikMinus] = "Dik'",
-                [DirectInputKeyCode.DikEquals] = "Dik√å", [DirectInputKeyCode.DikLbracket] = "Dik√à",
-                [DirectInputKeyCode.DikRbracket] = "Dik+", [DirectInputKeyCode.DikBackslash] = "Dik√ô",
-                [DirectInputKeyCode.DikSemicolon] = "Dik√í", [DirectInputKeyCode.DikApostrophe] = "Dik√Ä",
+                [DirectInputKeyCode.DikEquals] = "DikÃ", [DirectInputKeyCode.DikLbracket] = "Dik»",
+                [DirectInputKeyCode.DikRbracket] = "Dik+", [DirectInputKeyCode.DikBackslash] = "DikŸ",
+                [DirectInputKeyCode.DikSemicolon] = "Dik“", [DirectInputKeyCode.DikApostrophe] = "Dik¿",
                 [DirectInputKeyCode.DikComma] = "Dik,", [DirectInputKeyCode.DikPeriod] = "Dik.",
                 [DirectInputKeyCode.DikSlash] = "Dik-",
             },
             ["pt-PT"] = new Dictionary<DirectInputKeyCode, string>
             {
                 [DirectInputKeyCode.DikGrave] = "Dik\\", [DirectInputKeyCode.DikMinus] = "Dik'",
-                [DirectInputKeyCode.DikEquals] = "Dik¬´", [DirectInputKeyCode.DikLbracket] = "Dik+",
-                [DirectInputKeyCode.DikRbracket] = "Dik¬¥", [DirectInputKeyCode.DikBackslash] = "Dik~",
-                [DirectInputKeyCode.DikSemicolon] = "Dik√á", [DirectInputKeyCode.DikApostrophe] = "Dik¬∫",
+                [DirectInputKeyCode.DikEquals] = "Dik´", [DirectInputKeyCode.DikLbracket] = "Dik+",
+                [DirectInputKeyCode.DikRbracket] = "Dik¥", [DirectInputKeyCode.DikBackslash] = "Dik~",
+                [DirectInputKeyCode.DikSemicolon] = "Dik«", [DirectInputKeyCode.DikApostrophe] = "Dik∫",
                 [DirectInputKeyCode.DikComma] = "Dik,", [DirectInputKeyCode.DikPeriod] = "Dik.",
                 [DirectInputKeyCode.DikSlash] = "Dik-",
             },
             ["de-DE"] = new Dictionary<DirectInputKeyCode, string>
             {
-                [DirectInputKeyCode.DikGrave] = "Dik^", [DirectInputKeyCode.DikMinus] = "Dik√ü",
-                [DirectInputKeyCode.DikEquals] = "Dik¬¥", [DirectInputKeyCode.DikY] = "DikZ",
-                [DirectInputKeyCode.DikLbracket] = "Dik√ú", [DirectInputKeyCode.DikRbracket] = "Dik+",
-                [DirectInputKeyCode.DikBackslash] = "Dik#", [DirectInputKeyCode.DikSemicolon] = "Dik√ñ",
-                [DirectInputKeyCode.DikApostrophe] = "Dik√Ñ", [DirectInputKeyCode.DikZ] = "DikY",
+                [DirectInputKeyCode.DikGrave] = "Dik^", [DirectInputKeyCode.DikMinus] = "Dikﬂ",
+                [DirectInputKeyCode.DikEquals] = "Dik¥", [DirectInputKeyCode.DikY] = "DikZ",
+                [DirectInputKeyCode.DikLbracket] = "Dik‹", [DirectInputKeyCode.DikRbracket] = "Dik+",
+                [DirectInputKeyCode.DikBackslash] = "Dik#", [DirectInputKeyCode.DikSemicolon] = "Dik÷",
+                [DirectInputKeyCode.DikApostrophe] = "Dikƒ", [DirectInputKeyCode.DikZ] = "DikY",
                 [DirectInputKeyCode.DikComma] = "Dik,", [DirectInputKeyCode.DikPeriod] = "Dik.",
                 [DirectInputKeyCode.DikSlash] = "Dik-",
             },
             ["fr-FR"] = new Dictionary<DirectInputKeyCode, string>
             {
-                [DirectInputKeyCode.DikGrave] = "Dik¬≤",
-                [DirectInputKeyCode.Dik1] = "Dik&", [DirectInputKeyCode.Dik2] = "Dik√â",
+                [DirectInputKeyCode.DikGrave] = "Dik≤",
+                [DirectInputKeyCode.Dik1] = "Dik&", [DirectInputKeyCode.Dik2] = "Dik…",
                 [DirectInputKeyCode.Dik3] = "Dik\"", [DirectInputKeyCode.Dik4] = "Dik'",
                 [DirectInputKeyCode.Dik5] = "Dik(",
                 [DirectInputKeyCode.Dik6] = "Dik-",
-                [DirectInputKeyCode.Dik7] = "Dik√à", [DirectInputKeyCode.Dik8] = "Dik_",
-                [DirectInputKeyCode.Dik9] = "Dik√á", [DirectInputKeyCode.Dik0] = "Dik√Ä",
+                [DirectInputKeyCode.Dik7] = "Dik»", [DirectInputKeyCode.Dik8] = "Dik_",
+                [DirectInputKeyCode.Dik9] = "Dik«", [DirectInputKeyCode.Dik0] = "Dik¿",
                 [DirectInputKeyCode.DikMinus] = "Dik)", [DirectInputKeyCode.DikEquals] = "Dik=",
                 [DirectInputKeyCode.DikQ] = "DikA", [DirectInputKeyCode.DikW] = "DikZ",
                 [DirectInputKeyCode.DikLbracket] = "Dik^", [DirectInputKeyCode.DikRbracket] = "Dik$",
                 [DirectInputKeyCode.DikBackslash] = "Dik*", [DirectInputKeyCode.DikA] = "DikQ",
-                [DirectInputKeyCode.DikSemicolon] = "DikM", [DirectInputKeyCode.DikApostrophe] = "Dik√ô",
+                [DirectInputKeyCode.DikSemicolon] = "DikM", [DirectInputKeyCode.DikApostrophe] = "DikŸ",
                 [DirectInputKeyCode.DikZ] = "DikW", [DirectInputKeyCode.DikM] = "Dik,",
                 [DirectInputKeyCode.DikComma] = "Dik;", [DirectInputKeyCode.DikPeriod] = "Dik:",
                 [DirectInputKeyCode.DikSlash] = "Dik!",

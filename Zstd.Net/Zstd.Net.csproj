@@ -13,6 +13,10 @@
     <RepositoryUrl>https://github.com/dolkensp/zstd.net</RepositoryUrl>
     <PackageReleaseNotes>Modernized Zstd wrapper for .NET 8 with LibraryImport.</PackageReleaseNotes>
     
+    <!-- .NET 8 Performance Optimizations -->
+    <TieredCompilation>true</TieredCompilation>
+    <TieredPGO>true</TieredPGO>
+    
     <!-- CA1416: Platform compatibility warnings (we target Windows only) -->
     <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>

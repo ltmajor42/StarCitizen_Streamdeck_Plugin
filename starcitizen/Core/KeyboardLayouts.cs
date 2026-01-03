@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace starcitizen
+namespace starcitizen.Core
 {
     /// <summary>
     /// Provides keyboard layout detection for the current thread/process.

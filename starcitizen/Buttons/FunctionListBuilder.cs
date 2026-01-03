@@ -1,10 +1,11 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.Linq;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using BarRaider.SdTools;
 using starcitizen.Core;
+using starcitizen.SC;
 
 namespace starcitizen.Buttons
 {
@@ -17,9 +18,12 @@ namespace starcitizen.Buttons
         // ============================================================
         // REGION: Cache
         // ============================================================
-        private static readonly object CacheLock = new object();
+        private static readonly object CacheLock = new();
         private static int cachedVersion = -1;
         private static JArray cachedFunctions;
+
+        // Reusable separator array for string splitting
+        private static readonly char[] PlusSeparator = ['+'];
 
         // ============================================================
         // REGION: Public API
@@ -34,7 +38,7 @@ namespace starcitizen.Buttons
         public static JArray BuildFunctionsData(bool includeUnboundActions = true)
         {
             var bindingService = KeyBindingService.Instance;
-            if (bindingService.Reader == null) return new JArray();
+            if (bindingService.Reader == null) return [];
 
             var bindingsVersion = bindingService.Version;
 
@@ -107,7 +111,7 @@ namespace starcitizen.Buttons
         // ============================================================
         // REGION: Group Builders
         // ============================================================
-        private static JObject BuildActionGroup(IGrouping<string, SCJMapper_V2.SC.DProfileReader.Action> group, CultureInfo culture)
+        private static JObject BuildActionGroup(IGrouping<string, DProfileReader.Action> group, CultureInfo culture)
         {
             // Pre-compute duplicates for this group
             var duplicateKeys = ComputeDuplicateKeys(group, culture.Name);
@@ -145,7 +149,7 @@ namespace starcitizen.Buttons
         private static JObject BuildUnboundActionsGroup(KeyBindingService bindingService)
         {
             var unboundActions = bindingService.Reader.GetUnboundActions();
-            if (!unboundActions.Any()) return null;
+            if (unboundActions.Count == 0) return null;
 
             var unboundGroup = new JObject
             {
@@ -218,7 +222,7 @@ namespace starcitizen.Buttons
             }
         }
 
-        private static HashSet<string> ComputeDuplicateKeys(IGrouping<string, SCJMapper_V2.SC.DProfileReader.Action> group, string cultureName)
+        private static HashSet<string> ComputeDuplicateKeys(IGrouping<string, DProfileReader.Action> group, string cultureName)
         {
             return new HashSet<string>(
                 group.Select(a => 
@@ -232,7 +236,7 @@ namespace starcitizen.Buttons
                 StringComparer.OrdinalIgnoreCase);
         }
 
-        private static string FormatOptionText(SCJMapper_V2.SC.DProfileReader.Action action, (string PrimaryBinding, string BindingType) bindingInfo, bool isDuplicate)
+        private static string FormatOptionText(DProfileReader.Action action, (string PrimaryBinding, string BindingType) bindingInfo, bool isDuplicate)
         {
             var bindingDisplay = string.IsNullOrWhiteSpace(bindingInfo.PrimaryBinding) ? "" : $" [{bindingInfo.PrimaryBinding}]";
             var overruleIndicator = action.KeyboardOverRule || action.MouseOverRule ? " *" : "";
@@ -241,7 +245,7 @@ namespace starcitizen.Buttons
             if (isDuplicate)
             {
                 var actionName = action.Name?.StartsWith($"{action.MapName}-", StringComparison.OrdinalIgnoreCase) == true
-                    ? action.Name.Substring(action.MapName.Length + 1)
+                    ? action.Name[(action.MapName.Length + 1)..]
                     : action.Name;
                 uniqueSuffix = $" ({action.MapName}:{actionName})";
             }
@@ -249,22 +253,90 @@ namespace starcitizen.Buttons
             return $"{action.UILabel}{bindingDisplay}{overruleIndicator}{uniqueSuffix}";
         }
 
-        private static string BuildSearchText(SCJMapper_V2.SC.DProfileReader.Action action, string primaryBinding)
+        private static string BuildSearchText(DProfileReader.Action action, string primaryBinding)
         {
             return $"{action.UILabel.ToLower()} {action.UIDescription?.ToLower() ?? ""} {primaryBinding.ToLower()} {action.Name.ToLower()} {action.MapName.ToLower()}";
         }
 
         private static (string PrimaryBinding, string BindingType) GetBindingInfo(string keyboard, string cultureName)
         {
-            var keyString = CommandTools.ConvertKeyStringToLocale(keyboard, cultureName);
-            var primaryBinding = keyString
-                .Replace("Dik", "")
-                .Replace("}{", "+")
-                .Replace("}", "")
-                .Replace("{", "");
+            if (string.IsNullOrWhiteSpace(keyboard))
+            {
+                return (string.Empty, "keyboard");
+            }
 
-            var bindingType = ContainsMouseToken(keyboard) ? "mouse" : "keyboard";
+            // Build display string by processing each token
+            var tokens = keyboard.Split(PlusSeparator, StringSplitOptions.RemoveEmptyEntries);
+            var displayParts = new List<string>();
+            var hasMouseToken = false;
+
+            foreach (var rawToken in tokens)
+            {
+                var token = rawToken?.Trim();
+                if (string.IsNullOrWhiteSpace(token)) continue;
+
+                // Check for mouse tokens first
+                if (MouseTokenHelper.TryNormalize(token, out var normalizedMouse))
+                {
+                    displayParts.Add(FormatMouseTokenForDisplay(normalizedMouse));
+                    hasMouseToken = true;
+                    continue;
+                }
+
+                if (MouseTokenHelper.IsMouseLike(token))
+                {
+                    // It's mouse-like but couldn't normalize - show as-is
+                    displayParts.Add(token);
+                    hasMouseToken = true;
+                    continue;
+                }
+
+                // Try keyboard mapping
+                if (CommandTools.TryFromSCKeyboardCmd(token, out var dikKey))
+                {
+                    displayParts.Add(FormatKeyForDisplay(dikKey, cultureName));
+                }
+                else
+                {
+                    // Unknown token - show as-is
+                    displayParts.Add(token);
+                }
+            }
+
+            var primaryBinding = string.Join("+", displayParts);
+            var bindingType = hasMouseToken ? "mouse" : "keyboard";
             return (primaryBinding, bindingType);
+        }
+
+        private static string FormatMouseTokenForDisplay(string normalizedMouse)
+        {
+            return normalizedMouse switch
+            {
+                "mouse1" => "Mouse1",
+                "mouse2" => "Mouse2",
+                "mouse3" => "Mouse3",
+                "mouse4" => "Mouse4",
+                "mouse5" => "Mouse5",
+                "mwheelup" => "WheelUp",
+                "mwheeldown" => "WheelDown",
+                "mwheelleft" => "WheelLeft",
+                "mwheelright" => "WheelRight",
+                "mwheel" => "Wheel",
+                _ => normalizedMouse
+            };
+        }
+
+        private static string FormatKeyForDisplay(WindowsInput.Native.DirectInputKeyCode dikKey, string cultureName)
+        {
+            var dikKeyOut = dikKey.ToString();
+
+            // Remove "Dik" prefix for cleaner display
+            if (dikKeyOut.StartsWith("Dik", StringComparison.OrdinalIgnoreCase))
+            {
+                dikKeyOut = dikKeyOut.Substring(3);
+            }
+
+            return dikKeyOut;
         }
 
         // ============================================================
@@ -279,7 +351,7 @@ namespace starcitizen.Buttons
         {
             if (string.IsNullOrWhiteSpace(keyboard)) return false;
 
-            var tokens = keyboard.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries);
+            var tokens = keyboard.Split(PlusSeparator, StringSplitOptions.RemoveEmptyEntries);
             if (tokens.Length == 0) return false;
 
             var foundValidToken = false;
@@ -308,7 +380,7 @@ namespace starcitizen.Buttons
         {
             if (string.IsNullOrWhiteSpace(binding)) return false;
 
-            return binding.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries)
+            return binding.Split(PlusSeparator, StringSplitOptions.RemoveEmptyEntries)
                 .Any(IsMouseToken);
         }
 
@@ -316,7 +388,7 @@ namespace starcitizen.Buttons
         {
             if (string.IsNullOrWhiteSpace(keyboard)) return "unknown";
 
-            var unknowns = keyboard.Split(new[] { '+' }, StringSplitOptions.RemoveEmptyEntries)
+            var unknowns = keyboard.Split(PlusSeparator, StringSplitOptions.RemoveEmptyEntries)
                 .Select(t => t?.Trim())
                 .Where(t => !string.IsNullOrWhiteSpace(t))
                 .Where(t => !MouseTokenHelper.IsMouseLike(t))

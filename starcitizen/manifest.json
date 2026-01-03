@@ -17,6 +17,23 @@
       "PropertyInspectorPath": "PropertyInspector/StarCitizen/ActionKey.html"
     },
     {
+      "Icon": "Images/ActionKey",
+      "Name": "Action Key (Legacy)",
+      "Controllers": ["Keypad"],
+      "States": [
+        {
+          "Image": "Images/ActionKey",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "Star Citizen Action Key (Legacy - for old mhwlng profiles)",
+      "UUID": "com.mhwlng.starcitizen.static",
+      "PropertyInspectorPath": "PropertyInspector/StarCitizen/ActionKey.html",
+      "VisibleInActionsList": false
+    },
+    {
       "Icon": "Images/pluginDialIcon",
       "Name": "Dial Button",
       "Controllers": ["Encoder"],
@@ -180,7 +197,7 @@
   "Description": "Star Citizen Buttons",
   "Name": "Star Citizen",
   "Icon": "Images/pluginIcon",
-  "URL": "https://github.com/ltmajor42/streamdeck-starcitizen",
+  "URL": "https://github.com/ltmajor42/StarCitizen_Streamdeck_Plugin",
   "Version": "2.0.8",
   "CodePath": "com.ltmajor42.starcitizen.exe",
   "Category": "Star Citizen",

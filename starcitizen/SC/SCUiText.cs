@@ -9,7 +9,7 @@ using p4ktest.SC;
 using SCJMapper_V2.p4kFile;
 using starcitizen.Core;
 
-namespace SCJMapper_V2.SC
+namespace starcitizen.SC
 {
     sealed class SCUiText
     {
@@ -69,14 +69,19 @@ namespace SCJMapper_V2.SC
         /// </summary>
         public SCUiText()
         {
+            PluginLog.Info($"SCUiText initializing - {SCFiles.Instance.LangFiles.Count} language file(s) available");
+            
             foreach (string fileKey in SCFiles.Instance.LangFiles)
             {
                 string lang = Path.GetFileNameWithoutExtension(fileKey);
+                PluginLog.Debug($"SCUiText - Processing language file: {fileKey} -> lang={lang}");
+                
                 // check if it is a valid language
-                if (Enum.TryParse(lang, out Languages fileLang))
+                if (Enum.TryParse(lang, true, out Languages fileLang))
                 {
                     string fContent = SCFiles.Instance.LangFile(fileKey);
 
+                    int entriesLoaded = 0;
                     using TextReader sr = new StringReader(fContent);
                     string line = sr.ReadLine();
                     while (line != null)
@@ -96,14 +101,23 @@ namespace SCJMapper_V2.SC
                             {
                                 // seems all strings we may need are ui_Cxyz
                                 m_locales[(int) fileLang].Add("@" + tag, content); // cAT is prepending the tags
+                                entriesLoaded++;
                             }
                         }
 
                         line = sr.ReadLine();
                     } // while
-                 }
-             } // all files
-         }
+                    
+                    PluginLog.Info($"SCUiText - Loaded {entriesLoaded} UI strings for language '{lang}'");
+                }
+                else
+                {
+                    PluginLog.Warn($"SCUiText - Unrecognized language: {lang}");
+                }
+            } // all files
+            
+            PluginLog.Info($"SCUiText initialization complete - english locale has {m_locales[(int)Languages.english].Count} entries");
+        }
 
         /// <summary>
         /// Returns the content from the UILabel in the set Language

@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
-using starcitizen.Core;
+using starcitizen.SC;
 
-namespace starcitizen
+namespace starcitizen.Core
 {
     /// <summary>
     /// Helper for normalizing and validating mouse token strings from Star Citizen bindings.
@@ -20,7 +21,7 @@ namespace starcitizen
         private static void LogDebugOnce(string key, string message)
         {
             // Only emit these debug messages when detailed diagnostics are explicitly enabled
-            if (!SCJMapper_V2.SC.SCPath.DetailedInputDiagnostics) return;
+            if (!SCPath.DetailedInputDiagnostics) return;
 
             if (string.IsNullOrEmpty(key)) return;
             
