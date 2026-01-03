@@ -3,6 +3,31 @@
 All notable changes to this repository are documented below. Unreleased changes appear at the top.
 
 
+## [2.0.9]
+
+### Fixes & Improvements
+- Restored and fixed mouse binding discovery and display in Property Inspector dropdowns:
+  - Properly normalize and accept mouse tokens (`mouse1`, `mouse2`, `mwheel_up`, `mwheel_down`, and human-readable formats like `Button 1 (mouse)`).
+  - Support composite mouse bindings and combos (e.g., `mouse1+mouse2` and `Button 1 (mouse) and Button 2 (mouse)`) via improved token splitting and normalization.
+  - Ensure `mouse` attribute from game XML is used when `keyboard` is blank/whitespace so mouse-only bindings appear in the dropdown.
+  - Relaxed and corrected executable-binding validation to accept mouse tokens as valid bindings.
+  - Improved display formatting for mouse tokens in dropdowns (Wheel/Mouse names instead of raw tokens).
+- Property Inspector robustness:
+  - Use action name as fallback when `UILabel` is missing so actions without labels still appear.
+  - Use `MapName`/`Other` as optgroup label when `MapUILabel` is empty.
+- Diagnostics and logging:
+  - Added diagnostic logging when building function lists to aid troubleshooting missing bindings.
+- Minor refactors and helper additions to `FunctionListBuilder` for clearer token parsing and duplicate detection.
+- Dropdown behavior:
+  - Ensure the Property Inspector dropdown list reflects the in-game function list (merged `defaultProfile.xml` and `actionmaps.xml`), showing keyboard and mouse bindings and honoring user overrides so the PI matches the game's current bindings.
+
+### Files touched (high level)
+- `starcitizen/Buttons/FunctionListBuilder.cs` — token splitting, validation, display formatting, diagnostics
+- `starcitizen/SC/DProfileReader.cs` — keyboard/mouse merging and normalization
+- `starcitizen/Core/PropertyInspectorMessenger.cs` — (no functional change; used by PI flow)
+
+---
+
 ## [2.0.8]
 
 ### Major Changes

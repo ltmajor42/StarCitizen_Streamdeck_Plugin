@@ -74,27 +74,26 @@ namespace starcitizen.Buttons
             {
                 var culture = GetCurrentCulture();
 
-                // Build main action groups (executable keyboard bindings)
-                var executableActions = bindingService.Reader.GetAllActions().Values
-                    .Where(x => !string.IsNullOrWhiteSpace(x.Keyboard))
-                    .Where(x => IsExecutableKeyboardBinding(x.Keyboard))
-                    .OrderBy(x => x.MapUILabel)
-                    .GroupBy(x => x.MapUILabel);
+                // Diagnostic: collect stats to help debug missing mouse bindings
+                var allActionsList = bindingService.Reader.GetAllActions().Values.ToList();
+                var totalActions = allActionsList.Count;
+                var hasKeyboardCount = allActionsList.Count(a => !string.IsNullOrWhiteSpace(a.Keyboard));
+                var hasMouseCount = allActionsList.Count(a => !string.IsNullOrWhiteSpace(a.Mouse));
+                var mouseLikeInKeyboard = allActionsList.Count(a => !string.IsNullOrWhiteSpace(a.Keyboard) && MouseTokenHelper.IsMouseLike(a.Keyboard));
+                var executableCount = allActionsList.Count(a => !string.IsNullOrWhiteSpace(a.Keyboard) && IsExecutableKeyboardBinding(a.Keyboard));
+                PluginLog.Debug($"FunctionListBuilder: totalActions={totalActions}, hasKeyboard={hasKeyboardCount}, hasMouse={hasMouseCount}, mouseLikeInKeyboard={mouseLikeInKeyboard}, executable={executableCount}");
 
-                foreach (var group in executableActions)
+                // Get all actions grouped by MapUILabel (fallback to MapName if missing)
+                var allActions = allActionsList
+                    .GroupBy(x => string.IsNullOrWhiteSpace(x.MapUILabel) ? (x.MapName ?? "Other") : x.MapUILabel);
+
+                foreach (var group in allActions)
                 {
-                    var groupObj = BuildActionGroup(group, culture);
+                    var groupObj = BuildFullActionGroup(group, culture, includeUnboundActions);
                     if (((JArray)groupObj["options"]).Count > 0)
                     {
                         result.Add(groupObj);
                     }
-                }
-
-                // Add unbound actions group
-                if (includeUnboundActions)
-                {
-                    var unboundGroup = BuildUnboundActionsGroup(bindingService);
-                    if (unboundGroup != null) result.Add(unboundGroup);
                 }
 
                 // Add unknown token groups (for visibility)
@@ -108,67 +107,82 @@ namespace starcitizen.Buttons
             return result;
         }
 
-        // ============================================================
-        // REGION: Group Builders
-        // ============================================================
-        private static JObject BuildActionGroup(IGrouping<string, DProfileReader.Action> group, CultureInfo culture)
+        // New: Build group with both bound and unbound actions
+        private static JObject BuildFullActionGroup(IGrouping<string, DProfileReader.Action> group, CultureInfo culture, bool includeUnboundActions)
         {
-            // Pre-compute duplicates for this group
             var duplicateKeys = ComputeDuplicateKeys(group, culture.Name);
             var seenOptionKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var groupObj = new JObject
             {
-                ["label"] = group.Key,
+                ["label"] = string.IsNullOrWhiteSpace(group.Key) ? "Other" : group.Key,
                 ["options"] = new JArray()
             };
 
-            foreach (var action in group.OrderBy(x => x.MapUICategory).ThenBy(x => x.UILabel))
+            foreach (var action in group.OrderBy(x => x.MapUICategory).ThenBy(x => x.UILabel ?? x.Name))
             {
-                var bindingInfo = GetBindingInfo(action.Keyboard, culture.Name);
-                var optionKey = $"{action.UILabel}||{bindingInfo.PrimaryBinding}||{bindingInfo.BindingType}";
+                // Use fallback for label
+                var label = string.IsNullOrWhiteSpace(action.UILabel) ? action.Name : action.UILabel;
 
-                // Skip duplicates
-                if (seenOptionKeys.Contains(optionKey)) continue;
-                seenOptionKeys.Add(optionKey);
-
-                var optionText = FormatOptionText(action, bindingInfo, duplicateKeys.Contains(optionKey));
-
-                ((JArray)groupObj["options"]).Add(new JObject
+                // Bound action
+                if (!string.IsNullOrWhiteSpace(action.Keyboard) && IsExecutableKeyboardBinding(action.Keyboard))
                 {
-                    ["value"] = action.Name,
-                    ["text"] = optionText,
-                    ["bindingType"] = bindingInfo.BindingType,
-                    ["searchText"] = BuildSearchText(action, bindingInfo.PrimaryBinding)
-                });
+                    var bindingInfo = GetBindingInfo(action.Keyboard, culture.Name);
+                    var optionKey = $"{label}||{bindingInfo.PrimaryBinding}||{bindingInfo.BindingType}";
+                    if (seenOptionKeys.Contains(optionKey)) continue;
+                    seenOptionKeys.Add(optionKey);
+                    var optionText = FormatOptionTextWithFallback(action, bindingInfo, duplicateKeys.Contains(optionKey));
+                    ((JArray)groupObj["options"]).Add(new JObject
+                    {
+                        ["value"] = action.Name,
+                        ["text"] = optionText,
+                        ["bindingType"] = bindingInfo.BindingType,
+                        ["searchText"] = BuildSearchTextWithFallback(action, bindingInfo.PrimaryBinding)
+                    });
+                }
+                // Unbound action
+                else if (includeUnboundActions)
+                {
+                    var optionKey = $"{label}||unbound";
+                    if (seenOptionKeys.Contains(optionKey)) continue;
+                    seenOptionKeys.Add(optionKey);
+                    ((JArray)groupObj["options"]).Add(new JObject
+                    {
+                        ["value"] = action.Name,
+                        ["text"] = $"{label} (unbound)",
+                        ["bindingType"] = "unbound",
+                        ["searchText"] = $"{label.ToLower()} {action.UIDescription?.ToLower() ?? ""}"
+                    });
+                }
             }
 
             return groupObj;
         }
 
-        private static JObject BuildUnboundActionsGroup(KeyBindingService bindingService)
+        // Fallback for option text
+        private static string FormatOptionTextWithFallback(DProfileReader.Action action, (string PrimaryBinding, string BindingType) bindingInfo, bool isDuplicate)
         {
-            var unboundActions = bindingService.Reader.GetUnboundActions();
-            if (unboundActions.Count == 0) return null;
+            var label = string.IsNullOrWhiteSpace(action.UILabel) ? action.Name : action.UILabel;
+            var bindingDisplay = string.IsNullOrWhiteSpace(bindingInfo.PrimaryBinding) ? "" : $" [{bindingInfo.PrimaryBinding}]";
+            var overruleIndicator = action.KeyboardOverRule || action.MouseOverRule ? " *" : "";
+            var uniqueSuffix = "";
 
-            var unboundGroup = new JObject
+            if (isDuplicate)
             {
-                ["label"] = "Unbound Actions",
-                ["options"] = new JArray()
-            };
-
-            foreach (var action in unboundActions.OrderBy(x => x.Value.MapUILabel).ThenBy(x => x.Value.UILabel))
-            {
-                ((JArray)unboundGroup["options"]).Add(new JObject
-                {
-                    ["value"] = action.Value.Name,
-                    ["text"] = $"{action.Value.UILabel} (unbound)",
-                    ["bindingType"] = "unbound",
-                    ["searchText"] = $"{action.Value.UILabel.ToLower()} {action.Value.UIDescription?.ToLower() ?? ""}"
-                });
+                var actionName = action.Name?.StartsWith($"{action.MapName}-", StringComparison.OrdinalIgnoreCase) == true
+                    ? action.Name[(action.MapName.Length + 1)..]
+                    : action.Name;
+                uniqueSuffix = $" ({action.MapName}:{actionName})";
             }
 
-            return unboundGroup;
+            return $"{label}{bindingDisplay}{overruleIndicator}{uniqueSuffix}";
+        }
+
+        // Fallback for search text
+        private static string BuildSearchTextWithFallback(DProfileReader.Action action, string primaryBinding)
+        {
+            var label = string.IsNullOrWhiteSpace(action.UILabel) ? action.Name : action.UILabel;
+            return $"{label.ToLower()} {action.UIDescription?.ToLower() ?? ""} {primaryBinding.ToLower()} {action.Name.ToLower()} {action.MapName.ToLower()}";
         }
 
         private static void AddUnknownTokenGroups(JArray result, KeyBindingService bindingService)
@@ -258,6 +272,16 @@ namespace starcitizen.Buttons
             return $"{action.UILabel.ToLower()} {action.UIDescription?.ToLower() ?? ""} {primaryBinding.ToLower()} {action.Name.ToLower()} {action.MapName.ToLower()}";
         }
 
+        // Helper: Split tokens on both '+' and 'and' (case-insensitive, with/without spaces)
+        private static string[] SplitBindingTokens(string binding)
+        {
+            if (string.IsNullOrWhiteSpace(binding)) return [];
+            // Split on + or 'and' (with optional spaces and parentheses)
+            return System.Text.RegularExpressions.Regex.Split(binding, @"\s*(\+|and)\s*", System.Text.RegularExpressions.RegexOptions.IgnoreCase)
+                .Where(t => !string.IsNullOrWhiteSpace(t) && !string.Equals(t, "+", StringComparison.OrdinalIgnoreCase) && !string.Equals(t, "and", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+        }
+
         private static (string PrimaryBinding, string BindingType) GetBindingInfo(string keyboard, string cultureName)
         {
             if (string.IsNullOrWhiteSpace(keyboard))
@@ -266,7 +290,7 @@ namespace starcitizen.Buttons
             }
 
             // Build display string by processing each token
-            var tokens = keyboard.Split(PlusSeparator, StringSplitOptions.RemoveEmptyEntries);
+            var tokens = SplitBindingTokens(keyboard);
             var displayParts = new List<string>();
             var hasMouseToken = false;
 
@@ -351,52 +375,58 @@ namespace starcitizen.Buttons
         {
             if (string.IsNullOrWhiteSpace(keyboard)) return false;
 
-            var tokens = keyboard.Split(PlusSeparator, StringSplitOptions.RemoveEmptyEntries);
-            if (tokens.Length == 0) return false;
+            var tokens = SplitBindingTokens(keyboard);
+            if (tokens.Length <= 0) return false;
 
-            var foundValidToken = false;
-            foreach (var raw in tokens)
+            // Accept if ALL tokens are valid keyboard OR valid mouse tokens
+            foreach (var rawToken in tokens)
             {
-                var token = raw?.Trim();
+                var token = rawToken?.Trim();
                 if (string.IsNullOrWhiteSpace(token)) continue;
 
-                if (IsMouseToken(token))
+                // Accept if token is a valid mouse token
+                if (MouseTokenHelper.TryNormalize(token, out _))
                 {
-                    foundValidToken = true;
                     continue;
                 }
 
-                if (!CommandTools.TryFromSCKeyboardCmd(token, out _)) return false;
-                foundValidToken = true;
+                // Accept if token is a valid keyboard command
+                if (CommandTools.TryFromSCKeyboardCmd(token, out _))
+                {
+                    continue;
+                }
+
+                // If neither, it's not executable
+                return false;
             }
 
-            return foundValidToken;
-        }
-
-        private static bool IsMouseToken(string token) =>
-            MouseTokenHelper.TryNormalize(token, out _) || MouseTokenHelper.IsMouseLike(token);
-
-        private static bool ContainsMouseToken(string binding)
-        {
-            if (string.IsNullOrWhiteSpace(binding)) return false;
-
-            return binding.Split(PlusSeparator, StringSplitOptions.RemoveEmptyEntries)
-                .Any(IsMouseToken);
+            return true;
         }
 
         private static string DescribeUnknownTokens(string keyboard)
         {
-            if (string.IsNullOrWhiteSpace(keyboard)) return "unknown";
+            if (string.IsNullOrWhiteSpace(keyboard)) return "";
 
-            var unknowns = keyboard.Split(PlusSeparator, StringSplitOptions.RemoveEmptyEntries)
-                .Select(t => t?.Trim())
-                .Where(t => !string.IsNullOrWhiteSpace(t))
-                .Where(t => !MouseTokenHelper.IsMouseLike(t))
-                .Where(t => !CommandTools.TryFromSCKeyboardCmd(t, out _))
-                .Distinct()
-                .ToArray();
+            var tokens = SplitBindingTokens(keyboard);
+            var unknownTokens = new List<string>();
 
-            return unknowns.Length == 0 ? "unknown" : string.Join(", ", unknowns);
+            foreach (var rawToken in tokens)
+            {
+                var token = rawToken?.Trim();
+                if (string.IsNullOrWhiteSpace(token)) continue;
+
+                // Mouse tokens are ignored here - they are either normalized or considered valid by default
+                if (MouseTokenHelper.IsMouseLike(token)) continue;
+
+                // Unknown keyboard command - add to list
+                if (!CommandTools.TryFromSCKeyboardCmd(token, out _))
+                {
+                    unknownTokens.Add(token);
+                }
+            }
+
+            // Join unknown tokens with commas for display
+            return string.Join(", ", unknownTokens);
         }
     }
 }

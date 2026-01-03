@@ -2,919 +2,773 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Configuration;
-using System.Linq;
-using System.Text;
 using System.IO;
-using BarRaider.SdTools;
+using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.Win32;
-using p4ktest;
-using TheUser = p4ktest.SC.TheUser;
 using starcitizen.Core;
 
-namespace starcitizen.SC
+namespace starcitizen.SC;
+
+/// <summary>
+/// Find the SC pathes and folders using multiple detection methods
+/// </summary>
+partial class SCPath
 {
+    private static readonly string[] KNOWN_REGISTRY_KEYS =
+    [
+        @"SOFTWARE\81bfc699-f883-50c7-b674-2483b6baae23",
+        @"SOFTWARE\94a6df8a-d3f9-558d-bb04-097c192530b9",
+        @"SOFTWARE\Cloud Imperium Games\Star Citizen",
+        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\StarCitizen",
+    ];
+
+    private static readonly string[] COMMON_INSTALL_PATHS =
+    [
+        @"C:\Program Files\Roberts Space Industries\StarCitizen",
+        @"C:\Program Files (x86)\Roberts Space Industries\StarCitizen",
+        @"D:\Program Files\Roberts Space Industries\StarCitizen",
+        @"D:\Program Files (x86)\Roberts Space Industries\StarCitizen",
+        @"E:\Program Files\Roberts Space Industries\StarCitizen",
+        @"E:\Program Files (x86)\Roberts Space Industries\StarCitizen",
+        @"F:\Program Files\Roberts Space Industries\StarCitizen",
+        @"F:\Program Files (x86)\Roberts Space Industries\StarCitizen",
+        @"C:\Games\StarCitizen",
+        @"D:\Games\StarCitizen",
+        @"E:\Games\StarCitizen",
+        @"F:\Games\StarCitizen",
+        @"C:\StarCitizen",
+        @"D:\StarCitizen",
+        @"E:\StarCitizen",
+        @"F:\StarCitizen",
+        @"G:\Program Files\Roberts Space Industries\StarCitizen",
+        @"G:\Games\StarCitizen",
+        @"G:\StarCitizen",
+        @"H:\Program Files\Roberts Space Industries\StarCitizen",
+        @"H:\Games\StarCitizen",
+        @"H:\StarCitizen",
+        @"C:\Program Files\Epic Games\StarCitizen",
+        @"D:\Program Files\Epic Games\StarCitizen",
+        @"E:\Program Files\Epic Games\StarCitizen",
+        @"C:\Users\Public\Games\StarCitizen",
+        @"D:\Users\Public\Games\StarCitizen",
+        @"E:\Users\Public\Games\StarCitizen",
+    ];
+
+    private static readonly string[] STEAM_LIBRARY_PATHS =
+    [
+        @"C:\Program Files (x86)\Steam\steamapps\common\Star Citizen",
+        @"D:\Steam\steamapps\common\Star Citizen",
+        @"E:\Steam\steamapps\common\Star Citizen",
+        @"F:\Steam\steamapps\common\Star Citizen",
+        @"G:\Steam\steamapps\common\Star Citizen",
+        @"C:\SteamLibrary\steamapps\common\Star Citizen",
+        @"D:\SteamLibrary\steamapps\common\Star Citizen",
+        @"E:\SteamLibrary\steamapps\common\Star Citizen",
+    ];
+
+    private static readonly object PathCacheLock = new();
+    private static string cachedBasePath;
+    private static bool cachedBasePathSet;
+
+    private static readonly object ClientPathCacheLock = new();
+    private static string cachedClientPath;
+    private static bool cachedClientPathSet;
+    private static bool cachedClientPathUsePtu;
+    private static string cachedClientBasePath;
+
+    [GeneratedRegex(@"([A-Za-z]:\\[^\""<>|\r\n]+?StarCitizen)", RegexOptions.IgnoreCase)]
+    private static partial Regex StarCitizenPathRegex();
+
     /// <summary>
-    /// Find the SC pathes and folders using multiple detection methods
+    /// Try to find SC installation from RSI Launcher configuration files
     /// </summary>
-    class SCPath
+    private static string FindInstallationFromRSILauncher()
     {
-        private static readonly string[] KNOWN_REGISTRY_KEYS = new[]
+        PluginLog.Debug("FindInstallationFromRSILauncher - Entry");
+
+        try
         {
-            // Current and recent Star Citizen launcher registry keys
-            @"SOFTWARE\81bfc699-f883-50c7-b674-2483b6baae23", // LIVE
-            @"SOFTWARE\94a6df8a-d3f9-558d-bb04-097c192530b9", // PTU
-            @"SOFTWARE\Cloud Imperium Games\Star Citizen",   // Alternative key
-            @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\StarCitizen", // Uninstall key
-        };
+            string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string rsiLauncherPath = Path.Combine(appDataPath, "rsilauncher");
 
-        private static readonly string[] COMMON_INSTALL_PATHS = new[]
-        {
-            // Standard RSI Launcher paths
-            @"C:\Program Files\Roberts Space Industries\StarCitizen",
-            @"C:\Program Files (x86)\Roberts Space Industries\StarCitizen",
-            @"D:\Program Files\Roberts Space Industries\StarCitizen",
-            @"D:\Program Files (x86)\Roberts Space Industries\StarCitizen",
-            @"E:\Program Files\Roberts Space Industries\StarCitizen",
-            @"E:\Program Files (x86)\Roberts Space Industries\StarCitizen",
-            @"F:\Program Files\Roberts Space Industries\StarCitizen",
-            @"F:\Program Files (x86)\Roberts Space Industries\StarCitizen",
-
-            // Common game directories
-            @"C:\Games\StarCitizen",
-            @"D:\Games\StarCitizen",
-            @"E:\Games\StarCitizen",
-            @"F:\Games\StarCitizen",
-            @"C:\StarCitizen",
-            @"D:\StarCitizen",
-            @"E:\StarCitizen",
-            @"F:\StarCitizen",
-
-            // Alternative drive letters
-            @"G:\Program Files\Roberts Space Industries\StarCitizen",
-            @"G:\Games\StarCitizen",
-            @"G:\StarCitizen",
-            @"H:\Program Files\Roberts Space Industries\StarCitizen",
-            @"H:\Games\StarCitizen",
-            @"H:\StarCitizen",
-
-            // Epic Games Store paths
-            @"C:\Program Files\Epic Games\StarCitizen",
-            @"D:\Program Files\Epic Games\StarCitizen",
-            @"E:\Program Files\Epic Games\StarCitizen",
-
-            // Custom/user installations
-            @"C:\Users\Public\Games\StarCitizen",
-            @"D:\Users\Public\Games\StarCitizen",
-            @"E:\Users\Public\Games\StarCitizen",
-        };
-
-        private static readonly string[] STEAM_LIBRARY_PATHS = new[]
-        {
-            @"C:\Program Files (x86)\Steam\steamapps\common\Star Citizen",
-            @"D:\Steam\steamapps\common\Star Citizen",
-            @"E:\Steam\steamapps\common\Star Citizen",
-            @"F:\Steam\steamapps\common\Star Citizen",
-            @"G:\Steam\steamapps\common\Star Citizen",
-            @"C:\SteamLibrary\steamapps\common\Star Citizen",
-            @"D:\SteamLibrary\steamapps\common\Star Citizen",
-            @"E:\SteamLibrary\steamapps\common\Star Citizen",
-        };
-
-        private static readonly object PathCacheLock = new object();
-        private static string cachedBasePath;
-        private static bool cachedBasePathSet;
-
-        private static readonly object ClientPathCacheLock = new object();
-        private static string cachedClientPath;
-        private static bool cachedClientPathSet;
-        private static bool cachedClientPathUsePtu;
-        private static string cachedClientBasePath;
-
-        /// <summary>
-        /// Try to find SC installation from RSI Launcher configuration files
-        /// The RSI Launcher stores its library folder in %APPDATA%\rsilauncher\
-        /// </summary>
-        static private string FindInstallationFromRSILauncher()
-        {
-            PluginLog.Debug("FindInstallationFromRSILauncher - Entry");
-
-            try
+            string libraryFolderFile = Path.Combine(rsiLauncherPath, "library_folder.json");
+            if (File.Exists(libraryFolderFile))
             {
-                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                string rsiLauncherPath = Path.Combine(appDataPath, "rsilauncher");
-
-                // Check for library_folder.json (newer launcher versions)
-                string libraryFolderFile = Path.Combine(rsiLauncherPath, "library_folder.json");
-                if (File.Exists(libraryFolderFile))
+                PluginLog.Debug($"FindInstallationFromRSILauncher - Found library_folder.json: {libraryFolderFile}");
+                string json = File.ReadAllText(libraryFolderFile);
+                int pathStart = json.IndexOf('"');
+                int pathEnd = json.LastIndexOf('"');
+                if (pathStart >= 0 && pathEnd > pathStart)
                 {
-                    PluginLog.Debug($"FindInstallationFromRSILauncher - Found library_folder.json: {libraryFolderFile}");
-                    string json = File.ReadAllText(libraryFolderFile);
-                    // Simple JSON parsing - look for path in quotes
-                    int pathStart = json.IndexOf('"');
-                    int pathEnd = json.LastIndexOf('"');
-                    if (pathStart >= 0 && pathEnd > pathStart)
-                    {
-                        string libraryPath = json.Substring(pathStart + 1, pathEnd - pathStart - 1);
-                        libraryPath = libraryPath.Replace("\\\\", "\\").Replace("\\/", "/").Replace("/", "\\");
-                        PluginLog.Debug($"FindInstallationFromRSILauncher - Parsed library path: {libraryPath}");
-                        
-                        if (Directory.Exists(libraryPath) && IsValidStarCitizenInstallation(libraryPath))
-                        {
-                            PluginLog.Info($"FindInstallationFromRSILauncher - Found via library_folder.json: {libraryPath}");
-                            return libraryPath;
-                        }
-                    }
-                }
-
-                // Check for settings.json (contains InstallDir)
-                string settingsFile = Path.Combine(rsiLauncherPath, "settings.json");
-                if (File.Exists(settingsFile))
-                {
-                    PluginLog.Debug($"FindInstallationFromRSILauncher - Found settings.json: {settingsFile}");
-                    string json = File.ReadAllText(settingsFile);
+                    string libraryPath = json[(pathStart + 1)..pathEnd];
+                    libraryPath = libraryPath.Replace("\\\\", "\\").Replace("\\/", "/").Replace("/", "\\");
+                    PluginLog.Debug($"FindInstallationFromRSILauncher - Parsed library path: {libraryPath}");
                     
-                    // Look for "libraryFolder" or "installDir" in settings
-                    string[] searchKeys = new[] { "\"libraryFolder\"", "\"library_folder\"", "\"installDir\"", "\"InstallDir\"" };
-                    foreach (string key in searchKeys)
+                    if (Directory.Exists(libraryPath) && IsValidStarCitizenInstallation(libraryPath))
                     {
-                        int keyIndex = json.IndexOf(key, StringComparison.OrdinalIgnoreCase);
-                        if (keyIndex >= 0)
-                        {
-                            // Find the value after the key
-                            int colonIndex = json.IndexOf(':', keyIndex);
-                            if (colonIndex >= 0)
-                            {
-                                int valueStart = json.IndexOf('"', colonIndex);
-                                int valueEnd = json.IndexOf('"', valueStart + 1);
-                                if (valueStart >= 0 && valueEnd > valueStart)
-                                {
-                                    string path = json.Substring(valueStart + 1, valueEnd - valueStart - 1);
-                                    path = path.Replace("\\\\", "\\").Replace("\\/", "/").Replace("/", "\\");
-                                    PluginLog.Debug($"FindInstallationFromRSILauncher - Found path in settings.json: {path}");
-                                    
-                                    if (Directory.Exists(path) && IsValidStarCitizenInstallation(path))
-                                    {
-                                        PluginLog.Info($"FindInstallationFromRSILauncher - Found via settings.json: {path}");
-                                        return path;
-                                    }
-                                }
-                            }
-                        }
+                        PluginLog.Info($"FindInstallationFromRSILauncher - Found via library_folder.json: {libraryPath}");
+                        return libraryPath;
                     }
                 }
+            }
 
-                // Check log files for installation path
-                string logDir = Path.Combine(rsiLauncherPath, "logs");
-                if (Directory.Exists(logDir))
+            string settingsFile = Path.Combine(rsiLauncherPath, "settings.json");
+            if (File.Exists(settingsFile))
+            {
+                PluginLog.Debug($"FindInstallationFromRSILauncher - Found settings.json: {settingsFile}");
+                string json = File.ReadAllText(settingsFile);
+                
+                string[] searchKeys = ["\"libraryFolder\"", "\"library_folder\"", "\"installDir\"", "\"InstallDir\""];
+                foreach (string key in searchKeys)
                 {
-                    string[] logFiles = Directory.GetFiles(logDir, "*.log");
-                    foreach (string logFile in logFiles.OrderByDescending(f => File.GetLastWriteTime(f)).Take(3))
+                    int keyIndex = json.IndexOf(key, StringComparison.OrdinalIgnoreCase);
+                    if (keyIndex >= 0)
                     {
-                        try
+                        int colonIndex = json.IndexOf(':', keyIndex);
+                        if (colonIndex >= 0)
                         {
-                            string logContent = File.ReadAllText(logFile);
-                            // Look for paths containing StarCitizen
-                            var matches = System.Text.RegularExpressions.Regex.Matches(logContent, @"([A-Za-z]:\\[^\""<>|\r\n]+?StarCitizen)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-                            foreach (System.Text.RegularExpressions.Match match in matches)
+                            int valueStart = json.IndexOf('"', colonIndex);
+                            int valueEnd = json.IndexOf('"', valueStart + 1);
+                            if (valueStart >= 0 && valueEnd > valueStart)
                             {
-                                string path = match.Value;
-                                // Clean up path
-                                path = path.Replace("\\\\", "\\");
+                                string path = json[(valueStart + 1)..valueEnd];
+                                path = path.Replace("\\\\", "\\").Replace("\\/", "/").Replace("/", "\\");
+                                PluginLog.Debug($"FindInstallationFromRSILauncher - Found path in settings.json: {path}");
+                                
                                 if (Directory.Exists(path) && IsValidStarCitizenInstallation(path))
                                 {
-                                    PluginLog.Info($"FindInstallationFromRSILauncher - Found via log file: {path}");
+                                    PluginLog.Info($"FindInstallationFromRSILauncher - Found via settings.json: {path}");
                                     return path;
                                 }
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            PluginLog.Debug($"FindInstallationFromRSILauncher - Error reading log {logFile}: {ex.Message}");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                PluginLog.Debug($"FindInstallationFromRSILauncher - Error: {ex.Message}");
-            }
-
-            PluginLog.Debug("FindInstallationFromRSILauncher - No valid installation found");
-            return "";
-        }
-
-        /// <summary>
-        /// Try to find SC launcher directory from various registry locations
-        /// </summary>
-        static private string FindLauncherFromRegistry()
-        {
-            PluginLog.Debug("FindLauncherFromRegistry - Entry");
-
-            foreach (string regKey in KNOWN_REGISTRY_KEYS)
-            {
-                try
-                {
-                    RegistryKey localKey;
-                    if (Environment.Is64BitOperatingSystem)
-                        localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
-                    else
-                        localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
-
-                    using var key = localKey.OpenSubKey(regKey);
-                    if (key != null)
-                    {
-                        object installLocation = key.GetValue("InstallLocation");
-                        if (installLocation != null)
-                        {
-                            string scLauncher = installLocation.ToString();
-                            PluginLog.Debug($"FindLauncherFromRegistry - Found in {regKey}: {scLauncher}");
-
-                            if (Directory.Exists(scLauncher))
-                            {
-                                return scLauncher;
-                            }
-                            else
-                            {
-                                PluginLog.Debug($"FindLauncherFromRegistry - Directory does not exist: {scLauncher}");
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    PluginLog.Debug($"FindLauncherFromRegistry - Error checking {regKey}: {ex.Message}");
-                }
-            }
-
-            PluginLog.Debug("FindLauncherFromRegistry - No valid launcher found in registry");
-            return "";
-        }
-
-        /// <summary>
-        /// Try to find SC installation by scanning common installation paths
-        /// </summary>
-        static private string FindInstallationFromCommonPaths()
-        {
-            PluginLog.Debug("FindInstallationFromCommonPaths - Entry");
-
-            foreach (string path in COMMON_INSTALL_PATHS)
-            {
-                PluginLog.Debug($"FindInstallationFromCommonPaths - Checking: {path}");
-
-                if (Directory.Exists(path))
-                {
-                    // Check if this looks like a valid SC installation
-                    if (IsValidStarCitizenInstallation(path))
-                    {
-                        PluginLog.Info($"FindInstallationFromCommonPaths - Found valid installation: {path}");
-                        return path;
                     }
                 }
             }
 
-            PluginLog.Debug("FindInstallationFromCommonPaths - No valid installation found");
-            return "";
-        }
-
-        /// <summary>
-        /// Check if a directory contains a valid Star Citizen installation
-        /// Supports multiple directory structures:
-        /// 1. RSI Launcher style: path/StarCitizen/LIVE/Data.p4k
-        /// 2. Direct style: path/LIVE/Data.p4k (when user points directly to StarCitizen folder)
-        /// 3. Direct Data.p4k: path/Data.p4k
-        /// </summary>
-        static private bool IsValidStarCitizenInstallation(string path)
-        {
-            try
+            string logDir = Path.Combine(rsiLauncherPath, "logs");
+            if (Directory.Exists(logDir))
             {
-                // Structure 1: RSI Launcher style - path/StarCitizen/LIVE
-                string livePath = Path.Combine(path, "StarCitizen", "LIVE");
-                string ptuPath = Path.Combine(path, "StarCitizen", "PTU");
-
-                if (Directory.Exists(livePath))
-                {
-                    string dataP4k = Path.Combine(livePath, "Data.p4k");
-                    if (File.Exists(dataP4k))
-                    {
-                        PluginLog.Debug($"IsValidStarCitizenInstallation - Found RSI style LIVE: {livePath}");
-                        return true;
-                    }
-                }
-
-                if (Directory.Exists(ptuPath))
-                {
-                    string dataP4k = Path.Combine(ptuPath, "Data.p4k");
-                    if (File.Exists(dataP4k))
-                    {
-                        PluginLog.Debug($"IsValidStarCitizenInstallation - Found RSI style PTU: {ptuPath}");
-                        return true;
-                    }
-                }
-
-                // Structure 2: Direct style - path/LIVE (user points directly to StarCitizen folder)
-                string directLivePath = Path.Combine(path, "LIVE");
-                string directPtuPath = Path.Combine(path, "PTU");
-
-                if (Directory.Exists(directLivePath))
-                {
-                    string dataP4k = Path.Combine(directLivePath, "Data.p4k");
-                    if (File.Exists(dataP4k))
-                    {
-                        PluginLog.Debug($"IsValidStarCitizenInstallation - Found direct style LIVE: {directLivePath}");
-                        return true;
-                    }
-                }
-
-                if (Directory.Exists(directPtuPath))
-                {
-                    string dataP4k = Path.Combine(directPtuPath, "Data.p4k");
-                    if (File.Exists(dataP4k))
-                    {
-                        PluginLog.Debug($"IsValidStarCitizenInstallation - Found direct style PTU: {directPtuPath}");
-                        return true;
-                    }
-                }
-
-                // Structure 3: Direct Data.p4k in the path
-                string directDataP4k = Path.Combine(path, "Data.p4k");
-                if (File.Exists(directDataP4k))
-                {
-                    PluginLog.Debug($"IsValidStarCitizenInstallation - Found direct Data.p4k: {directDataP4k}");
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                PluginLog.Debug($"IsValidStarCitizenInstallation - Error checking {path}: {ex.Message}");
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Try to find SC installation by scanning known Steam library paths
-        /// </summary>
-        static private string FindInstallationFromSteamPaths()
-        {
-            PluginLog.Debug("FindInstallationFromSteamPaths - Entry");
-
-            foreach (string path in STEAM_LIBRARY_PATHS)
-            {
-                PluginLog.Debug($"FindInstallationFromSteamPaths - Checking: {path}");
-
-                if (Directory.Exists(path))
-                {
-                    // Check if this looks like a valid SC installation
-                    if (IsValidStarCitizenInstallation(path))
-                    {
-                        PluginLog.Info($"FindInstallationFromSteamPaths - Found valid installation: {path}");
-                        return path;
-                    }
-                }
-            }
-
-            PluginLog.Debug("FindInstallationFromSteamPaths - No valid installation found");
-            return "";
-        }
-
-        /// <summary>
-        /// Try to find SC installation by parsing Steam's config.vdf file for custom library locations
-        /// </summary>
-        static private string FindInstallationFromSteamConfig()
-        {
-            PluginLog.Debug("FindInstallationFromSteamConfig - Entry");
-
-            try
-            {
-                // Default Steam config location
-                string steamConfigPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Steam", "config", "config.vdf");
-
-                if (!File.Exists(steamConfigPath))
-                {
-                    // Try SteamPath environment variable
-                    string steamPath = Environment.GetEnvironmentVariable("SteamPath");
-                    if (!string.IsNullOrEmpty(steamPath))
-                    {
-                        steamConfigPath = Path.Combine(steamPath, "config", "config.vdf");
-                    }
-                }
-
-                if (!File.Exists(steamConfigPath))
-                {
-                    PluginLog.Debug("FindInstallationFromSteamConfig - Steam config not found");
-                    return "";
-                }
-
-                // Parse the VDF file to find library folders
-                var libraryPaths = ParseSteamConfigForLibraries(steamConfigPath);
-
-                foreach (string libraryPath in libraryPaths)
-                {
-                    string scPath = Path.Combine(libraryPath, "steamapps", "common", "Star Citizen");
-                    PluginLog.Debug($"FindInstallationFromSteamConfig - Checking Steam library: {scPath}");
-
-                    if (IsValidStarCitizenInstallation(scPath))
-                    {
-                        PluginLog.Info($"FindInstallationFromSteamConfig - Found valid installation: {scPath}");
-                        return scPath;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                PluginLog.Debug($"FindInstallationFromSteamConfig - Error: {ex.Message}");
-            }
-
-            PluginLog.Debug("FindInstallationFromSteamConfig - No valid installation found");
-            return "";
-        }
-
-        /// <summary>
-        /// Parse Steam's config.vdf to extract library folder paths
-        /// </summary>
-        static private List<string> ParseSteamConfigForLibraries(string configPath)
-        {
-            var libraryPaths = new List<string>();
-
-            try
-            {
-                string[] lines = File.ReadAllLines(configPath);
-                bool inSoftwareSection = false;
-                bool inSteamSection = false;
-                bool inLibraryFolders = false;
-
-                foreach (string line in lines)
-                {
-                    string trimmed = line.Trim();
-
-                    if (trimmed.Contains("\"Software\""))
-                    {
-                        inSoftwareSection = true;
-                    }
-                    else if (inSoftwareSection && trimmed.Contains("\"Valve\""))
-                    {
-                        inSteamSection = true;
-                    }
-                    else if (inSteamSection && trimmed.Contains("\"BaseInstallFolder\""))
-                    {
-                        // Extract the base install folder path
-                        int start = trimmed.IndexOf('\'', trimmed.IndexOf('\'') + 1) + 1;
-                        int end = trimmed.LastIndexOf('\'');
-                        if (start < end)
-                        {
-                            string path = trimmed.Substring(start, end - start);
-                            libraryPaths.Add(path.Replace("\\\\", "\\"));
-                        }
-                    }
-                    else if (inSteamSection && trimmed.Contains("\"LibraryFolders\""))
-                    {
-                        inLibraryFolders = true;
-                    }
-                    else if (inLibraryFolders && trimmed.Contains("{"))
-                    {
-                        // Skip opening brace
-                        continue;
-                    }
-                    else if (inLibraryFolders && trimmed.Contains("}"))
-                    {
-                        // End of library folders
-                        break;
-                    }
-                    else if (inLibraryFolders && trimmed.StartsWith("\"") && trimmed.Contains("\""))
-                    {
-                        // Extract library path
-                        int firstQuote = trimmed.IndexOf('\"');
-                        int secondQuote = trimmed.IndexOf('\"', firstQuote + 1);
-                        int thirdQuote = trimmed.IndexOf('\"', secondQuote + 1);
-
-                        if (thirdQuote > secondQuote)
-                        {
-                            string path = trimmed.Substring(secondQuote + 1, thirdQuote - secondQuote - 1);
-                            libraryPaths.Add(path.Replace("\\\\", "\\"));
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                PluginLog.Debug($"ParseSteamConfigForLibraries - Error parsing config: {ex.Message}");
-            }
-
-            return libraryPaths;
-        }
-
-        /// <summary>
-        /// Returns the base SC install path using multiple detection methods
-        /// </summary>
-        static private string SCBasePath
-        {
-            get
-            {
-                lock (PathCacheLock)
-                {
-                    if (cachedBasePathSet)
-                    {
-                        return cachedBasePath;
-                    }
-
-                    cachedBasePath = ResolveBasePath();
-                    cachedBasePathSet = true;
-                    return cachedBasePath;
-                }
-            }
-        }
-
-        private static string ResolveBasePath()
-        {
-            PluginLog.Debug("SCBasePath - Entry");
-
-            string scp;
-
-            // Method 1: Check appsettings config first (user override)
-            if (File.Exists("appSettings.config"))
-            {
-                try
-                {
-                    var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-                    if (config.AppSettings.Settings["SCBasePath"] != null)
-                    {
-                        scp = config.AppSettings.Settings["SCBasePath"].Value;
-                        if (!string.IsNullOrEmpty(scp) && Directory.Exists(scp) && IsValidStarCitizenInstallation(scp))
-                        {
-                            PluginLog.Info($"SCBasePath - Using user-specified path: {scp}");
-                            return scp;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    PluginLog.Debug($"SCBasePath - Error reading config: {ex.Message}");
-                }
-            }
-
-            // Method 2: RSI Launcher configuration files (%APPDATA%\rsilauncher\)
-            scp = FindInstallationFromRSILauncher();
-            if (!string.IsNullOrEmpty(scp))
-            {
-                PluginLog.Info($"SCBasePath - Found via RSI Launcher config: {scp}");
-                return scp;
-            }
-
-            // Method 3: Registry-based detection
-            scp = FindLauncherFromRegistry();
-            if (!string.IsNullOrEmpty(scp))
-            {
-                scp = Path.GetDirectoryName(scp); // Get parent directory
-                if (IsValidStarCitizenInstallation(scp))
-                {
-                    PluginLog.Info($"SCBasePath - Found via registry: {scp}");
-                    return scp;
-                }
-            }
-
-            // Method 4: Common path scanning
-            scp = FindInstallationFromCommonPaths();
-            if (!string.IsNullOrEmpty(scp))
-            {
-                PluginLog.Info($"SCBasePath - Found via common paths: {scp}");
-                return scp;
-            }
-
-            // Method 4: Steam library scanning
-            scp = FindInstallationFromSteamPaths();
-            if (!string.IsNullOrEmpty(scp))
-            {
-                PluginLog.Info($"SCBasePath - Found via Steam: {scp}");
-                return scp;
-            }
-
-            // Method 5: Check Steam config files for custom library locations
-            scp = FindInstallationFromSteamConfig();
-            if (!string.IsNullOrEmpty(scp))
-            {
-                PluginLog.Info($"SCBasePath - Found via Steam config: {scp}");
-                return scp;
-            }
-
-            PluginLog.Error("SCBasePath - Could not find Star Citizen installation. Please check your installation or set SCBasePath in appSettings.config");
-            return "";
-        }
-
-        /// <summary>
-        /// Determines whether to use PTU based on configuration
-        /// </summary>
-        static private bool UsePTU
-        {
-            get
-            {
-                if (File.Exists("appSettings.config"))
+                string[] logFiles = Directory.GetFiles(logDir, "*.log");
+                foreach (string logFile in logFiles.OrderByDescending(f => File.GetLastWriteTime(f)).Take(3))
                 {
                     try
                     {
-                        var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-                        if (config.AppSettings.Settings["UsePTU"] != null)
+                        string logContent = File.ReadAllText(logFile);
+                        var matches = StarCitizenPathRegex().Matches(logContent);
+                        foreach (Match match in matches)
                         {
-                            string ptuSetting = config.AppSettings.Settings["UsePTU"].Value;
-                            if (bool.TryParse(ptuSetting, out bool usePTU))
+                            string path = match.Value.Replace("\\\\", "\\");
+                            if (Directory.Exists(path) && IsValidStarCitizenInstallation(path))
                             {
-                                return usePTU;
+                                PluginLog.Info($"FindInstallationFromRSILauncher - Found via log file: {path}");
+                                return path;
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        PluginLog.Debug($"Error reading UsePTU config: {ex.Message}");
+                        PluginLog.Debug($"FindInstallationFromRSILauncher - Error reading log {logFile}: {ex.Message}");
                     }
                 }
-
-                // Fallback to TheUser.UsePTU for backward compatibility
-                return TheUser.UsePTU;
             }
         }
-
-        /// <summary>
-        /// Returns the SC Client path
-        /// Supports multiple directory structures:
-        /// 1. RSI Launcher style: basepath/StarCitizen/LIVE
-        /// 2. Direct style: basepath/LIVE (when user points to StarCitizen folder directly)
-        /// </summary>
-        static public string SCClientPath
+        catch (Exception ex)
         {
-            get
+            PluginLog.Debug($"FindInstallationFromRSILauncher - Error: {ex.Message}");
+        }
+
+        PluginLog.Debug("FindInstallationFromRSILauncher - No valid installation found");
+        return "";
+    }
+
+    private static string FindLauncherFromRegistry()
+    {
+        PluginLog.Debug("FindLauncherFromRegistry - Entry");
+
+        foreach (string regKey in KNOWN_REGISTRY_KEYS)
+        {
+            try
             {
-                string scp = SCBasePath;
-#if DEBUG
-                //***************************************
-                // scp += "X"; // TEST not found (COMMENT OUT FOR PRODUCTIVE BUILD)
-                //***************************************
-#endif
-                if (string.IsNullOrEmpty(scp)) return ""; // no valid one can be found
+                RegistryKey localKey;
+                if (Environment.Is64BitOperatingSystem)
+                    localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
+                else
+                    localKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32);
 
-                // Check configuration for PTU vs LIVE
-                bool usePTU = UsePTU;
-
-                lock (ClientPathCacheLock)
+                using var key = localKey.OpenSubKey(regKey);
+                if (key != null)
                 {
-                    if (cachedClientPathSet &&
-                        cachedClientPathUsePtu == usePTU &&
-                        string.Equals(cachedClientBasePath, scp, StringComparison.OrdinalIgnoreCase))
+                    object installLocation = key.GetValue("InstallLocation");
+                    if (installLocation != null)
                     {
-                        return cachedClientPath;
+                        string scLauncher = installLocation.ToString();
+                        PluginLog.Debug($"FindLauncherFromRegistry - Found in {regKey}: {scLauncher}");
+
+                        if (Directory.Exists(scLauncher))
+                        {
+                            return scLauncher;
+                        }
+                        else
+                        {
+                            PluginLog.Debug($"FindLauncherFromRegistry - Directory does not exist: {scLauncher}");
+                        }
                     }
-
-                    PluginLog.Debug("SCClientPath - Entry");
-                    PluginLog.Debug($"Using PTU: {usePTU}");
-
-                    cachedClientPath = ResolveClientPath(scp, usePTU);
-                    cachedClientPathUsePtu = usePTU;
-                    cachedClientBasePath = scp;
-                    cachedClientPathSet = true;
-                    return cachedClientPath;
                 }
+            }
+            catch (Exception ex)
+            {
+                PluginLog.Debug($"FindLauncherFromRegistry - Error checking {regKey}: {ex.Message}");
             }
         }
 
-        private static string ResolveClientPath(string scp, bool usePTU)
+        PluginLog.Debug("FindLauncherFromRegistry - No valid launcher found in registry");
+        return "";
+    }
+
+    private static string FindInstallationFromCommonPaths()
+    {
+        PluginLog.Debug("FindInstallationFromCommonPaths - Entry");
+
+        foreach (string path in COMMON_INSTALL_PATHS)
         {
-            string targetFolder = usePTU ? "PTU" : "LIVE";
+            PluginLog.Debug($"FindInstallationFromCommonPaths - Checking: {path}");
 
-            // Try Structure 1: RSI Launcher style - basepath/StarCitizen/LIVE or PTU
-            string rsiStylePath = Path.Combine(scp, "StarCitizen", targetFolder);
-            if (Directory.Exists(rsiStylePath) && File.Exists(Path.Combine(rsiStylePath, "Data.p4k")))
+            if (Directory.Exists(path) && IsValidStarCitizenInstallation(path))
             {
-                PluginLog.Info($"Using RSI style {targetFolder} installation: {rsiStylePath}");
-                return rsiStylePath;
+                PluginLog.Info($"FindInstallationFromCommonPaths - Found valid installation: {path}");
+                return path;
             }
-
-            // Try Structure 2: Direct style - basepath/LIVE or PTU (user points to StarCitizen folder)
-            string directStylePath = Path.Combine(scp, targetFolder);
-            if (Directory.Exists(directStylePath) && File.Exists(Path.Combine(directStylePath, "Data.p4k")))
-            {
-                PluginLog.Info($"Using direct style {targetFolder} installation: {directStylePath}");
-                return directStylePath;
-            }
-
-            // If PTU was requested but not found, try fallback to LIVE
-            if (usePTU)
-            {
-                PluginLog.Warn("PTU requested but not found, trying LIVE fallback");
-
-                // Try RSI style LIVE
-                rsiStylePath = Path.Combine(scp, "StarCitizen", "LIVE");
-                if (Directory.Exists(rsiStylePath) && File.Exists(Path.Combine(rsiStylePath, "Data.p4k")))
-                {
-                    PluginLog.Info($"Fallback to RSI style LIVE: {rsiStylePath}");
-                    return rsiStylePath;
-                }
-
-                // Try direct style LIVE
-                directStylePath = Path.Combine(scp, "LIVE");
-                if (Directory.Exists(directStylePath) && File.Exists(Path.Combine(directStylePath, "Data.p4k")))
-                {
-                    PluginLog.Info($"Fallback to direct style LIVE: {directStylePath}");
-                    return directStylePath;
-                }
-
-                // Try legacy PTU structure
-                string legacyPtuPath = Path.Combine(scp, "StarCitizenPTU", "LIVE");
-                if (Directory.Exists(legacyPtuPath) && File.Exists(Path.Combine(legacyPtuPath, "Data.p4k")))
-                {
-                    PluginLog.Info($"Using legacy PTU: {legacyPtuPath}");
-                    return legacyPtuPath;
-                }
-            }
-
-            PluginLog.Error($"SCClientPath - Could not find Star Citizen {targetFolder} installation in: {scp}");
-            return "";
         }
 
-        /// <summary>
-        /// Returns the SC ClientData path
-        /// AC 3.0: E:\G\StarCitizen\StarCitizen\LIVE\USER
-        /// AC 3.13: E:\G\StarCitizen\StarCitizen\LIVE\USER\Client\0
-        /// </summary>
-        static public string SCClientUSERPath
+        PluginLog.Debug("FindInstallationFromCommonPaths - No valid installation found");
+        return "";
+    }
+
+    private static bool IsValidStarCitizenInstallation(string path)
+    {
+        try
         {
-            get
+            string livePath = Path.Combine(path, "StarCitizen", "LIVE");
+            string ptuPath = Path.Combine(path, "StarCitizen", "PTU");
+
+            if (Directory.Exists(livePath))
             {
-                // SCClientUSERPath - Entry
-                string scp = SCClientPath;
-                if (string.IsNullOrEmpty(scp)) return "";
-                //
-                string scpu = Path.Combine(scp, "USER", "Client", "0"); // 20210404 new path
-                if (!Directory.Exists(scpu))
+                string dataP4k = Path.Combine(livePath, "Data.p4k");
+                if (File.Exists(dataP4k))
                 {
-                    scpu = Path.Combine(scp, "USER"); // 20210404 old path
+                    PluginLog.Debug($"IsValidStarCitizenInstallation - Found RSI style LIVE: {livePath}");
+                    return true;
                 }
+            }
 
-#if DEBUG
-                //***************************************
-                // scp += "X"; // TEST not found (COMMENT OUT FOR PRODUCTIVE BUILD)
-                //***************************************
-#endif
-                if (Directory.Exists(scpu)) return scpu;
+            if (Directory.Exists(ptuPath))
+            {
+                string dataP4k = Path.Combine(ptuPath, "Data.p4k");
+                if (File.Exists(dataP4k))
+                {
+                    PluginLog.Debug($"IsValidStarCitizenInstallation - Found RSI style PTU: {ptuPath}");
+                    return true;
+                }
+            }
 
-                // SCClientUSERPath - StarCitizen\\LIVE\\USER[\\Client\\0] subfolder does not exist
+            string directLivePath = Path.Combine(path, "LIVE");
+            string directPtuPath = Path.Combine(path, "PTU");
+
+            if (Directory.Exists(directLivePath))
+            {
+                string dataP4k = Path.Combine(directLivePath, "Data.p4k");
+                if (File.Exists(dataP4k))
+                {
+                    PluginLog.Debug($"IsValidStarCitizenInstallation - Found direct style LIVE: {directLivePath}");
+                    return true;
+                }
+            }
+
+            if (Directory.Exists(directPtuPath))
+            {
+                string dataP4k = Path.Combine(directPtuPath, "Data.p4k");
+                if (File.Exists(dataP4k))
+                {
+                    PluginLog.Debug($"IsValidStarCitizenInstallation - Found direct style PTU: {directPtuPath}");
+                    return true;
+                }
+            }
+
+            string directDataP4k = Path.Combine(path, "Data.p4k");
+            if (File.Exists(directDataP4k))
+            {
+                PluginLog.Debug($"IsValidStarCitizenInstallation - Found direct Data.p4k: {directDataP4k}");
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            PluginLog.Debug($"IsValidStarCitizenInstallation - Error checking {path}: {ex.Message}");
+        }
+
+        return false;
+    }
+
+    private static string FindInstallationFromSteamPaths()
+    {
+        PluginLog.Debug("FindInstallationFromSteamPaths - Entry");
+
+        foreach (string path in STEAM_LIBRARY_PATHS)
+        {
+            PluginLog.Debug($"FindInstallationFromSteamPaths - Checking: {path}");
+
+            if (Directory.Exists(path) && IsValidStarCitizenInstallation(path))
+            {
+                PluginLog.Info($"FindInstallationFromSteamPaths - Found valid installation: {path}");
+                return path;
+            }
+        }
+
+        PluginLog.Debug("FindInstallationFromSteamPaths - No valid installation found");
+        return "";
+    }
+
+    private static string FindInstallationFromSteamConfig()
+    {
+        PluginLog.Debug("FindInstallationFromSteamConfig - Entry");
+
+        try
+        {
+            string steamConfigPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Steam", "config", "config.vdf");
+
+            if (!File.Exists(steamConfigPath))
+            {
+                string steamPath = Environment.GetEnvironmentVariable("SteamPath");
+                if (!string.IsNullOrEmpty(steamPath))
+                {
+                    steamConfigPath = Path.Combine(steamPath, "config", "config.vdf");
+                }
+            }
+
+            if (!File.Exists(steamConfigPath))
+            {
+                PluginLog.Debug("FindInstallationFromSteamConfig - Steam config not found");
                 return "";
             }
+
+            var libraryPaths = ParseSteamConfigForLibraries(steamConfigPath);
+
+            foreach (string libraryPath in libraryPaths)
+            {
+                string scPath = Path.Combine(libraryPath, "steamapps", "common", "Star Citizen");
+                PluginLog.Debug($"FindInstallationFromSteamConfig - Checking Steam library: {scPath}");
+
+                if (IsValidStarCitizenInstallation(scPath))
+                {
+                    PluginLog.Info($"FindInstallationFromSteamConfig - Found valid installation: {scPath}");
+                    return scPath;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            PluginLog.Debug($"FindInstallationFromSteamConfig - Error: {ex.Message}");
         }
 
-        static public string SCClientProfilePath
-        {
-            get
-            {
-                if (File.Exists("appSettings.config") &&
-                    ConfigurationManager.GetSection("appSettings") is NameValueCollection appSection)
-                {
-                    if ((!string.IsNullOrEmpty(appSection["SCClientProfilePath"]) && !string.IsNullOrEmpty(Path.GetDirectoryName(appSection["SCClientProfilePath"]))))
+        PluginLog.Debug("FindInstallationFromSteamConfig - No valid installation found");
+        return "";
+    }
 
+    private static List<string> ParseSteamConfigForLibraries(string configPath)
+    {
+        List<string> libraryPaths = [];
+
+        try
+        {
+            string[] lines = File.ReadAllLines(configPath);
+            bool inSoftwareSection = false;
+            bool inSteamSection = false;
+            bool inLibraryFolders = false;
+
+            foreach (string line in lines)
+            {
+                string trimmed = line.Trim();
+
+                if (trimmed.Contains("\"Software\""))
+                {
+                    inSoftwareSection = true;
+                }
+                else if (inSoftwareSection && trimmed.Contains("\"Valve\""))
+                {
+                    inSteamSection = true;
+                }
+                else if (inSteamSection && trimmed.Contains("\"BaseInstallFolder\""))
+                {
+                    int start = trimmed.IndexOf('\'', trimmed.IndexOf('\'') + 1) + 1;
+                    int end = trimmed.LastIndexOf('\'');
+                    if (start < end)
                     {
-                        return appSection["SCClientProfilePath"];
+                        string path = trimmed[start..end];
+                        libraryPaths.Add(path.Replace("\\\\", "\\"));
                     }
                 }
+                else if (inSteamSection && trimmed.Contains("\"LibraryFolders\""))
+                {
+                    inLibraryFolders = true;
+                }
+                else if (inLibraryFolders && trimmed.Contains('{'))
+                {
+                    continue;
+                }
+                else if (inLibraryFolders && trimmed.Contains('}'))
+                {
+                    break;
+                }
+                else if (inLibraryFolders && trimmed.StartsWith('"') && trimmed.Contains('"'))
+                {
+                    int firstQuote = trimmed.IndexOf('"');
+                    int secondQuote = trimmed.IndexOf('"', firstQuote + 1);
+                    int thirdQuote = trimmed.IndexOf('"', secondQuote + 1);
 
-                // SCClientProfilePath - Entry
-                string scp = SCClientUSERPath; 
-                if (string.IsNullOrEmpty(scp)) return "";
-                //
-                scp = Path.Combine(scp, "Profiles", "default");
+                    if (thirdQuote > secondQuote)
+                    {
+                        string path = trimmed[(secondQuote + 1)..thirdQuote];
+                        libraryPaths.Add(path.Replace("\\\\", "\\"));
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            PluginLog.Debug($"ParseSteamConfigForLibraries - Error parsing config: {ex.Message}");
+        }
 
-                if (Directory.Exists(scp)) return scp;
+        return libraryPaths;
+    }
 
-                // SCClientProfilePath - Profiles default subfolder does not exist
-                return "";
+    private static string SCBasePath
+    {
+        get
+        {
+            lock (PathCacheLock)
+            {
+                if (cachedBasePathSet)
+                {
+                    return cachedBasePath;
+                }
+
+                cachedBasePath = ResolveBasePath();
+                cachedBasePathSet = true;
+                return cachedBasePath;
+            }
+        }
+    }
+
+    private static string ResolveBasePath()
+    {
+        PluginLog.Debug("SCBasePath - Entry");
+
+        string scp;
+
+        if (File.Exists("appSettings.config"))
+        {
+            try
+            {
+                var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                if (config.AppSettings.Settings["SCBasePath"] != null)
+                {
+                    scp = config.AppSettings.Settings["SCBasePath"].Value;
+                    if (!string.IsNullOrEmpty(scp) && Directory.Exists(scp) && IsValidStarCitizenInstallation(scp))
+                    {
+                        PluginLog.Info($"SCBasePath - Using user-specified path: {scp}");
+                        return scp;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                PluginLog.Debug($"SCBasePath - Error reading config: {ex.Message}");
             }
         }
 
-        /// <summary>
-        /// Returns the best-effort path to the current actionmaps.xml file.
-        /// Tries the expected profile folder first, then falls back to scanning
-        /// the USER tree (handles non-default profile folders or renamed paths).
-        /// </summary>
-        public static string ResolveActionMapsPath()
+        scp = FindInstallationFromRSILauncher();
+        if (!string.IsNullOrEmpty(scp))
         {
-            var profilePath = SCClientProfilePath;
-            if (!string.IsNullOrWhiteSpace(profilePath))
-            {
-                var candidate = Path.Combine(profilePath, "actionmaps.xml");
-                if (File.Exists(candidate))
-                {
-                    return candidate;
-                }
-            }
+            PluginLog.Info($"SCBasePath - Found via RSI Launcher config: {scp}");
+            return scp;
+        }
 
-            var userRoot = SCClientUSERPath;
-            if (!string.IsNullOrWhiteSpace(userRoot) && Directory.Exists(userRoot))
+        scp = FindLauncherFromRegistry();
+        if (!string.IsNullOrEmpty(scp))
+        {
+            var parentDir = Path.GetDirectoryName(scp);
+            if (!string.IsNullOrEmpty(parentDir) && IsValidStarCitizenInstallation(parentDir))
+            {
+                PluginLog.Info($"SCBasePath - Found via registry: {parentDir}");
+                return parentDir;
+            }
+        }
+
+        scp = FindInstallationFromCommonPaths();
+        if (!string.IsNullOrEmpty(scp))
+        {
+            PluginLog.Info($"SCBasePath - Found via common paths: {scp}");
+            return scp;
+        }
+
+        scp = FindInstallationFromSteamPaths();
+        if (!string.IsNullOrEmpty(scp))
+        {
+            PluginLog.Info($"SCBasePath - Found via Steam: {scp}");
+            return scp;
+        }
+
+        scp = FindInstallationFromSteamConfig();
+        if (!string.IsNullOrEmpty(scp))
+        {
+            PluginLog.Info($"SCBasePath - Found via Steam config: {scp}");
+            return scp;
+        }
+
+        PluginLog.Error("SCBasePath - Could not find Star Citizen installation");
+        return "";
+    }
+
+    private static bool UsePTU
+    {
+        get
+        {
+            if (File.Exists("appSettings.config"))
             {
                 try
                 {
-                    var candidates = Directory.EnumerateFiles(userRoot, "actionmaps.xml", SearchOption.AllDirectories)
-                                              .OrderByDescending(File.GetLastWriteTimeUtc)
-                                              .ToArray();
-
-                    if (candidates.Length > 0)
+                    var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+                    if (config.AppSettings.Settings["UsePTU"] != null)
                     {
-                        return candidates[0];
+                        string ptuSetting = config.AppSettings.Settings["UsePTU"].Value;
+                        if (bool.TryParse(ptuSetting, out bool usePTU))
+                        {
+                            return usePTU;
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
-                    PluginLog.Debug($"ResolveActionMapsPath scan failed: {ex.Message}");
+                    PluginLog.Debug($"Error reading UsePTU config: {ex.Message}");
                 }
             }
+
+            return TheUser.UsePTU;
+        }
+    }
+
+    public static string SCClientPath
+    {
+        get
+        {
+            string scp = SCBasePath;
+            if (string.IsNullOrEmpty(scp)) return "";
+
+            bool usePTU = UsePTU;
+
+            lock (ClientPathCacheLock)
+            {
+                if (cachedClientPathSet &&
+                    cachedClientPathUsePtu == usePTU &&
+                    string.Equals(cachedClientBasePath, scp, StringComparison.OrdinalIgnoreCase))
+                {
+                    return cachedClientPath;
+                }
+
+                PluginLog.Debug("SCClientPath - Entry");
+                PluginLog.Debug($"Using PTU: {usePTU}");
+
+                cachedClientPath = ResolveClientPath(scp, usePTU);
+                cachedClientPathUsePtu = usePTU;
+                cachedClientBasePath = scp;
+                cachedClientPathSet = true;
+                return cachedClientPath;
+            }
+        }
+    }
+
+    private static string ResolveClientPath(string scp, bool usePTU)
+    {
+        string targetFolder = usePTU ? "PTU" : "LIVE";
+
+        string rsiStylePath = Path.Combine(scp, "StarCitizen", targetFolder);
+        if (Directory.Exists(rsiStylePath) && File.Exists(Path.Combine(rsiStylePath, "Data.p4k")))
+        {
+            PluginLog.Info($"Using RSI style {targetFolder} installation: {rsiStylePath}");
+            return rsiStylePath;
+        }
+
+        string directStylePath = Path.Combine(scp, targetFolder);
+        if (Directory.Exists(directStylePath) && File.Exists(Path.Combine(directStylePath, "Data.p4k")))
+        {
+            PluginLog.Info($"Using direct style {targetFolder} installation: {directStylePath}");
+            return directStylePath;
+        }
+
+        if (usePTU)
+        {
+            PluginLog.Warn("PTU requested but not found, trying LIVE fallback");
+
+            rsiStylePath = Path.Combine(scp, "StarCitizen", "LIVE");
+            if (Directory.Exists(rsiStylePath) && File.Exists(Path.Combine(rsiStylePath, "Data.p4k")))
+            {
+                PluginLog.Info($"Fallback to RSI style LIVE: {rsiStylePath}");
+                return rsiStylePath;
+            }
+
+            directStylePath = Path.Combine(scp, "LIVE");
+            if (Directory.Exists(directStylePath) && File.Exists(Path.Combine(directStylePath, "Data.p4k")))
+            {
+                PluginLog.Info($"Fallback to direct style LIVE: {directStylePath}");
+                return directStylePath;
+            }
+
+            string legacyPtuPath = Path.Combine(scp, "StarCitizenPTU", "LIVE");
+            if (Directory.Exists(legacyPtuPath) && File.Exists(Path.Combine(legacyPtuPath, "Data.p4k")))
+            {
+                PluginLog.Info($"Using legacy PTU: {legacyPtuPath}");
+                return legacyPtuPath;
+            }
+        }
+
+        PluginLog.Error($"SCClientPath - Could not find Star Citizen {targetFolder} installation in: {scp}");
+        return "";
+    }
+
+    public static string SCClientUSERPath
+    {
+        get
+        {
+            string scp = SCClientPath;
+            if (string.IsNullOrEmpty(scp)) return "";
+
+            string scpu = Path.Combine(scp, "USER", "Client", "0");
+            if (!Directory.Exists(scpu))
+            {
+                scpu = Path.Combine(scp, "USER");
+            }
+
+            if (Directory.Exists(scpu)) return scpu;
 
             return "";
         }
+    }
 
-
-
-        /// <summary>
-        /// Returns the SC Data.p4k file path
-        /// SC Alpha 3.0: E:\G\StarCitizen\StarCitizen\LIVE\Data.p4k (contains the binary XML now)
-        /// </summary>
-        static public string SCData_p4k
+    public static string SCClientProfilePath
+    {
+        get
         {
-            get
+            if (File.Exists("appSettings.config") &&
+                ConfigurationManager.GetSection("appSettings") is NameValueCollection appSection)
             {
-                if (File.Exists("appSettings.config") &&
-                    ConfigurationManager.GetSection("appSettings") is NameValueCollection appSection)
+                if (!string.IsNullOrEmpty(appSection["SCClientProfilePath"]) && 
+                    !string.IsNullOrEmpty(Path.GetDirectoryName(appSection["SCClientProfilePath"])))
                 {
-                    if ((!string.IsNullOrEmpty(appSection["SCData_p4k"]) && File.Exists(appSection["SCData_p4k"])))
-                    {
-                        return appSection["SCData_p4k"];
-                    }
+                    return appSection["SCClientProfilePath"];
                 }
+            }
 
-                // SCDataXML_p4k - Entry
-                string scp = SCClientPath;
-                if (string.IsNullOrEmpty(scp)) return "";
-                //
-                scp = Path.Combine(scp, "Data.p4k");
-#if DEBUG
-                //***************************************
-                // scp += "X"; // TEST not found (COMMENT OUT FOR PRODUCTIVE BUILD)
-                //***************************************
-#endif
-                if (File.Exists(scp)) return scp;
+            string scp = SCClientUSERPath;
+            if (string.IsNullOrEmpty(scp)) return "";
 
-                // SCData_p4k - Data.p4k file does not exist
-                return "";
+            scp = Path.Combine(scp, "Profiles", "default");
+
+            if (Directory.Exists(scp)) return scp;
+
+            return "";
+        }
+    }
+
+    public static string ResolveActionMapsPath()
+    {
+        var profilePath = SCClientProfilePath;
+        if (!string.IsNullOrWhiteSpace(profilePath))
+        {
+            var candidate = Path.Combine(profilePath, "actionmaps.xml");
+            if (File.Exists(candidate))
+            {
+                return candidate;
             }
         }
 
-
-        private static bool ReadBoolAppSetting(string key, bool defaultValue)
+        var userRoot = SCClientUSERPath;
+        if (!string.IsNullOrWhiteSpace(userRoot) && Directory.Exists(userRoot))
         {
             try
             {
-                if (File.Exists("appSettings.config") &&
-                    ConfigurationManager.GetSection("appSettings") is NameValueCollection appSection)
+                var candidates = Directory.EnumerateFiles(userRoot, "actionmaps.xml", SearchOption.AllDirectories)
+                                          .OrderByDescending(File.GetLastWriteTimeUtc)
+                                          .ToArray();
+
+                if (candidates.Length > 0)
                 {
-                    var raw = appSection[key];
-                    if (!string.IsNullOrWhiteSpace(raw) && bool.TryParse(raw, out var value))
-                    {
-                        return value;
-                    }
+                    return candidates[0];
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // ignored
+                PluginLog.Debug($"ResolveActionMapsPath scan failed: {ex.Message}");
             }
-
-            return defaultValue;
         }
 
-
-        /// <summary>
-        /// Optional behavior fix: if actionmaps.xml contains an explicit blank rebind (e.g. kb1_ with nothing after the underscore),
-        /// treat it as an explicit UNBIND instead of ignoring it.
-        /// Default: false (legacy behavior).
-        /// </summary>
-        public static bool TreatBlankRebindAsUnbound => ReadBoolAppSetting("TreatBlankRebindAsUnbound", false);
-
-        /// <summary>
-        /// Optional safety fix: unknown SC key tokens should not silently map to Escape.
-        /// If enabled, unknown tokens are displayed as-is, and sending will skip them.
-        /// Default: true (safer to avoid unintended Escape fallbacks).
-        /// </summary>
-        public static bool SafeUnknownKeyTokens => ReadBoolAppSetting("SafeUnknownKeyTokens", true);
-
-        /// <summary>
-        /// Optional feature: allow mouse tokens (mouse1/mwheelup/...) to be sent via InputSimulator.
-        /// Default: true (more convenient; can be disabled via appsettings.config).
-        /// </summary>
-        public static bool EnableMouseOutput => ReadBoolAppSetting("EnableMouseOutput", true);
-
-        /// <summary>
-        /// Enable detailed input diagnostics logging (macro parsing, keystroke details, dispatcher previews).
-        /// Default: false.
-        /// </summary>
-        public static bool DetailedInputDiagnostics => ReadBoolAppSetting("DetailedInputDiagnostics", false);
-
-        /// <summary>
-        /// Enable mouse wheel coalescing to reduce log noise. Default: true.
-        /// </summary>
-        public static bool CoalesceMouseWheel => ReadBoolAppSetting("CoalesceMouseWheel", true);
+        return "";
     }
+
+    public static string SCData_p4k
+    {
+        get
+        {
+            if (File.Exists("appSettings.config") &&
+                ConfigurationManager.GetSection("appSettings") is NameValueCollection appSection)
+            {
+                if (!string.IsNullOrEmpty(appSection["SCData_p4k"]) && File.Exists(appSection["SCData_p4k"]))
+                {
+                    return appSection["SCData_p4k"];
+                }
+            }
+
+            string scp = SCClientPath;
+            if (string.IsNullOrEmpty(scp)) return "";
+
+            scp = Path.Combine(scp, "Data.p4k");
+
+            if (File.Exists(scp)) return scp;
+
+            return "";
+        }
+    }
+
+    private static bool ReadBoolAppSetting(string key, bool defaultValue)
+    {
+        try
+        {
+            if (File.Exists("appSettings.config") &&
+                ConfigurationManager.GetSection("appSettings") is NameValueCollection appSection)
+            {
+                var raw = appSection[key];
+                if (!string.IsNullOrWhiteSpace(raw) && bool.TryParse(raw, out var value))
+                {
+                    return value;
+                }
+            }
+        }
+        catch
+        {
+            // ignored
+        }
+
+        return defaultValue;
+    }
+
+    public static bool TreatBlankRebindAsUnbound => ReadBoolAppSetting("TreatBlankRebindAsUnbound", false);
+
+    public static bool SafeUnknownKeyTokens => ReadBoolAppSetting("SafeUnknownKeyTokens", true);
+
+    public static bool EnableMouseOutput => ReadBoolAppSetting("EnableMouseOutput", true);
+
+    public static bool DetailedInputDiagnostics => ReadBoolAppSetting("DetailedInputDiagnostics", false);
+
+    public static bool CoalesceMouseWheel => ReadBoolAppSetting("CoalesceMouseWheel", true);
 }

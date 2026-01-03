@@ -1,19 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
-namespace starcitizen.SC
+namespace starcitizen.SC;
+
+/// <summary>
+/// Language-specific key-value dictionary for UI text localization.
+/// </summary>
+class SCLocale(string lang) : Dictionary<string, string>
 {
-  class SCLocale : Dictionary<string,string>
-  {
-
-    public string Language { get; set; } // easier for debuging if knowing the expected language
-
-    public  SCLocale(string lang )
-    {
-      Language = lang;
-    }
-  }
+    /// <summary>
+    /// The language code for debugging purposes.
+    /// </summary>
+    public string Language { get; set; } = lang;
 }

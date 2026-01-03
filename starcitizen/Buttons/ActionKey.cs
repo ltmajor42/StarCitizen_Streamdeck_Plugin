@@ -24,7 +24,7 @@ namespace starcitizen.Buttons
         /// </summary>
         protected class PluginSettings : PluginSettingsBase
         {
-            public static PluginSettings CreateDefaultSettings() => new PluginSettings();
+            public static PluginSettings CreateDefaultSettings() => new();
         }
 
         #endregion
@@ -96,15 +96,6 @@ namespace starcitizen.Buttons
             
             LoadClickSoundFromSettings(settings);
             Connection.SetSettingsAsync(JObject.FromObject(settings)).Wait();
-        }
-
-        #endregion
-
-        #region Disposal
-
-        public override void Dispose()
-        {
-            base.Dispose();
         }
 
         #endregion
