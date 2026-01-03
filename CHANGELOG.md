@@ -3,6 +3,23 @@
 All notable changes to this repository are documented below. Unreleased changes appear at the top.
 
 
+## [2.0.7]
+
+### Added
+- Clear-search UI for function search fields across Property Inspectors (explicit × button to clear queries).
+- `clearSearch()` and `updateClearSearchButton()` helpers to manage clear-button behavior and visibility.
+- Dropdown refresh on select interactions (mousedown / click / focus) so opening a select with an empty search reliably shows the full list.
+
+### Changed
+- Preserve user search text when a function is selected; users must clear explicitly (via × or editing).
+- Use HTML entity `&times;` for the clear glyph to improve cross-host rendering.
+
+### Fixed
+- Repaired truncated / broken `DOMContentLoaded` handler in `Repeataction.html` that prevented the function list from being populated.
+- Restored missing clear-search helpers and wiring in `Momentary.html`, `Repeataction.html`, and `HoldMacroAction.html`.
+- Ensured file-picker clear buttons (`updateClearButtons()`) remain functional when shared init is skipped.
+
+
 ## [2.0.6]
 
 ### Changes

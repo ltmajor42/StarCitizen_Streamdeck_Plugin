@@ -63,6 +63,7 @@
                        id="functionSearch"
                        placeholder="Type to search functions..."
                        autocomplete="off">
+                <button id="btnClearSearch" class="sdpi-clear-button hidden" onclick="clearSearch()" title="Clear search" style="margin-left:6px;padding:3px 8px;height:28px;">&times;</button>
             </div>
             <div class="sdpi-item-value"
                  id="searchResults"
@@ -172,6 +173,22 @@
     let functionsLoaded = false;
     let savedFunctionValue = null;
 
+    function clearSearch() {
+        const s = document.getElementById('functionSearch');
+        if (!s) return;
+        s.value = '';
+        try { filterOptions(); } catch (e) { }
+        s.focus();
+        updateClearSearchButton();
+    }
+
+    function updateClearSearchButton() {
+        const s = document.getElementById('functionSearch');
+        const b = document.getElementById('btnClearSearch');
+        if (!b || !s) return;
+        b.classList.toggle('hidden', !s.value);
+    }
+
     /* Preserve selected function if payload arrives before functions list */
     const originalLoadConfiguration = loadConfiguration;
     loadConfiguration = function (payload) {
@@ -223,6 +240,7 @@
         if (savedFunctionValue) select.value = savedFunctionValue;
 
         filterOptions();
+        updateClearSearchButton();
     }
 
     // Hide/show option rows and display no-results banner + helper text
@@ -250,6 +268,8 @@
         searchResults.textContent = term
             ? `Found ${visibleGroups} group${visibleGroups !== 1 ? 's' : ''}`
             : '';
+
+        updateClearSearchButton();
     }
 
     /* Hook into websocket to receive function list */
@@ -278,18 +298,23 @@
             searchEl.addEventListener('input', function () {
                 clearTimeout(this.searchTimeout);
                 this.searchTimeout = setTimeout(filterOptions, 150);
+                updateClearSearchButton();
             });
         }
 
         const funcEl = document.getElementById('function');
         if (funcEl) {
-            funcEl.addEventListener('change', function () {
-                const s = document.getElementById('functionSearch'); if (s) s.value = '';
-                const r = document.getElementById('searchResults'); if (r) r.textContent = '';
-            });
+            // Do not clear the search on selection change (keeps user input intact until they clear it)
+            // Existing select has onchange="setSettings()" so no JS handler needed here.
+
+            // Ensure dropdown refreshes when opened so an empty search shows all options
+            const refreshFilter = function () { try { filterOptions(); } catch (e) { } try { setTimeout(filterOptions, 10); } catch (e) { } };
+            funcEl.addEventListener('mousedown', refreshFilter);
+            funcEl.addEventListener('click', refreshFilter);
+            funcEl.addEventListener('focus', refreshFilter);
         }
 
-        // Ensure clear-button visibility and filename label update work even if shared init is skipped
+        // Ensure clear-button visibility and filename label update work even if shared init was skipped
         const fileInput = document.getElementById('clickSound');
         if (fileInput) {
             fileInput.addEventListener('change', function () {

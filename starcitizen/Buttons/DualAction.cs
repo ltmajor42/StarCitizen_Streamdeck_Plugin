@@ -9,19 +9,23 @@ using starcitizen.Core;
 
 namespace starcitizen.Buttons
 {
+    /// <summary>
+    /// Dual Action button - sends different keybindings on press vs release.
+    /// Press triggers Action A, Release triggers Action B.
+    /// </summary>
     [PluginActionId("com.ltmajor42.starcitizen.dualaction")]
     public class DualAction : StarCitizenKeypadBase
     {
+        // ============================================================
+        // REGION: Settings
+        // ============================================================
         protected class PluginSettings
         {
-            public static PluginSettings CreateDefaultSettings()
+            public static PluginSettings CreateDefaultSettings() => new PluginSettings
             {
-                return new PluginSettings
-                {
-                    DownFunction = string.Empty,
-                    UpFunction = string.Empty
-                };
-            }
+                DownFunction = string.Empty,
+                UpFunction = string.Empty
+            };
 
             [JsonProperty(PropertyName = "downFunction")]
             public string DownFunction { get; set; }
@@ -34,12 +38,17 @@ namespace starcitizen.Buttons
             public string ClickSoundFilename { get; set; }
         }
 
-        private PluginSettings settings;
+        // ============================================================
+        // REGION: State
+        // ============================================================
+        private readonly PluginSettings settings;
         private CachedSound _clickSound;
         private readonly KeyBindingService bindingService = KeyBindingService.Instance;
 
-        public DualAction(SDConnection connection, InitialPayload payload)
-            : base(connection, payload)
+        // ============================================================
+        // REGION: Initialization
+        // ============================================================
+        public DualAction(SDConnection connection, InitialPayload payload) : base(connection, payload)
         {
             if (payload.Settings == null || payload.Settings.Count == 0)
             {
@@ -59,6 +68,9 @@ namespace starcitizen.Buttons
             UpdatePropertyInspector();
         }
 
+        // ============================================================
+        // REGION: Key Events
+        // ============================================================
         public override void KeyPressed(KeyPayload payload)
         {
             if (bindingService.Reader == null)
@@ -68,8 +80,7 @@ namespace starcitizen.Buttons
             }
 
             StreamDeckCommon.ForceStop = false;
-
-            SendDownAction();
+            SendAction(settings.DownFunction);
             _ = Connection.SetStateAsync(1);
             PlayClickSound();
         }
@@ -83,57 +94,59 @@ namespace starcitizen.Buttons
             }
 
             StreamDeckCommon.ForceStop = false;
-
-            SendUpAction();
+            SendAction(settings.UpFunction);
             _ = Connection.SetStateAsync(0);
         }
 
-        private void SendDownAction()
+        private void SendAction(string function)
         {
-            if (!bindingService.TryGetBinding(settings.DownFunction, out var action))
-            {
-                return;
-            }
+            if (!bindingService.TryGetBinding(function, out var action)) return;
 
-            StreamDeckCommon.SendKeypressDown(CommandTools.ConvertKeyString(action.Keyboard));
+            var converted = CommandTools.ConvertKeyString(action.Keyboard);
+            if (!string.IsNullOrWhiteSpace(converted))
+            {
+                StreamDeckCommon.SendKeypress(converted, 40);
+            }
         }
 
-        private void SendUpAction()
-        {
-            if (bindingService.TryGetBinding(settings.DownFunction, out var downAction))
-            {
-                StreamDeckCommon.SendKeypressUp(CommandTools.ConvertKeyString(downAction.Keyboard));
-            }
-
-            if (!bindingService.TryGetBinding(settings.UpFunction, out var upAction) || settings.UpFunction == settings.DownFunction)
-            {
-                return;
-            }
-
-            StreamDeckCommon.SendKeypress(CommandTools.ConvertKeyString(upAction.Keyboard), 40);
-        }
-
+        // ============================================================
+        // REGION: Settings Management
+        // ============================================================
         public override void ReceivedSettings(ReceivedSettingsPayload payload)
         {
             Tools.AutoPopulateSettings(settings, payload.Settings);
             LoadClickSound();
         }
 
-        private void Connection_OnPropertyInspectorDidAppear(object sender, EventArgs e)
+        private void LoadClickSound()
         {
-            UpdatePropertyInspector();
+            _clickSound = null;
+            if (!string.IsNullOrEmpty(settings.ClickSoundFilename) && File.Exists(settings.ClickSoundFilename))
+            {
+                try { _clickSound = new CachedSound(settings.ClickSoundFilename); }
+                catch { settings.ClickSoundFilename = null; }
+            }
         }
+
+        private void PlayClickSound()
+        {
+            if (_clickSound == null) return;
+            try { AudioPlaybackEngine.Instance.PlaySound(_clickSound); }
+            catch { /* intentionally ignore */ }
+        }
+
+        // ============================================================
+        // REGION: Property Inspector
+        // ============================================================
+        private void Connection_OnPropertyInspectorDidAppear(object sender, EventArgs e) => UpdatePropertyInspector();
 
         private void Connection_OnSendToPlugin(object sender, EventArgs e)
         {
             try
             {
                 var payload = e.ExtractPayload();
-
                 if (payload?["property_inspector"]?.ToString() == "propertyInspectorConnected")
-                {
                     UpdatePropertyInspector();
-                }
             }
             catch (Exception ex)
             {
@@ -141,56 +154,17 @@ namespace starcitizen.Buttons
             }
         }
 
-        private void OnKeyBindingsLoaded(object sender, EventArgs e)
-        {
-            UpdatePropertyInspector();
-        }
+        private void OnKeyBindingsLoaded(object sender, EventArgs e) => UpdatePropertyInspector();
 
         private void UpdatePropertyInspector()
         {
-            if (bindingService.Reader == null)
-            {
-                return;
-            }
-
+            if (bindingService.Reader == null) return;
             PropertyInspectorMessenger.SendFunctionsAsync(Connection);
         }
 
-        private void LoadClickSound()
-        {
-            _clickSound = null;
-
-            if (!string.IsNullOrEmpty(settings.ClickSoundFilename) &&
-                File.Exists(settings.ClickSoundFilename))
-            {
-                try
-                {
-                    _clickSound = new CachedSound(settings.ClickSoundFilename);
-                }
-                catch
-                {
-                    settings.ClickSoundFilename = null;
-                }
-            }
-        }
-
-        private void PlayClickSound()
-        {
-            if (_clickSound == null)
-            {
-                return;
-            }
-
-            try
-            {
-                AudioPlaybackEngine.Instance.PlaySound(_clickSound);
-            }
-            catch
-            {
-                // intentionally ignore
-            }
-        }
-
+        // ============================================================
+        // REGION: Disposal
+        // ============================================================
         public override void Dispose()
         {
             Connection.OnPropertyInspectorDidAppear -= Connection_OnPropertyInspectorDidAppear;

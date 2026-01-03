@@ -9,12 +9,27 @@ using SCJMapper_V2.SC;
 namespace starcitizen.Core
 {
     /// <summary>
-    /// Centralized management of Star Citizen key bindings, including loading,
-    /// caching, and watching the profile for changes. All actions read bindings
-    /// from this service instead of touching the loader directly.
+    /// Centralized management of Star Citizen key bindings.
+    /// Handles loading, caching, and watching the profile for changes.
+    /// All button actions read bindings from this service instead of touching the loader directly.
     /// </summary>
+    /// <remarks>
+    /// This is a singleton service that:
+    /// - Loads bindings from defaultProfile.xml (base layer from Data.p4k)
+    /// - Applies actionmaps.xml overrides (user customizations)
+    /// - Watches for actionmaps.xml changes and triggers reload
+    /// - Raises KeyBindingsLoaded event when bindings are refreshed
+    /// </remarks>
     public sealed class KeyBindingService : IDisposable
     {
+        // ============================================================
+        // REGION: Singleton Instance
+        // ============================================================
+        public static KeyBindingService Instance { get; } = new KeyBindingService();
+
+        // ============================================================
+        // REGION: Thread Safety and State
+        // ============================================================
         private readonly FifoExecution loadQueue = new FifoExecution();
         private readonly object syncLock = new object();
 
@@ -24,22 +39,28 @@ namespace starcitizen.Core
         private bool enableCsvExport;
         private int bindingsVersion;
 
+        // ============================================================
+        // REGION: Public API
+        // ============================================================
+        
+        /// <summary>Raised when key bindings are loaded or reloaded.</summary>
         public event EventHandler KeyBindingsLoaded;
 
-        public static KeyBindingService Instance { get; } = new KeyBindingService();
-
+        /// <summary>The current binding reader. May be null if not yet initialized.</summary>
         public DProfileReader Reader { get; private set; }
 
+        /// <summary>Incremented each time bindings are successfully loaded. Used for cache invalidation.</summary>
         public int Version => bindingsVersion;
 
+        /// <summary>
+        /// Initializes the service. Must be called once at plugin startup.
+        /// Triggers initial binding load and starts file watching.
+        /// </summary>
         public void Initialize()
         {
             lock (syncLock)
             {
-                if (initialized)
-                {
-                    return;
-                }
+                if (initialized) return;
 
                 enableCsvExport = ReadCsvFlagFromConfig();
                 initialized = true;
@@ -47,24 +68,26 @@ namespace starcitizen.Core
 
             PluginLog.Info($"CSV export setting: {(enableCsvExport ? "enabled" : "disabled")}");
             SCFiles.Instance.UpdatePack();
-
             QueueReload();
         }
 
+        /// <summary>Queues a reload of bindings on a background thread.</summary>
         public void QueueReload()
         {
             loadQueue.QueueUserWorkItem(_ => LoadBindings(), null);
         }
 
+        /// <summary>
+        /// Attempts to retrieve a binding by function name.
+        /// </summary>
+        /// <param name="functionName">The function name (e.g., "spaceship_flight-v_pitch")</param>
+        /// <param name="action">The action containing binding info if found</param>
+        /// <returns>True if binding exists, false otherwise</returns>
         public bool TryGetBinding(string functionName, out DProfileReader.Action action)
         {
             action = null;
-
             var reader = Reader;
-            if (reader == null || string.IsNullOrWhiteSpace(functionName))
-            {
-                return false;
-            }
+            if (reader == null || string.IsNullOrWhiteSpace(functionName)) return false;
 
             action = reader.GetBinding(functionName);
             return action != null;
@@ -72,15 +95,14 @@ namespace starcitizen.Core
 
         public void Dispose()
         {
-            if (disposed)
-            {
-                return;
-            }
-
+            if (disposed) return;
             disposed = true;
             StopWatcher();
         }
 
+        // ============================================================
+        // REGION: Binding Loading
+        // ============================================================
         private void LoadBindings()
         {
             try
@@ -94,9 +116,9 @@ namespace starcitizen.Core
                     return;
                 }
 
-                // Build a fresh reader first (do NOT overwrite current Reader unless successful)
+                // Build a fresh reader (don't overwrite current Reader unless successful)
                 var newReader = new DProfileReader();
-                newReader.fromXML(profile);
+                newReader.FromXML(profile);
 
                 // Apply actionmaps.xml with retry (handles SC writing/flush timing)
                 if (!TryApplyActionMapsWithRetry(newReader))
@@ -108,7 +130,7 @@ namespace starcitizen.Core
                 newReader.Actions();
                 newReader.CreateCsv(enableCsvExport);
 
-                // Success => swap
+                // Success => swap reader reference
                 Reader = newReader;
 
                 Interlocked.Increment(ref bindingsVersion);
@@ -126,6 +148,10 @@ namespace starcitizen.Core
             }
         }
 
+        /// <summary>
+        /// Attempts to apply actionmaps.xml with exponential backoff retry.
+        /// Handles race conditions when SC is still writing the file.
+        /// </summary>
         private static bool TryApplyActionMapsWithRetry(DProfileReader reader, int maxAttempts = 8, int baseDelayMs = 180)
         {
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
@@ -133,27 +159,27 @@ namespace starcitizen.Core
                 var actionmaps = SCDefaultProfile.ActionMaps(out var actionmapsPath);
                 if (string.IsNullOrEmpty(actionmaps))
                 {
-                    // No actionmaps.xml (or empty) => nothing to apply
                     PluginLog.Warn($"actionmaps.xml missing or empty at '{actionmapsPath ?? "(unknown)"}'. Keeping previous bindings.");
-                    return true;
+                    return true; // No actionmaps = nothing to apply (not an error)
                 }
 
                 try
                 {
-                    reader.fromActionProfile(actionmaps);
+                    reader.FromActionProfile(actionmaps);
                     return true; // success
                 }
                 catch (Exception ex)
                 {
-                    // Common when SC is still flushing the file (partial/incomplete XML)
                     PluginLog.Warn($"actionmaps.xml parse failed (attempt {attempt}/{maxAttempts}). Retrying... {ex.Message}");
-                    Thread.Sleep(baseDelayMs * attempt); // small backoff
+                    Thread.Sleep(baseDelayMs * attempt); // exponential backoff
                 }
             }
-
             return false;
         }
 
+        // ============================================================
+        // REGION: File Watching
+        // ============================================================
         private void MonitorProfileDirectory(bool forceRestart = false)
         {
             var profilePath = SCPath.SCClientProfilePath;
@@ -167,11 +193,7 @@ namespace starcitizen.Core
             {
                 if (!forceRestart && watcher != null)
                 {
-                    if (!watcher.EnableRaisingEvents)
-                    {
-                        watcher.StartWatching();
-                    }
-
+                    if (!watcher.EnableRaisingEvents) watcher.StartWatching();
                     return;
                 }
 
@@ -192,42 +214,18 @@ namespace starcitizen.Core
 
         private void Watcher_OnError(object sender, ErrorEventArgs e)
         {
-            PluginLog.Warn($"Key binding watcher encountered an error: {e.GetException()?.Message ?? "unknown"}. Restarting watcher.");
+            PluginLog.Warn($"Key binding watcher error: {e.GetException()?.Message ?? "unknown"}. Restarting watcher.");
             MonitorProfileDirectory(forceRestart: true);
         }
 
         private void StopWatcher()
         {
-            lock (syncLock)
-            {
-                StopWatcherInternal();
-            }
-        }
-
-        private static bool ReadCsvFlagFromConfig()
-        {
-            try
-            {
-                var csvSetting = ConfigurationManager.AppSettings["EnableCsvExport"];
-                if (bool.TryParse(csvSetting, out var parsed))
-                {
-                    return parsed;
-                }
-            }
-            catch (Exception ex)
-            {
-                PluginLog.Warn($"Could not read CSV export setting, defaulting to disabled. {ex.Message}");
-            }
-
-            return false;
+            lock (syncLock) { StopWatcherInternal(); }
         }
 
         private void StopWatcherInternal()
         {
-            if (watcher == null)
-            {
-                return;
-            }
+            if (watcher == null) return;
 
             try
             {
@@ -237,13 +235,30 @@ namespace starcitizen.Core
             }
             catch (Exception ex)
             {
-                PluginLog.Error($"Error while stopping watcher: {ex.Message}");
+                PluginLog.Error($"Error stopping watcher: {ex.Message}");
             }
             finally
             {
                 watcher.Dispose();
                 watcher = null;
             }
+        }
+
+        // ============================================================
+        // REGION: Configuration Helpers
+        // ============================================================
+        private static bool ReadCsvFlagFromConfig()
+        {
+            try
+            {
+                var csvSetting = ConfigurationManager.AppSettings["EnableCsvExport"];
+                if (bool.TryParse(csvSetting, out var parsed)) return parsed;
+            }
+            catch (Exception ex)
+            {
+                PluginLog.Warn($"Could not read CSV export setting, defaulting to disabled. {ex.Message}");
+            }
+            return false;
         }
     }
 }

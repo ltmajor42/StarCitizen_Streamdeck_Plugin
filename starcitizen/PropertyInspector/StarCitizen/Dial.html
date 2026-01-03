@@ -33,6 +33,7 @@
             <div class="sdpi-item-label empty"></div>
             <div class="sdpi-item-value search-row">
                 <input type="text" class="sdpi-item-value" id="functionSearch" placeholder="Type to search functions..." autocomplete="off">
+                <button id="btnClearSearch" class="sdpi-clear-button hidden" onclick="clearSearch()" title="Clear search" style="margin-left:6px;padding:3px 8px;height:28px;">&times;</button>
             </div>
             <div class="sdpi-item-value" id="searchResults" style="font-size: 11px; color: #999; margin-top: 0;"></div>
         </div>
@@ -225,6 +226,7 @@
         const term = document.getElementById('functionSearch').value.toLowerCase().trim();
         const noResults = document.getElementById('noResults');
         const searchResults = document.getElementById('searchResults');
+
         const visibleLabels = new Set();
 
         allOptions.forEach(o => {
@@ -249,6 +251,18 @@
         searchResults.textContent = term ? `Found ${count} group${count !== 1 ? 's' : ''}` : '';
     }
 
+    function clearSearch() {
+        document.getElementById('functionSearch').value = '';
+        filterOptions();
+        updateClearSearchButton();
+    }
+
+    function updateClearSearchButton() {
+        const searchInput = document.getElementById('functionSearch');
+        const clearButton = document.getElementById('btnClearSearch');
+        clearButton.classList.toggle('hidden', !searchInput.value.trim());
+    }
+
     document.addEventListener('websocketCreate', function () {
         const originalOnMessage = websocket.onmessage;
         websocket.onmessage = function (evt) {
@@ -264,13 +278,18 @@
         document.getElementById('functionSearch').addEventListener('input', function () {
             clearTimeout(this.searchTimeout);
             this.searchTimeout = setTimeout(filterOptions, 150);
+            updateClearSearchButton();
         });
 
         document.querySelectorAll('.function-select').forEach(sel => {
             sel.addEventListener('change', function () {
                 document.getElementById('functionSearch').value = '';
                 document.getElementById('searchResults').textContent = '';
+                try { filterOptions(); } catch (e) { }
             });
+
+            sel.addEventListener('mousedown', function () { try { filterOptions(); } catch (e) { } });
+            sel.addEventListener('focus', function () { try { filterOptions(); } catch (e) { } });
         });
 
         updateClearButtons();

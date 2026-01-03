@@ -4,8 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 using p4ktest.SC;
 using SCJMapper_V2.p4kFile;
+using starcitizen.Core;
 
 namespace SCJMapper_V2.SC
 {
@@ -14,11 +16,11 @@ namespace SCJMapper_V2.SC
         public enum Languages
         {
             profile = 0, // use profile texts
-            english // must be the one used in the game assets.. Data\Localization\<lang>
+            english // must be the one used in the game assets.. Data\\Localization\\<lang>
         }
 
 
-        private SCLocale[] m_locales =
+        private readonly SCLocale[] m_locales =
         {
             new SCLocale(Languages.profile
                 .ToString()), // creates an empty one and will return the default(profile string) later
@@ -26,6 +28,9 @@ namespace SCJMapper_V2.SC
         }; // add supported languages
 
         private Languages m_language = Languages.english;
+
+        // One-time rate limiter: remember which (language,label) failures have already been logged to avoid flooding
+        private static readonly ConcurrentDictionary<string, byte> s_loggedFailures = new ConcurrentDictionary<string, byte>();
 
         /// <summary>
         /// Set the language to be used
@@ -72,35 +77,33 @@ namespace SCJMapper_V2.SC
                 {
                     string fContent = SCFiles.Instance.LangFile(fileKey);
 
-                    using (TextReader sr = new StringReader(fContent))
+                    using TextReader sr = new StringReader(fContent);
+                    string line = sr.ReadLine();
+                    while (line != null)
                     {
-                        string line = sr.ReadLine();
-                        while (line != null)
+                        int epo = line.IndexOf('=');
+                        string tag = "";
+                        string content = "";
+                        if (epo >= 0)
                         {
-                            int epo = line.IndexOf('=');
-                            string tag = "";
-                            string content = "";
-                            if (epo >= 0)
+                            tag = line.Substring(0, epo);
+                            if (line.Length >= (epo + 1))
                             {
-                                tag = line.Substring(0, epo);
-                                if (line.Length >= (epo + 1))
-                                {
-                                    content = line.Substring(epo + 1);
-                                }
-
-                                if (tag.StartsWith("ui_", StringComparison.InvariantCultureIgnoreCase))
-                                {
-                                    // seems all strings we may need are ui_Cxyz
-                                    m_locales[(int) fileLang].Add("@" + tag, content); // cAT is prepending the tags
-                                }
+                                content = line.Substring(epo + 1);
                             }
 
-                            line = sr.ReadLine();
-                        } // while
-                    }
-                }
-            } // all files
-        }
+                            if (tag.StartsWith("ui_", StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                // seems all strings we may need are ui_Cxyz
+                                m_locales[(int) fileLang].Add("@" + tag, content); // cAT is prepending the tags
+                            }
+                        }
+
+                        line = sr.ReadLine();
+                    } // while
+                 }
+             } // all files
+         }
 
         /// <summary>
         /// Returns the content from the UILabel in the set Language
@@ -110,6 +113,25 @@ namespace SCJMapper_V2.SC
         /// <returns>A text string</returns>
         public string Text(string UILabel, string defaultS)
         {
+            // Guard against null/empty label to avoid Dictionary operations with null key
+            if (string.IsNullOrEmpty(UILabel))
+            {
+                try
+                {
+                    string key = $"{m_language}:<empty_label>";
+                    if (s_loggedFailures.TryAdd(key, 0))
+                    {
+                        PluginLog.Warn($"SCLocale - Empty or null UILabel requested for language {m_language}. Returning default.");
+                    }
+                }
+                catch
+                {
+                    // swallow
+                }
+
+                return defaultS;
+            }
+
             try
             {
                 string retVal = "";
@@ -129,9 +151,22 @@ namespace SCJMapper_V2.SC
 
                 return retVal.Replace("Â", "").Trim();
             }
-            catch
+            catch (Exception ex)
             {
-                //Logger.Instance.LogMessage(TracingLevel.DEBUG, "SCLocale - Language not valid ??!!" );
+                // One-time rate-limited warn: only log the first time this language+label fails to avoid flooding the log
+                try
+                {
+                    string key = $"{m_language}:{UILabel}";
+                    if (s_loggedFailures.TryAdd(key, 0))
+                    {
+                        // Log as Warn for visibility but avoid repeated entries
+                        PluginLog.Warn($"SCLocale - Language not valid ({m_language}) for label '{UILabel}': {ex.Message}");
+                    }
+                }
+                catch
+                {
+                    // swallow logging errors to avoid cascading failures
+                }
             }
 
             return defaultS;
