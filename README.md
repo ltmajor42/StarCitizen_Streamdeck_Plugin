@@ -5,6 +5,8 @@
 > 🔗 **Updated fork of [mhwlng/streamdeck-starcitizen](https://github.com/mhwlng/streamdeck-starcitizen)**  
 > Maintained by **Ltmajor42**. Original code by **mhwlng** with in-game binding discovery provided by **SCJMapper** assets. This fork adds auto-detection, search, refactors, and stability fixes.
 
+## Users with profiles from the original mhwlng plugin no longer need to reconfigure their buttons
+
 ---
 
 ## 📚 Documentation
