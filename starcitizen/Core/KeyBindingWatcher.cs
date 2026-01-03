@@ -5,18 +5,36 @@ using starcitizen.Core;
 
 namespace starcitizen.Core
 {
+    /// <summary>
+    /// Watches for changes to the Star Citizen actionmaps.xml file.
+    /// Uses FileSystemWatcher combined with polling and hash comparison
+    /// to reliably detect when bindings have changed.
+    /// </summary>
     public class KeyBindingWatcher : FileSystemWatcher
     {
+        // ============================================================
+        // REGION: Events
+        // ============================================================
+        
+        /// <summary>Raised when actionmaps.xml has been modified.</summary>
         public event EventHandler KeyBindingUpdated;
 
+        // ============================================================
+        // REGION: Configuration
+        // ============================================================
+        private const int DebounceDelayMs = 200;
+        private const int PollIntervalMs = 1500;
+
+        // ============================================================
+        // REGION: State
+        // ============================================================
         private readonly Timer debounceTimer;
         private readonly Timer pollTimer;
         private readonly object debounceLock = new object();
         private readonly string targetFilePath;
         private FileSignature lastSignature;
-        private const int DebounceDelayMs = 200;
-        private const int PollIntervalMs = 1500;
 
+        /// <summary>Tracks file identity using multiple attributes for reliable change detection.</summary>
         private class FileSignature
         {
             public DateTime? WriteTimeUtc { get; set; }
@@ -25,17 +43,16 @@ namespace starcitizen.Core
 
             public bool Equals(FileSignature other)
             {
-                if (other == null)
-                {
-                    return false;
-                }
-
+                if (other == null) return false;
                 return WriteTimeUtc == other.WriteTimeUtc &&
                        Length == other.Length &&
                        string.Equals(Hash, other.Hash, StringComparison.Ordinal);
             }
         }
 
+        // ============================================================
+        // REGION: Initialization
+        // ============================================================
         public KeyBindingWatcher(string path, string fileName)
         {
             Filter = fileName;
@@ -47,6 +64,11 @@ namespace starcitizen.Core
             pollTimer = new Timer(_ => PollForChanges(), null, Timeout.Infinite, Timeout.Infinite);
         }
 
+        // ============================================================
+        // REGION: Public API
+        // ============================================================
+        
+        /// <summary>Starts watching for file changes.</summary>
         public virtual void StartWatching()
         {
             if (EnableRaisingEvents)
@@ -66,6 +88,7 @@ namespace starcitizen.Core
             pollTimer.Change(PollIntervalMs, PollIntervalMs);
         }
 
+        /// <summary>Stops watching for file changes.</summary>
         public virtual void StopWatching()
         {
             try
@@ -87,11 +110,13 @@ namespace starcitizen.Core
             }
             catch (Exception e)
             {
-                PluginLog.Error($"Error while stopping Status watcher: {e.Message}");
-                PluginLog.Info(e.StackTrace);
+                PluginLog.Error($"Error stopping watcher: {e.Message}");
             }
         }
 
+        // ============================================================
+        // REGION: Event Handlers
+        // ============================================================
         protected void UpdateStatus(object sender, FileSystemEventArgs e)
         {
             TouchLastWriteTimestamp();
@@ -104,6 +129,9 @@ namespace starcitizen.Core
             ScheduleUpdate();
         }
 
+        // ============================================================
+        // REGION: Update Scheduling
+        // ============================================================
         private void ScheduleUpdate()
         {
             lock (debounceLock)
@@ -124,6 +152,9 @@ namespace starcitizen.Core
             }
         }
 
+        // ============================================================
+        // REGION: Polling (Fallback for missed events)
+        // ============================================================
         private void PollForChanges()
         {
             try
@@ -132,10 +163,7 @@ namespace starcitizen.Core
 
                 lock (debounceLock)
                 {
-                    if (currentSignature.Equals(lastSignature))
-                    {
-                        return;
-                    }
+                    if (currentSignature.Equals(lastSignature)) return;
 
                     lastSignature = currentSignature;
                     debounceTimer.Change(DebounceDelayMs, Timeout.Infinite);
@@ -162,24 +190,26 @@ namespace starcitizen.Core
             }
         }
 
+        // ============================================================
+        // REGION: File Signature Computation
+        // ============================================================
         private FileSignature GetFileSignature()
         {
             try
             {
                 var info = new FileInfo(targetFilePath);
-                if (!info.Exists)
-                {
-                    return new FileSignature();
-                }
+                if (!info.Exists) return new FileSignature();
 
                 info.Refresh();
 
                 string hash = null;
                 try
                 {
-                    using var stream = new FileStream(targetFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    using var sha = System.Security.Cryptography.SHA256.Create();
-                    hash = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", string.Empty);
+                    using (var stream = new FileStream(targetFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (var sha = System.Security.Cryptography.SHA256.Create())
+                    {
+                        hash = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", string.Empty);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -200,6 +230,9 @@ namespace starcitizen.Core
             }
         }
 
+        // ============================================================
+        // REGION: Disposal
+        // ============================================================
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -207,7 +240,6 @@ namespace starcitizen.Core
                 debounceTimer.Dispose();
                 pollTimer.Dispose();
             }
-
             base.Dispose(disposing);
         }
     }

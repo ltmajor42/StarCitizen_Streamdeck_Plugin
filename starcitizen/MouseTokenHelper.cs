@@ -5,8 +5,15 @@ using starcitizen.Core;
 
 namespace starcitizen
 {
+    /// <summary>
+    /// Helper for normalizing and validating mouse token strings from Star Citizen bindings.
+    /// Handles various formats like "mouse1", "mousebutton1", "Button 2", "mwheelup", etc.
+    /// </summary>
     internal static class MouseTokenHelper
     {
+        // ============================================================
+        // REGION: Logging Deduplication
+        // ============================================================
         private static readonly HashSet<string> LoggedTokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static readonly object LoggedTokensLock = new object();
 
@@ -16,6 +23,7 @@ namespace starcitizen
             if (!SCJMapper_V2.SC.SCPath.DetailedInputDiagnostics) return;
 
             if (string.IsNullOrEmpty(key)) return;
+            
             lock (LoggedTokensLock)
             {
                 if (LoggedTokens.Contains(key)) return;
@@ -24,148 +32,155 @@ namespace starcitizen
             try { PluginLog.Debug(message); } catch { }
         }
 
+        // ============================================================
+        // REGION: Token Normalization Maps
+        // ============================================================
+        /// <summary>Maps various mouse token formats to canonical forms.</summary>
         private static readonly Dictionary<string, string> CanonicalTokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["mouse1"] = "mouse1",
-            ["mousebutton1"] = "mouse1",
-            ["mouse2"] = "mouse2",
-            ["mousebutton2"] = "mouse2",
-            ["mouse3"] = "mouse3",
-            ["mousebutton3"] = "mouse3",
-            ["mouse4"] = "mouse4",
-            ["mousebutton4"] = "mouse4",
-            ["mouse5"] = "mouse5",
-            ["mousebutton5"] = "mouse5",
-            ["mwheelup"] = "mwheelup",
-            ["mousewheelup"] = "mwheelup",
-            ["wheelup"] = "mwheelup",
-            ["mwheeldown"] = "mwheeldown",
-            ["mousewheeldown"] = "mwheeldown",
-            ["wheeldown"] = "mwheeldown",
-            ["mwheelleft"] = "mwheelleft",
-            ["mousewheelleft"] = "mwheelleft",
-            ["wheelleft"] = "mwheeleft",
-            ["mwheelright"] = "mwheelright",
-            ["mousewheelright"] = "mwheelright",
-            ["wheelright"] = "mwheelright",
-            // Some bindings may be recorded as an undirected mouse wheel movement.
-            ["mwheel"] = "mwheel",
-            ["mousewheel"] = "mwheel",
-            ["wheel"] = "mwheel"
+            // Button aliases
+            ["mouse1"] = "mouse1", ["mousebutton1"] = "mouse1",
+            ["mouse2"] = "mouse2", ["mousebutton2"] = "mouse2",
+            ["mouse3"] = "mouse3", ["mousebutton3"] = "mouse3",
+            ["mouse4"] = "mouse4", ["mousebutton4"] = "mouse4",
+            ["mouse5"] = "mouse5", ["mousebutton5"] = "mouse5",
+            
+            // Wheel aliases
+            ["mwheelup"] = "mwheelup", ["mousewheelup"] = "mwheelup", ["wheelup"] = "mwheelup",
+            ["mwheeldown"] = "mwheeldown", ["mousewheeldown"] = "mwheeldown", ["wheeldown"] = "mwheeldown",
+            ["mwheelleft"] = "mwheelleft", ["mousewheelleft"] = "mwheelleft", ["wheelleft"] = "mwheeleft",
+            ["mwheelright"] = "mwheelright", ["mousewheelright"] = "mwheelright", ["wheelright"] = "mwheelright",
+            ["mwheel"] = "mwheel", ["mousewheel"] = "mwheel", ["wheel"] = "mwheel"
         };
 
         private static readonly Regex RemoveSeparators = new Regex(@"[ _\-]+", RegexOptions.Compiled);
+        private static readonly Regex ButtonNumberPattern = new Regex(
+            @"\b(?:mouse\s*button|mousebutton|mouse|button|btn)\s*[:\-\s]?\(?\s*(\d+)\s*\)?\b", 
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        // Pattern to match human readable mouse button tokens like "Button 2", "Mouse Button 2", "Button(2)", "Button 2 (mouse)"
-        private static readonly Regex ButtonNumberPattern = new Regex(@"\b(?:mouse\s*button|mousebutton|mouse|button|btn)\s*[:\-\s]?\(?\s*(\d+)\s*\)?\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
+        // ============================================================
+        // REGION: Public API
+        // ============================================================
+        
+        /// <summary>
+        /// Attempts to normalize a mouse token to its canonical form.
+        /// </summary>
+        /// <param name="token">Raw token from binding (e.g., "mousebutton1", "Button 2")</param>
+        /// <param name="normalized">Canonical form (e.g., "mouse1")</param>
+        /// <returns>True if token is a recognized mouse token</returns>
         internal static bool TryNormalize(string token, out string normalized)
         {
             normalized = string.Empty;
             var cleaned = NormalizeForLookup(token);
-            if (string.IsNullOrEmpty(cleaned))
-            {
-                return false;
-            }
+            if (string.IsNullOrEmpty(cleaned)) return false;
 
+            // Direct lookup
             if (CanonicalTokens.TryGetValue(cleaned, out var canonical))
             {
                 normalized = canonical;
                 return true;
             }
 
-            // Tolerantly accept human-readable "Button 2" / "Mouse Button 2" style tokens and map them to "mouseN"
+            // Try human-readable formats like "Button 2"
+            return TryParseHumanReadableToken(token, out normalized);
+        }
+
+        /// <summary>
+        /// Returns true if the token looks like a mouse token (even if not fully normalized).
+        /// </summary>
+        internal static bool IsMouseLike(string token)
+        {
+            if (TryNormalize(token, out _)) return true;
+
+            var cleaned = NormalizeForLookup(token);
+            if (string.IsNullOrEmpty(cleaned)) return false;
+
+            return cleaned.IndexOf("mouse", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   cleaned.IndexOf("wheel", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        // ============================================================
+        // REGION: Parsing Helpers
+        // ============================================================
+        private static bool TryParseHumanReadableToken(string token, out string normalized)
+        {
+            normalized = string.Empty;
+            if (string.IsNullOrEmpty(token)) return false;
+
             try
             {
-                // First try the dedicated pattern for a single button
-                var m = ButtonNumberPattern.Match(token ?? string.Empty);
+                // Try dedicated pattern for single button
+                var m = ButtonNumberPattern.Match(token);
                 if (m.Success && m.Groups.Count > 1)
                 {
                     var num = m.Groups[1].Value;
                     if (!string.IsNullOrEmpty(num))
                     {
                         normalized = "mouse" + num;
-                        LogDebugOnce($"norm_human:{token}", $"MouseTokenHelper normalized human-readable token '{token}' -> '{normalized}'");
+                        LogDebugOnce($"norm_human:{token}", $"MouseTokenHelper normalized '{token}' -> '{normalized}'");
                         return true;
                     }
                 }
 
-                // Fallback: detect composite tokens containing multiple button numbers like "mouse1_2" or "mouse1+2"
-                var numMatches = System.Text.RegularExpressions.Regex.Matches(token ?? string.Empty, "\\d+");
-                if (numMatches.Count > 0)
-                {
-                    // Do not treat a bare numeric token (e.g. "1") as a mouse button — those are likely keyboard tokens.
-                    if (System.Text.RegularExpressions.Regex.IsMatch((token ?? string.Empty).Trim(), "^\\d+$"))
-                    {
-                        // Log once and bail out so other systems can interpret as keyboard '1'
-                        LogDebugOnce($"skip_numeric:{token}", $"MouseTokenHelper skipped pure-numeric token '{token}' (not mapping to mouse)");
-                        return false;
-                    }
-
-                    // Only consider numeric tokens for mouse mapping when the original token contains
-                    // explicit mouse/button/wheel indicators. This avoids misinterpreting keys like 'f4' or 'np_6'.
-                    var loweredToken = (token ?? string.Empty).ToLowerInvariant();
-                    if (!(loweredToken.Contains("mouse") || loweredToken.Contains("button") || loweredToken.Contains("btn") || loweredToken.Contains("wheel")))
-                    {
-                        LogDebugOnce($"skip_indicator:{token}", $"MouseTokenHelper skipped numeric token '{token}' (no mouse/button/wheel indicator)");
-                        return false;
-                    }
-
-                    var nums = new List<string>();
-                    foreach (System.Text.RegularExpressions.Match nm in numMatches)
-                    {
-                        var val = nm.Value;
-                        if (!string.IsNullOrEmpty(val) && !nums.Contains(val)) nums.Add(val);
-                    }
-
-                    if (nums.Count == 1)
-                    {
-                        normalized = "mouse" + nums[0];
-                        LogDebugOnce($"norm_num:{token}", $"MouseTokenHelper normalized numeric token '{token}' -> '{normalized}'");
-                        return true;
-                    }
-
-                    if (nums.Count > 1)
-                    {
-                        // produce composite normalized token using '+' as separator: e.g. mouse1+mouse2
-                        normalized = string.Join("+", nums.ConvertAll(n => "mouse" + n));
-                        LogDebugOnce($"norm_comp:{token}", $"MouseTokenHelper normalized composite token '{token}' -> '{normalized}'");
-                        return true;
-                    }
-                }
+                // Fallback: detect composite tokens like "mouse1_2" or numeric extraction
+                return TryParseNumericToken(token, out normalized);
             }
             catch
             {
-                // ignore regex errors and fall through
+                return false;
+            }
+        }
+
+        private static bool TryParseNumericToken(string token, out string normalized)
+        {
+            normalized = string.Empty;
+
+            var numMatches = Regex.Matches(token ?? string.Empty, "\\d+");
+            if (numMatches.Count == 0) return false;
+
+            // Skip pure numeric tokens (likely keyboard keys like "1")
+            if (Regex.IsMatch((token ?? string.Empty).Trim(), "^\\d+$"))
+            {
+                LogDebugOnce($"skip_numeric:{token}", $"MouseTokenHelper skipped pure-numeric '{token}'");
+                return false;
+            }
+
+            // Only consider when explicit mouse/button/wheel indicator present
+            var lowered = (token ?? string.Empty).ToLowerInvariant();
+            if (!(lowered.Contains("mouse") || lowered.Contains("button") || lowered.Contains("btn") || lowered.Contains("wheel")))
+            {
+                LogDebugOnce($"skip_indicator:{token}", $"MouseTokenHelper skipped '{token}' (no mouse indicator)");
+                return false;
+            }
+
+            var nums = new List<string>();
+            foreach (Match nm in numMatches)
+            {
+                var val = nm.Value;
+                if (!string.IsNullOrEmpty(val) && !nums.Contains(val)) nums.Add(val);
+            }
+
+            if (nums.Count == 1)
+            {
+                normalized = "mouse" + nums[0];
+                LogDebugOnce($"norm_num:{token}", $"MouseTokenHelper normalized '{token}' -> '{normalized}'");
+                return true;
+            }
+
+            if (nums.Count > 1)
+            {
+                // Composite: e.g., "mouse1+mouse2"
+                normalized = string.Join("+", nums.ConvertAll(n => "mouse" + n));
+                LogDebugOnce($"norm_comp:{token}", $"MouseTokenHelper normalized composite '{token}' -> '{normalized}'");
+                return true;
             }
 
             return false;
         }
 
-        internal static bool IsMouseLike(string token)
-        {
-            if (TryNormalize(token, out _))
-            {
-                return true;
-            }
-
-            var cleaned = NormalizeForLookup(token);
-            if (string.IsNullOrEmpty(cleaned))
-            {
-                return false;
-            }
-
-            return cleaned.IndexOf("mouse", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                   cleaned.IndexOf("wheel", StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-
         private static string NormalizeForLookup(string token)
         {
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                return string.Empty;
-            }
-
+            if (string.IsNullOrWhiteSpace(token)) return string.Empty;
             var lowered = token.Trim().ToLowerInvariant();
             return RemoveSeparators.Replace(lowered, "");
         }

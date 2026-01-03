@@ -10,19 +10,23 @@ using starcitizen.Core;
 
 namespace starcitizen.Buttons
 {
+    /// <summary>
+    /// Repeat Action button - repeatedly sends a keybind while held.
+    /// Useful for actions that need rapid repeated input.
+    /// </summary>
     [PluginActionId("com.ltmajor42.starcitizen.holdrepeat")]
     public class Repeataction : StarCitizenKeypadBase
     {
+        // ============================================================
+        // REGION: Settings
+        // ============================================================
         protected class PluginSettings
         {
-            public static PluginSettings CreateDefaultSettings()
+            public static PluginSettings CreateDefaultSettings() => new PluginSettings
             {
-                return new PluginSettings
-                {
-                    Function = string.Empty,
-                    RepeatRate = 100
-                };
-            }
+                Function = string.Empty,
+                RepeatRate = 100
+            };
 
             [JsonProperty(PropertyName = "function")]
             public string Function { get; set; }
@@ -31,15 +35,19 @@ namespace starcitizen.Buttons
             public int RepeatRate { get; set; }
         }
 
-        private PluginSettings settings;
+        // ============================================================
+        // REGION: State
+        // ============================================================
+        private readonly PluginSettings settings;
         private CancellationTokenSource repeatToken;
-
         private int currentRepeatRate = 100;
         private bool isRepeating;
         private readonly KeyBindingService bindingService = KeyBindingService.Instance;
 
-        public Repeataction(SDConnection connection, InitialPayload payload)
-            : base(connection, payload)
+        // ============================================================
+        // REGION: Initialization
+        // ============================================================
+        public Repeataction(SDConnection connection, InitialPayload payload) : base(connection, payload)
         {
             settings = PluginSettings.CreateDefaultSettings();
 
@@ -60,6 +68,9 @@ namespace starcitizen.Buttons
             UpdatePropertyInspector();
         }
 
+        // ============================================================
+        // REGION: Key Events
+        // ============================================================
         public override void KeyPressed(KeyPayload payload)
         {
             if (bindingService.Reader == null)
@@ -70,64 +81,32 @@ namespace starcitizen.Buttons
 
             StreamDeckCommon.ForceStop = false;
 
-            if (payload != null && payload.Settings != null)
-            {
-                ParseRepeatRate(payload.Settings);
-            }
+            if (payload?.Settings != null) ParseRepeatRate(payload.Settings);
 
-            if (!bindingService.TryGetBinding(settings.Function, out var action))
-            {
-                return;
-            }
+            if (!bindingService.TryGetBinding(settings.Function, out var action)) return;
 
             var keyInfo = CommandTools.ConvertKeyString(action.Keyboard);
-            if (string.IsNullOrWhiteSpace(keyInfo))
-            {
-                return;
-            }
+            if (string.IsNullOrWhiteSpace(keyInfo)) return;
 
             StopRepeater();
-
             repeatToken = new CancellationTokenSource();
             isRepeating = true;
 
-            // Switch to "active" state (state 1 image is managed by Stream Deck UI)
             _ = Connection.SetStateAsync(1);
-
             _ = Task.Run(() => RepeatWhileHeldAsync(keyInfo, currentRepeatRate, repeatToken.Token));
         }
 
         public override void KeyReleased(KeyPayload payload)
         {
-            if (!isRepeating)
-            {
-                return;
-            }
+            if (!isRepeating) return;
 
             StopRepeater();
-
-            // Switch back to "idle" state (state 0 image is managed by Stream Deck UI)
             _ = Connection.SetStateAsync(0);
         }
 
-        public override void ReceivedSettings(ReceivedSettingsPayload payload)
-        {
-            if (payload.Settings != null)
-            {
-                Tools.AutoPopulateSettings(settings, payload.Settings);
-                ParseRepeatRate(payload.Settings);
-            }
-        }
-
-        public override void Dispose()
-        {
-            repeatToken?.Cancel();
-            Connection.OnPropertyInspectorDidAppear -= Connection_OnPropertyInspectorDidAppear;
-            Connection.OnSendToPlugin -= Connection_OnSendToPlugin;
-            bindingService.KeyBindingsLoaded -= OnKeyBindingsLoaded;
-            base.Dispose();
-        }
-
+        // ============================================================
+        // REGION: Repeat Logic
+        // ============================================================
         private async Task RepeatWhileHeldAsync(string keyInfo, int repeatRate, CancellationToken token)
         {
             SendSingleKeypress(keyInfo);
@@ -138,15 +117,9 @@ namespace starcitizen.Buttons
                 {
                     await Task.Delay(Math.Max(1, repeatRate), token);
                 }
-                catch (TaskCanceledException)
-                {
-                    break;
-                }
+                catch (TaskCanceledException) { break; }
 
-                if (token.IsCancellationRequested)
-                {
-                    break;
-                }
+                if (token.IsCancellationRequested) break;
 
                 SendSingleKeypress(keyInfo);
             }
@@ -164,11 +137,33 @@ namespace starcitizen.Buttons
             }
         }
 
+        private void StopRepeater()
+        {
+            if (repeatToken != null)
+            {
+                try { repeatToken.Cancel(); } catch { }
+                repeatToken.Dispose();
+                repeatToken = null;
+            }
+            isRepeating = false;
+        }
+
+        // ============================================================
+        // REGION: Settings Management
+        // ============================================================
+        public override void ReceivedSettings(ReceivedSettingsPayload payload)
+        {
+            if (payload.Settings != null)
+            {
+                Tools.AutoPopulateSettings(settings, payload.Settings);
+                ParseRepeatRate(payload.Settings);
+            }
+        }
+
         private void ParseRepeatRate(JObject settingsObj)
         {
-            JToken rateToken;
             if (settingsObj != null &&
-                settingsObj.TryGetValue("repeatRate", out rateToken) &&
+                settingsObj.TryGetValue("repeatRate", out var rateToken) &&
                 int.TryParse(rateToken.ToString(), out var parsedRate))
             {
                 currentRepeatRate = Math.Max(1, parsedRate);
@@ -179,39 +174,18 @@ namespace starcitizen.Buttons
             }
         }
 
-        private void StopRepeater()
-        {
-            if (repeatToken != null)
-            {
-                try
-                {
-                    repeatToken.Cancel();
-                }
-                catch { }
-
-                repeatToken.Dispose();
-                repeatToken = null;
-            }
-
-            isRepeating = false;
-        }
-
-        private void Connection_OnPropertyInspectorDidAppear(object sender, EventArgs e)
-        {
-            UpdatePropertyInspector();
-        }
+        // ============================================================
+        // REGION: Property Inspector
+        // ============================================================
+        private void Connection_OnPropertyInspectorDidAppear(object sender, EventArgs e) => UpdatePropertyInspector();
 
         private void Connection_OnSendToPlugin(object sender, EventArgs e)
         {
             try
             {
                 var payload = e.ExtractPayload();
-
-                if (payload != null && payload["property_inspector"] != null &&
-                    payload["property_inspector"].ToString() == "propertyInspectorConnected")
-                {
+                if (payload?["property_inspector"]?.ToString() == "propertyInspectorConnected")
                     UpdatePropertyInspector();
-                }
             }
             catch (Exception ex)
             {
@@ -219,19 +193,24 @@ namespace starcitizen.Buttons
             }
         }
 
-        private void OnKeyBindingsLoaded(object sender, EventArgs e)
-        {
-            UpdatePropertyInspector();
-        }
+        private void OnKeyBindingsLoaded(object sender, EventArgs e) => UpdatePropertyInspector();
 
         private void UpdatePropertyInspector()
         {
-            if (bindingService.Reader == null)
-            {
-                return;
-            }
-
+            if (bindingService.Reader == null) return;
             PropertyInspectorMessenger.SendFunctionsAsync(Connection);
+        }
+
+        // ============================================================
+        // REGION: Disposal
+        // ============================================================
+        public override void Dispose()
+        {
+            repeatToken?.Cancel();
+            Connection.OnPropertyInspectorDidAppear -= Connection_OnPropertyInspectorDidAppear;
+            Connection.OnSendToPlugin -= Connection_OnSendToPlugin;
+            bindingService.KeyBindingsLoaded -= OnKeyBindingsLoaded;
+            base.Dispose();
         }
     }
 }

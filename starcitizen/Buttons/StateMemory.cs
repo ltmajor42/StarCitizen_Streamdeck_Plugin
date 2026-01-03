@@ -13,22 +13,27 @@ using starcitizen.Core;
 
 namespace starcitizen.Buttons
 {
+    /// <summary>
+    /// State Memory button - a toggle with soft sync capability.
+    /// Short press: sends keybind + toggles state.
+    /// Long press: toggles state only (manual resync without sending key).
+    /// </summary>
     [PluginActionId("com.ltmajor42.starcitizen.statememory")]
     public class StateMemory : StarCitizenKeypadBase
     {
+        // ============================================================
+        // REGION: Settings
+        // ============================================================
         protected class PluginSettings
         {
-            public static PluginSettings CreateDefaultSettings()
+            public static PluginSettings CreateDefaultSettings() => new PluginSettings
             {
-                return new PluginSettings
-                {
-                    Function = string.Empty,
-                    StateOn = false,
-                    SoftSyncLongPress = true,
-                    LongPressMs = 750,
-                    KeypressDelayMs = 40
-                };
-            }
+                Function = string.Empty,
+                StateOn = false,
+                SoftSyncLongPress = true,
+                LongPressMs = 750,
+                KeypressDelayMs = 40
+            };
 
             [JsonProperty(PropertyName = "function")]
             public string Function { get; set; }
@@ -54,19 +59,24 @@ namespace starcitizen.Buttons
             public string LongPressSoundFilename { get; set; }
         }
 
-        private PluginSettings settings;
+        // ============================================================
+        // REGION: State
+        // ============================================================
+        private readonly PluginSettings settings;
         private CachedSound shortPressSound;
         private CachedSound longPressSound;
         private DateTime? pressStartUtc;
-
         private int inFlight;
         private readonly KeyBindingService bindingService = KeyBindingService.Instance;
 
+        // ============================================================
+        // REGION: Initialization
+        // ============================================================
         public StateMemory(SDConnection connection, InitialPayload payload) : base(connection, payload)
         {
             settings = PluginSettings.CreateDefaultSettings();
 
-            if (payload != null && payload.Settings != null && payload.Settings.Count > 0)
+            if (payload?.Settings != null && payload.Settings.Count > 0)
             {
                 Tools.AutoPopulateSettings(settings, payload.Settings);
             }
@@ -80,10 +90,12 @@ namespace starcitizen.Buttons
 
             ApplyVisualState();
             UpdatePropertyInspector();
-
             Connection.SetSettingsAsync(JObject.FromObject(settings));
         }
 
+        // ============================================================
+        // REGION: Key Events
+        // ============================================================
         public override void KeyPressed(KeyPayload payload)
         {
             pressStartUtc = DateTime.UtcNow;
@@ -91,10 +103,8 @@ namespace starcitizen.Buttons
 
         public override void KeyReleased(KeyPayload payload)
         {
-            if (Interlocked.Exchange(ref inFlight, 1) == 1)
-            {
-                return;
-            }
+            // Prevent concurrent execution
+            if (Interlocked.Exchange(ref inFlight, 1) == 1) return;
 
             try
             {
@@ -105,7 +115,6 @@ namespace starcitizen.Buttons
                 }
 
                 StreamDeckCommon.ForceStop = false;
-
                 var isLongPress = IsLongPress();
 
                 // Long press = indicator only (no key sent)
@@ -120,7 +129,6 @@ namespace starcitizen.Buttons
 
                 // Short press = send key + flip indicator
                 SafeSendBoundKeypress();
-
                 settings.StateOn = !settings.StateOn;
                 ApplyVisualState();
                 Connection.SetSettingsAsync(JObject.FromObject(settings));
@@ -137,9 +145,12 @@ namespace starcitizen.Buttons
             }
         }
 
+        // ============================================================
+        // REGION: Settings Management
+        // ============================================================
         public override void ReceivedSettings(ReceivedSettingsPayload payload)
         {
-            if (payload == null || payload.Settings == null) return;
+            if (payload?.Settings == null) return;
 
             Tools.AutoPopulateSettings(settings, payload.Settings);
             NormalizeDefaults();
@@ -147,26 +158,19 @@ namespace starcitizen.Buttons
             ApplyVisualState();
         }
 
-        public override void Dispose()
-        {
-            Connection.OnPropertyInspectorDidAppear -= Connection_OnPropertyInspectorDidAppear;
-            Connection.OnSendToPlugin -= Connection_OnSendToPlugin;
-            bindingService.KeyBindingsLoaded -= OnKeyBindingsLoaded;
-            base.Dispose();
-        }
-
         private void NormalizeDefaults()
         {
             if (settings.LongPressMs <= 0) settings.LongPressMs = 750;
             if (settings.KeypressDelayMs < 0) settings.KeypressDelayMs = 0;
-
-            if (settings.Function == null) settings.Function = string.Empty;
+            settings.Function ??= string.Empty;
         }
 
+        // ============================================================
+        // REGION: Key Handling
+        // ============================================================
         private bool IsLongPress()
         {
             if (!pressStartUtc.HasValue) return false;
-
             var ms = (DateTime.UtcNow - pressStartUtc.Value).TotalMilliseconds;
             return ms >= Math.Max(0, settings.LongPressMs);
         }
@@ -191,8 +195,7 @@ namespace starcitizen.Buttons
                 if (string.IsNullOrWhiteSpace(settings.Function)) return;
 
                 var binding = bindingService.Reader.GetBinding(settings.Function);
-                var keyboard = binding != null ? binding.Keyboard : null;
-
+                var keyboard = binding?.Keyboard;
                 if (string.IsNullOrWhiteSpace(keyboard)) return;
 
                 var converted = CommandTools.ConvertKeyString(keyboard);
@@ -206,14 +209,15 @@ namespace starcitizen.Buttons
             }
         }
 
+        // ============================================================
+        // REGION: Sound Management
+        // ============================================================
         private void LoadSounds()
         {
-            string normalizedShort;
-            shortPressSound = TryLoadSound(settings.ShortPressSoundFilename, out normalizedShort);
+            shortPressSound = TryLoadSound(settings.ShortPressSoundFilename, out var normalizedShort);
             settings.ShortPressSoundFilename = normalizedShort;
 
-            string normalizedLong;
-            longPressSound = TryLoadSound(settings.LongPressSoundFilename, out normalizedLong);
+            longPressSound = TryLoadSound(settings.LongPressSoundFilename, out var normalizedLong);
             settings.LongPressSoundFilename = normalizedLong;
         }
 
@@ -238,20 +242,12 @@ namespace starcitizen.Buttons
             }
         }
 
-        private void PlayShortPressSound()
-        {
-            PlaySound(shortPressSound);
-        }
-
-        private void PlayLongPressSound()
-        {
-            PlaySound(longPressSound ?? shortPressSound);
-        }
+        private void PlayShortPressSound() => PlaySound(shortPressSound);
+        private void PlayLongPressSound() => PlaySound(longPressSound ?? shortPressSound);
 
         private void PlaySound(CachedSound sound)
         {
             if (sound == null) return;
-
             try
             {
                 AudioPlaybackEngine.Instance.PlaySound(sound);
@@ -262,17 +258,16 @@ namespace starcitizen.Buttons
             }
         }
 
-        private void Connection_OnPropertyInspectorDidAppear(object sender, EventArgs e)
-        {
-            UpdatePropertyInspector();
-        }
+        // ============================================================
+        // REGION: Property Inspector
+        // ============================================================
+        private void Connection_OnPropertyInspectorDidAppear(object sender, EventArgs e) => UpdatePropertyInspector();
 
         private void Connection_OnSendToPlugin(object sender, EventArgs e)
         {
             try
             {
                 var payload = e.ExtractPayload();
-
                 if (payload?["property_inspector"]?.ToString() == "propertyInspectorConnected")
                 {
                     UpdatePropertyInspector();
@@ -284,16 +279,23 @@ namespace starcitizen.Buttons
             }
         }
 
-        private void OnKeyBindingsLoaded(object sender, EventArgs e)
-        {
-            UpdatePropertyInspector();
-        }
+        private void OnKeyBindingsLoaded(object sender, EventArgs e) => UpdatePropertyInspector();
 
         private void UpdatePropertyInspector()
         {
             if (bindingService.Reader == null) return;
-
             PropertyInspectorMessenger.SendFunctionsAsync(Connection);
+        }
+
+        // ============================================================
+        // REGION: Disposal
+        // ============================================================
+        public override void Dispose()
+        {
+            Connection.OnPropertyInspectorDidAppear -= Connection_OnPropertyInspectorDidAppear;
+            Connection.OnSendToPlugin -= Connection_OnSendToPlugin;
+            bindingService.KeyBindingsLoaded -= OnKeyBindingsLoaded;
+            base.Dispose();
         }
     }
 }

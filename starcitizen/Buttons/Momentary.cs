@@ -11,18 +11,19 @@ using starcitizen.Core;
 
 namespace starcitizen.Buttons
 {
+    /// <summary>
+    /// Momentary button - sends key down on press, key up on release.
+    /// Includes visual state indicator that shows active state briefly after release.
+    /// </summary>
     [PluginActionId("com.ltmajor42.starcitizen.momentary")]
     public class Momentary : StarCitizenKeypadBase
     {
+        // ============================================================
+        // REGION: Settings
+        // ============================================================
         protected class PluginSettings
         {
-            public static PluginSettings CreateDefaultSettings()
-            {
-                return new PluginSettings
-                {
-                    Function = string.Empty
-                };
-            }
+            public static PluginSettings CreateDefaultSettings() => new PluginSettings { Function = string.Empty };
 
             [JsonProperty(PropertyName = "function")]
             public string Function { get; set; }
@@ -32,17 +33,20 @@ namespace starcitizen.Buttons
             public string ClickSoundFilename { get; set; }
         }
 
-        private PluginSettings settings;
+        // ============================================================
+        // REGION: State
+        // ============================================================
+        private readonly PluginSettings settings;
         private CachedSound _clickSound;
         private CancellationTokenSource resetToken;
         private int visualSequence;
         private readonly KeyBindingService bindingService = KeyBindingService.Instance;
+        private int currentDelay = 1000;  // Visual delay in ms
 
-        // 🔑 runtime-authoritative delay (updated via ReceivedSettings)
-        private int currentDelay = 1000;
-
-        public Momentary(SDConnection connection, InitialPayload payload)
-            : base(connection, payload)
+        // ============================================================
+        // REGION: Initialization
+        // ============================================================
+        public Momentary(SDConnection connection, InitialPayload payload) : base(connection, payload)
         {
             settings = PluginSettings.CreateDefaultSettings();
 
@@ -60,8 +64,9 @@ namespace starcitizen.Buttons
             UpdatePropertyInspector();
         }
 
-        // ================= KEY EVENTS =================
-
+        // ============================================================
+        // REGION: Key Events
+        // ============================================================
         public override void KeyPressed(KeyPayload payload)
         {
             if (bindingService.Reader == null) return;
@@ -69,19 +74,18 @@ namespace starcitizen.Buttons
             if (bindingService.TryGetBinding(settings.Function, out var action))
             {
                 var keyString = CommandTools.ConvertKeyString(action.Keyboard);
-
                 if (!string.IsNullOrEmpty(keyString))
                 {
                     StreamDeckCommon.SendKeypressDown(keyString);
                 }
                 else
                 {
-                    Logger.Instance.LogMessage(TracingLevel.WARN, $"Momentary action '{settings.Function}' missing keyboard binding; skipping KeyPressed send.");
+                    Logger.Instance.LogMessage(TracingLevel.WARN, 
+                        $"Momentary action '{settings.Function}' missing keyboard binding");
                 }
             }
 
             PlayClickSound();
-            
         }
 
         public override void KeyReleased(KeyPayload payload)
@@ -91,71 +95,58 @@ namespace starcitizen.Buttons
             if (bindingService.TryGetBinding(settings.Function, out var action))
             {
                 var keyString = CommandTools.ConvertKeyString(action.Keyboard);
-
                 if (!string.IsNullOrEmpty(keyString))
                 {
                     StreamDeckCommon.SendKeypressUp(keyString);
                 }
-                else
-                {
-                    Logger.Instance.LogMessage(TracingLevel.WARN, $"Momentary action '{settings.Function}' missing keyboard binding; skipping KeyReleased send.");
-                }
             }
 
-            // ALWAYS prefer live payload value
-            int delayToUse = currentDelay;
-
+            // Prefer live payload value if available
+            var delayToUse = currentDelay;
             if (payload?.Settings != null &&
                 payload.Settings.TryGetValue("delay", out var delayToken) &&
                 int.TryParse(delayToken.ToString(), out int liveDelay))
             {
                 delayToUse = liveDelay;
-                currentDelay = liveDelay; // keep cache in sync
+                currentDelay = liveDelay;
             }
 
             TriggerMomentaryVisual(delayToUse);
         }
 
-        // ================= MOMENTARY VISUAL =================
-
+        // ============================================================
+        // REGION: Visual State Management
+        // ============================================================
         private void TriggerMomentaryVisual(int delay)
         {
             resetToken?.Cancel();
-
             resetToken = new CancellationTokenSource();
-            var token = resetToken.Token;
-
-            // increment the visual sequence so older cycles cannot override newer ones
             var sequence = Interlocked.Increment(ref visualSequence);
-
-            _ = RunMomentaryVisualAsync(delay, token, sequence);
+            _ = RunMomentaryVisualAsync(delay, resetToken.Token, sequence);
         }
 
         private async Task RunMomentaryVisualAsync(int delay, CancellationToken token, int sequence)
         {
-            // always ensure we start (or restart) at ACTIVE
-            await Connection.SetStateAsync(1);
+            await Connection.SetStateAsync(1);  // Active state
 
             try
             {
                 await Task.Delay(Math.Max(0, delay), token);
             }
-            catch (TaskCanceledException)
-            {
-                // swallowed; we still want the finally guard below
-            }
+            catch (TaskCanceledException) { }
             finally
             {
-                // only the latest sequence is allowed to revert to idle
+                // Only the latest sequence reverts to idle
                 if (sequence == visualSequence)
                 {
-                    await Connection.SetStateAsync(0); // BACK TO IDLE
+                    await Connection.SetStateAsync(0);
                 }
             }
         }
 
-        // ================= SETTINGS =================
-
+        // ============================================================
+        // REGION: Settings Management
+        // ============================================================
         public override void ReceivedSettings(ReceivedSettingsPayload payload)
         {
             if (payload.Settings != null)
@@ -163,7 +154,6 @@ namespace starcitizen.Buttons
                 Tools.AutoPopulateSettings(settings, payload.Settings);
                 ParseDelay(payload.Settings);
             }
-
             LoadClickSound();
         }
 
@@ -179,49 +169,32 @@ namespace starcitizen.Buttons
         private void LoadClickSound()
         {
             _clickSound = null;
-
-            if (!string.IsNullOrEmpty(settings.ClickSoundFilename) &&
-                File.Exists(settings.ClickSoundFilename))
+            if (!string.IsNullOrEmpty(settings.ClickSoundFilename) && File.Exists(settings.ClickSoundFilename))
             {
-                try
-                {
-                    _clickSound = new CachedSound(settings.ClickSoundFilename);
-                }
-                catch
-                {
-                    settings.ClickSoundFilename = null;
-                }
+                try { _clickSound = new CachedSound(settings.ClickSoundFilename); }
+                catch { settings.ClickSoundFilename = null; }
             }
         }
 
         private void PlayClickSound()
         {
             if (_clickSound == null) return;
-
-            try
-            {
-                AudioPlaybackEngine.Instance.PlaySound(_clickSound);
-            }
+            try { AudioPlaybackEngine.Instance.PlaySound(_clickSound); }
             catch { }
         }
 
-        // ================= PROPERTY INSPECTOR =================
-
-        private void Connection_OnPropertyInspectorDidAppear(object sender, EventArgs e)
-        {
-            UpdatePropertyInspector();
-        }
+        // ============================================================
+        // REGION: Property Inspector
+        // ============================================================
+        private void Connection_OnPropertyInspectorDidAppear(object sender, EventArgs e) => UpdatePropertyInspector();
 
         private void Connection_OnSendToPlugin(object sender, EventArgs e)
         {
             try
             {
                 var payload = e.ExtractPayload();
-
                 if (payload?["property_inspector"]?.ToString() == "propertyInspectorConnected")
-                {
                     UpdatePropertyInspector();
-                }
             }
             catch (Exception ex)
             {
@@ -229,18 +202,17 @@ namespace starcitizen.Buttons
             }
         }
 
-        private void OnKeyBindingsLoaded(object sender, EventArgs e)
-        {
-            UpdatePropertyInspector();
-        }
+        private void OnKeyBindingsLoaded(object sender, EventArgs e) => UpdatePropertyInspector();
 
         private void UpdatePropertyInspector()
         {
             if (bindingService.Reader == null) return;
-
             PropertyInspectorMessenger.SendFunctionsAsync(Connection);
         }
 
+        // ============================================================
+        // REGION: Disposal
+        // ============================================================
         public override void Dispose()
         {
             resetToken?.Cancel();

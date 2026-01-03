@@ -5,6 +5,34 @@
 > 🔗 **Updated fork of [mhwlng/streamdeck-starcitizen](https://github.com/mhwlng/streamdeck-starcitizen)**  
 > Maintained by **Ltmajor42**. Original code by **mhwlng** with in-game binding discovery provided by **SCJMapper** assets. This fork adds auto-detection, search, refactors, and stability fixes.
 
+---
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [README.md](README.md) | This file - user guide and button descriptions |
+| [CHANGELOG.md](CHANGELOG.md) | Version history and release notes |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Developer guide for contributing code |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Technical architecture and component guide |
+
+---
+
+## 🚀 Quick Start
+
+1. **Install the plugin** from [Releases](https://github.com/ltmajor42/streamdeck-starcitizen/releases)
+2. **Launch Stream Deck** - the plugin auto-detects your Star Citizen installation
+3. **Drag a button** from the Star Citizen category to your deck
+4. **Select a function** from the dropdown
+5. **Press the button** in-game!
+
+**Troubleshooting?** Check the log file:
+```
+%appdata%\Elgato\StreamDeck\Plugins\com.ltmajor42.starcitizen.sdPlugin\pluginlog.log
+```
+
+---
+
 ## What's New in This Fork
 
 ### Real-Time Keybind Sync (In-Game Refresh)
