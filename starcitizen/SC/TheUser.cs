@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace starcitizen.SC;
 
-namespace p4ktest.SC
+/// <summary>
+/// User configuration settings for p4k file handling.
+/// </summary>
+static class TheUser
 {
-    class TheUser
-    {
-        public static string FileStoreDir = @".\";
-        public static bool UsePTU { get; set; } = false;
-    }
+    public static string FileStoreDir { get; set; } = @".\";
+    public static bool UsePTU { get; set; } = false;
 }

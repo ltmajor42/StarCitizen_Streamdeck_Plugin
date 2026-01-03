@@ -1,41 +1,36 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace starcitizen.SC
+namespace starcitizen.SC;
+
+/// <summary>
+/// Represents a cached Star Citizen asset file.
+/// </summary>
+[Serializable]
+class SCFile
 {
-  /// <summary>
-  /// One SC asset file
-  /// </summary>
-  ///
-  [Serializable()]
-  class SCFile 
-  {
+    /// <summary>
+    /// Type of cached file.
+    /// </summary>
     public enum FileType
     {
-      UnknownFile = -1,
-      PakFile = 0,
-      DefProfile = 1,
-      LangFile=3,
+        UnknownFile = -1,
+        PakFile = 0,
+        DefProfile = 1,
+        LangFile = 3,
     }
 
-    public FileType Filetype { get; set; }
-    public string Filename { get; set; }
-    public string Filepath { get; set; }
-    public DateTime FileDateTime { get; set; }
-    public string Filedata { get; set; }
-
-    public SCFile()
-    {
-      Filetype = FileType.UnknownFile;
-      Filename = "";
-      Filepath = "";
-      FileDateTime = new DateTime( 1970, 1, 1, 0, 0, 0 );
-      Filedata = "";
-    }
-
-
-  }
+    /// <summary>Gets or sets the file type.</summary>
+    public FileType Filetype { get; set; } = FileType.UnknownFile;
+    
+    /// <summary>Gets or sets the file name.</summary>
+    public string Filename { get; set; } = "";
+    
+    /// <summary>Gets or sets the file path.</summary>
+    public string Filepath { get; set; } = "";
+    
+    /// <summary>Gets or sets the file's last modified date.</summary>
+    public DateTime FileDateTime { get; set; } = DateTime.UnixEpoch;
+    
+    /// <summary>Gets or sets the file content.</summary>
+    public string Filedata { get; set; } = "";
 }

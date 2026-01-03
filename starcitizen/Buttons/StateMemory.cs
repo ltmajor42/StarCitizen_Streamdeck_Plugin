@@ -6,6 +6,7 @@ using BarRaider.SdTools;
 using BarRaider.SdTools.Wrappers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using starcitizen.Audio;
 using starcitizen.Core;
 
 namespace starcitizen.Buttons
@@ -30,7 +31,7 @@ namespace starcitizen.Buttons
         /// </summary>
         protected class PluginSettings : PluginSettingsBase
         {
-            public static PluginSettings CreateDefaultSettings() => new PluginSettings();
+            public static PluginSettings CreateDefaultSettings() => new();
 
             [JsonProperty(PropertyName = "stateOn")]
             public bool StateOn { get; set; }
@@ -235,11 +236,11 @@ namespace starcitizen.Buttons
 
         public override void Dispose()
         {
-            // Clear sound references to help GC
             shortPressSound = null;
             longPressSound = null;
             
             base.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         #endregion

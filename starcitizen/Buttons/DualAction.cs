@@ -24,7 +24,7 @@ namespace starcitizen.Buttons
         /// </summary>
         protected class PluginSettings : ISoundSettings
         {
-            public static PluginSettings CreateDefaultSettings() => new PluginSettings();
+            public static PluginSettings CreateDefaultSettings() => new();
 
             [JsonProperty(PropertyName = "downFunction")]
             public string DownFunction { get; set; } = string.Empty;
@@ -99,15 +99,6 @@ namespace starcitizen.Buttons
         {
             Tools.AutoPopulateSettings(settings, payload.Settings);
             LoadClickSoundFromSettings(settings);
-        }
-
-        #endregion
-
-        #region Disposal
-
-        public override void Dispose()
-        {
-            base.Dispose();
         }
 
         #endregion
