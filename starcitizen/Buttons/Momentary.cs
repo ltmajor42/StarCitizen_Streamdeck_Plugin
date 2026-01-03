@@ -1,9 +1,7 @@
 ﻿using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using BarRaider.SdTools;
-using BarRaider.SdTools.Events;
 using BarRaider.SdTools.Wrappers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -15,74 +13,79 @@ namespace starcitizen.Buttons
     /// Momentary button - sends key down on press, key up on release.
     /// Includes visual state indicator that shows active state briefly after release.
     /// </summary>
+    /// <remarks>
+    /// Use this for quick-tap actions like firing weapons or activating shields.
+    /// The visual feedback helps confirm the action was triggered.
+    /// </remarks>
     [PluginActionId("com.ltmajor42.starcitizen.momentary")]
     public class Momentary : StarCitizenKeypadBase
     {
-        // ============================================================
-        // REGION: Settings
-        // ============================================================
-        protected class PluginSettings
+        #region Settings
+
+        /// <summary>
+        /// Settings for Momentary button with visual feedback delay.
+        /// </summary>
+        protected class PluginSettings : PluginSettingsBase
         {
-            public static PluginSettings CreateDefaultSettings() => new PluginSettings { Function = string.Empty };
+            public static PluginSettings CreateDefaultSettings() => new PluginSettings();
 
-            [JsonProperty(PropertyName = "function")]
-            public string Function { get; set; }
-
-            [FilenameProperty]
-            [JsonProperty(PropertyName = "clickSound")]
-            public string ClickSoundFilename { get; set; }
+            /// <summary>
+            /// Duration in ms to show the active visual state after release.
+            /// Stored as string to handle empty values from PI gracefully.
+            /// </summary>
+            [JsonProperty(PropertyName = "delay")]
+            public string Delay { get; set; } = "1000";
         }
 
-        // ============================================================
-        // REGION: State
-        // ============================================================
+        #endregion
+
+        #region Constants
+
+        private const int DefaultVisualDelay = 1000;
+
+        #endregion
+
+        #region State
+
         private readonly PluginSettings settings;
-        private CachedSound _clickSound;
         private CancellationTokenSource resetToken;
         private int visualSequence;
-        private readonly KeyBindingService bindingService = KeyBindingService.Instance;
-        private int currentDelay = 1000;  // Visual delay in ms
+        private int currentVisualDelay = DefaultVisualDelay;
 
-        // ============================================================
-        // REGION: Initialization
-        // ============================================================
+        #endregion
+
+        #region Initialization
+
         public Momentary(SDConnection connection, InitialPayload payload) : base(connection, payload)
         {
             settings = PluginSettings.CreateDefaultSettings();
 
-            if (payload.Settings != null)
+            if (payload.Settings != null && payload.Settings.Count > 0)
             {
                 Tools.AutoPopulateSettings(settings, payload.Settings);
-                ParseDelay(payload.Settings);
+                ParseVisualDelay();
+                LoadClickSoundFromSettings(settings);
             }
 
-            Connection.OnPropertyInspectorDidAppear += Connection_OnPropertyInspectorDidAppear;
-            Connection.OnSendToPlugin += Connection_OnSendToPlugin;
-            bindingService.KeyBindingsLoaded += OnKeyBindingsLoaded;
-
-            LoadClickSound();
-            UpdatePropertyInspector();
+            WirePropertyInspectorEvents();
+            SendFunctionsToPropertyInspector();
         }
 
-        // ============================================================
-        // REGION: Key Events
-        // ============================================================
+        #endregion
+
+        #region Key Events
+
         public override void KeyPressed(KeyPayload payload)
         {
-            if (bindingService.Reader == null) return;
+            if (!EnsureBindingsReady()) return;
 
-            if (bindingService.TryGetBinding(settings.Function, out var action))
+            if (TryGetKeyBinding(settings.Function, out var keyInfo))
             {
-                var keyString = CommandTools.ConvertKeyString(action.Keyboard);
-                if (!string.IsNullOrEmpty(keyString))
-                {
-                    StreamDeckCommon.SendKeypressDown(keyString);
-                }
-                else
-                {
-                    Logger.Instance.LogMessage(TracingLevel.WARN, 
-                        $"Momentary action '{settings.Function}' missing keyboard binding");
-                }
+                StreamDeckCommon.SendKeypressDown(keyInfo);
+            }
+            else
+            {
+                PluginLog.Warn($"Momentary action '{settings.Function}' missing keyboard binding");
             }
 
             PlayClickSound();
@@ -90,33 +93,20 @@ namespace starcitizen.Buttons
 
         public override void KeyReleased(KeyPayload payload)
         {
-            if (bindingService.Reader == null) return;
+            if (!EnsureBindingsReady()) return;
 
-            if (bindingService.TryGetBinding(settings.Function, out var action))
+            if (TryGetKeyBinding(settings.Function, out var keyInfo))
             {
-                var keyString = CommandTools.ConvertKeyString(action.Keyboard);
-                if (!string.IsNullOrEmpty(keyString))
-                {
-                    StreamDeckCommon.SendKeypressUp(keyString);
-                }
+                StreamDeckCommon.SendKeypressUp(keyInfo);
             }
 
-            // Prefer live payload value if available
-            var delayToUse = currentDelay;
-            if (payload?.Settings != null &&
-                payload.Settings.TryGetValue("delay", out var delayToken) &&
-                int.TryParse(delayToken.ToString(), out int liveDelay))
-            {
-                delayToUse = liveDelay;
-                currentDelay = liveDelay;
-            }
-
-            TriggerMomentaryVisual(delayToUse);
+            TriggerMomentaryVisual(currentVisualDelay);
         }
 
-        // ============================================================
-        // REGION: Visual State Management
-        // ============================================================
+        #endregion
+
+        #region Visual State Management
+
         private void TriggerMomentaryVisual(int delay)
         {
             resetToken?.Cancel();
@@ -144,82 +134,47 @@ namespace starcitizen.Buttons
             }
         }
 
-        // ============================================================
-        // REGION: Settings Management
-        // ============================================================
+        #endregion
+
+        #region Settings Management
+
         public override void ReceivedSettings(ReceivedSettingsPayload payload)
         {
             if (payload.Settings != null)
             {
                 Tools.AutoPopulateSettings(settings, payload.Settings);
-                ParseDelay(payload.Settings);
+                ParseVisualDelay();
+                LoadClickSoundFromSettings(settings);
             }
-            LoadClickSound();
         }
 
-        private void ParseDelay(JObject settingsObj)
+        private void ParseVisualDelay()
         {
-            if (settingsObj.TryGetValue("delay", out var delayToken) &&
-                int.TryParse(delayToken.ToString(), out int parsed))
+            if (!string.IsNullOrWhiteSpace(settings.Delay) && 
+                int.TryParse(settings.Delay, out int parsed) && 
+                parsed >= 0)
             {
-                currentDelay = parsed;
+                currentVisualDelay = parsed;
             }
-        }
-
-        private void LoadClickSound()
-        {
-            _clickSound = null;
-            if (!string.IsNullOrEmpty(settings.ClickSoundFilename) && File.Exists(settings.ClickSoundFilename))
+            else
             {
-                try { _clickSound = new CachedSound(settings.ClickSoundFilename); }
-                catch { settings.ClickSoundFilename = null; }
+                currentVisualDelay = DefaultVisualDelay;
             }
         }
 
-        private void PlayClickSound()
-        {
-            if (_clickSound == null) return;
-            try { AudioPlaybackEngine.Instance.PlaySound(_clickSound); }
-            catch { }
-        }
+        #endregion
 
-        // ============================================================
-        // REGION: Property Inspector
-        // ============================================================
-        private void Connection_OnPropertyInspectorDidAppear(object sender, EventArgs e) => UpdatePropertyInspector();
+        #region Disposal
 
-        private void Connection_OnSendToPlugin(object sender, EventArgs e)
-        {
-            try
-            {
-                var payload = e.ExtractPayload();
-                if (payload?["property_inspector"]?.ToString() == "propertyInspectorConnected")
-                    UpdatePropertyInspector();
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.LogMessage(TracingLevel.WARN, $"Failed processing PI payload: {ex.Message}");
-            }
-        }
-
-        private void OnKeyBindingsLoaded(object sender, EventArgs e) => UpdatePropertyInspector();
-
-        private void UpdatePropertyInspector()
-        {
-            if (bindingService.Reader == null) return;
-            PropertyInspectorMessenger.SendFunctionsAsync(Connection);
-        }
-
-        // ============================================================
-        // REGION: Disposal
-        // ============================================================
         public override void Dispose()
         {
             resetToken?.Cancel();
-            Connection.OnPropertyInspectorDidAppear -= Connection_OnPropertyInspectorDidAppear;
-            Connection.OnSendToPlugin -= Connection_OnSendToPlugin;
-            bindingService.KeyBindingsLoaded -= OnKeyBindingsLoaded;
+            resetToken?.Dispose();
+            resetToken = null;
+            
             base.Dispose();
         }
+
+        #endregion
     }
 }

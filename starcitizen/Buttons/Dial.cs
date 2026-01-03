@@ -326,11 +326,7 @@ namespace starcitizen.Buttons
 
         private void UpdatePropertyInspector()
         {
-            if (bindingService.Reader == null)
-            {
-                return;
-            }
-
+            // Always send to PI - the messenger will handle loading state if bindings aren't ready
             PropertyInspectorMessenger.SendFunctionsAsync(Connection);
         }
     }

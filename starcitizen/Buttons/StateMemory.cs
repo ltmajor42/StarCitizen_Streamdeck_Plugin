@@ -1,14 +1,11 @@
 ﻿// File: Buttons/StateMemory.cs
 // UUID: com.ltmajor42.starcitizen.statememory
 using System;
-using System.IO;
 using System.Threading;
 using BarRaider.SdTools;
-using BarRaider.SdTools.Events;
 using BarRaider.SdTools.Wrappers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SCJMapper_V2.SC;
 using starcitizen.Core;
 
 namespace starcitizen.Buttons
@@ -18,37 +15,34 @@ namespace starcitizen.Buttons
     /// Short press: sends keybind + toggles state.
     /// Long press: toggles state only (manual resync without sending key).
     /// </summary>
+    /// <remarks>
+    /// Use this for toggle actions like landing gear, lights, or VTOL.
+    /// Long-press allows manual resync when state gets out of sync with the game.
+    /// </remarks>
     [PluginActionId("com.ltmajor42.starcitizen.statememory")]
     public class StateMemory : StarCitizenKeypadBase
     {
-        // ============================================================
-        // REGION: Settings
-        // ============================================================
-        protected class PluginSettings
-        {
-            public static PluginSettings CreateDefaultSettings() => new PluginSettings
-            {
-                Function = string.Empty,
-                StateOn = false,
-                SoftSyncLongPress = true,
-                LongPressMs = 750,
-                KeypressDelayMs = 40
-            };
+        #region Settings
 
-            [JsonProperty(PropertyName = "function")]
-            public string Function { get; set; }
+        /// <summary>
+        /// Settings for StateMemory with dual sound and long-press configuration.
+        /// Numeric values stored as strings to handle empty values from PI gracefully.
+        /// </summary>
+        protected class PluginSettings : PluginSettingsBase
+        {
+            public static PluginSettings CreateDefaultSettings() => new PluginSettings();
 
             [JsonProperty(PropertyName = "stateOn")]
             public bool StateOn { get; set; }
 
             [JsonProperty(PropertyName = "softSyncLongPress")]
-            public bool SoftSyncLongPress { get; set; }
+            public bool SoftSyncLongPress { get; set; } = true;
 
             [JsonProperty(PropertyName = "longPressMs")]
-            public int LongPressMs { get; set; }
+            public string LongPressMs { get; set; } = "750";
 
             [JsonProperty(PropertyName = "keypressDelayMs")]
-            public int KeypressDelayMs { get; set; }
+            public string KeypressDelayMs { get; set; } = "40";
 
             [FilenameProperty]
             [JsonProperty(PropertyName = "shortPressSound")]
@@ -59,19 +53,31 @@ namespace starcitizen.Buttons
             public string LongPressSoundFilename { get; set; }
         }
 
-        // ============================================================
-        // REGION: State
-        // ============================================================
+        #endregion
+
+        #region Constants
+
+        private const int DefaultLongPressMs = 750;
+        private const int DefaultKeypressDelayMs = 40;
+
+        #endregion
+
+        #region State
+
         private readonly PluginSettings settings;
         private CachedSound shortPressSound;
         private CachedSound longPressSound;
         private DateTime? pressStartUtc;
         private int inFlight;
-        private readonly KeyBindingService bindingService = KeyBindingService.Instance;
 
-        // ============================================================
-        // REGION: Initialization
-        // ============================================================
+        // Parsed values
+        private int longPressMs = DefaultLongPressMs;
+        private int keypressDelayMs = DefaultKeypressDelayMs;
+
+        #endregion
+
+        #region Initialization
+
         public StateMemory(SDConnection connection, InitialPayload payload) : base(connection, payload)
         {
             settings = PluginSettings.CreateDefaultSettings();
@@ -81,21 +87,19 @@ namespace starcitizen.Buttons
                 Tools.AutoPopulateSettings(settings, payload.Settings);
             }
 
-            NormalizeDefaults();
+            ParseSettings();
             LoadSounds();
-
-            Connection.OnPropertyInspectorDidAppear += Connection_OnPropertyInspectorDidAppear;
-            Connection.OnSendToPlugin += Connection_OnSendToPlugin;
-            bindingService.KeyBindingsLoaded += OnKeyBindingsLoaded;
-
             ApplyVisualState();
-            UpdatePropertyInspector();
+
+            WirePropertyInspectorEvents();
+            SendFunctionsToPropertyInspector();
             Connection.SetSettingsAsync(JObject.FromObject(settings));
         }
 
-        // ============================================================
-        // REGION: Key Events
-        // ============================================================
+        #endregion
+
+        #region Key Events
+
         public override void KeyPressed(KeyPayload payload)
         {
             pressStartUtc = DateTime.UtcNow;
@@ -108,13 +112,8 @@ namespace starcitizen.Buttons
 
             try
             {
-                if (bindingService.Reader == null)
-                {
-                    StreamDeckCommon.ForceStop = true;
-                    return;
-                }
+                if (!EnsureBindingsReady()) return;
 
-                StreamDeckCommon.ForceStop = false;
                 var isLongPress = IsLongPress();
 
                 // Long press = indicator only (no key sent)
@@ -123,20 +122,20 @@ namespace starcitizen.Buttons
                     settings.StateOn = !settings.StateOn;
                     ApplyVisualState();
                     Connection.SetSettingsAsync(JObject.FromObject(settings));
-                    PlayLongPressSound();
+                    PlaySound(longPressSound ?? shortPressSound);
                     return;
                 }
 
                 // Short press = send key + flip indicator
-                SafeSendBoundKeypress();
+                SendBoundKeypress();
                 settings.StateOn = !settings.StateOn;
                 ApplyVisualState();
                 Connection.SetSettingsAsync(JObject.FromObject(settings));
-                PlayShortPressSound();
+                PlaySound(shortPressSound);
             }
             catch (Exception ex)
             {
-                Logger.Instance.LogMessage(TracingLevel.ERROR, "StateMemory KeyReleased failed: " + ex);
+                PluginLog.Error($"StateMemory KeyReleased failed: {ex}");
             }
             finally
             {
@@ -145,34 +144,58 @@ namespace starcitizen.Buttons
             }
         }
 
-        // ============================================================
-        // REGION: Settings Management
-        // ============================================================
+        #endregion
+
+        #region Settings Management
+
         public override void ReceivedSettings(ReceivedSettingsPayload payload)
         {
             if (payload?.Settings == null) return;
 
             Tools.AutoPopulateSettings(settings, payload.Settings);
-            NormalizeDefaults();
+            ParseSettings();
             LoadSounds();
             ApplyVisualState();
         }
 
-        private void NormalizeDefaults()
+        private void ParseSettings()
         {
-            if (settings.LongPressMs <= 0) settings.LongPressMs = 750;
-            if (settings.KeypressDelayMs < 0) settings.KeypressDelayMs = 0;
+            // Parse long press duration
+            if (!string.IsNullOrWhiteSpace(settings.LongPressMs) &&
+                int.TryParse(settings.LongPressMs, out var parsedLong) &&
+                parsedLong > 0)
+            {
+                longPressMs = parsedLong;
+            }
+            else
+            {
+                longPressMs = DefaultLongPressMs;
+            }
+
+            // Parse keypress delay
+            if (!string.IsNullOrWhiteSpace(settings.KeypressDelayMs) &&
+                int.TryParse(settings.KeypressDelayMs, out var parsedDelay) &&
+                parsedDelay >= 0)
+            {
+                keypressDelayMs = parsedDelay;
+            }
+            else
+            {
+                keypressDelayMs = DefaultKeypressDelayMs;
+            }
+
             settings.Function ??= string.Empty;
         }
 
-        // ============================================================
-        // REGION: Key Handling
-        // ============================================================
+        #endregion
+
+        #region Key Handling
+
         private bool IsLongPress()
         {
             if (!pressStartUtc.HasValue) return false;
             var ms = (DateTime.UtcNow - pressStartUtc.Value).TotalMilliseconds;
-            return ms >= Math.Max(0, settings.LongPressMs);
+            return ms >= Math.Max(0, longPressMs);
         }
 
         private async void ApplyVisualState()
@@ -183,35 +206,20 @@ namespace starcitizen.Buttons
             }
             catch (Exception ex)
             {
-                Logger.Instance.LogMessage(TracingLevel.ERROR, "StateMemory SetStateAsync failed: " + ex);
+                PluginLog.Error($"StateMemory SetStateAsync failed: {ex}");
             }
         }
 
-        private void SafeSendBoundKeypress()
+        private void SendBoundKeypress()
         {
-            try
-            {
-                if (bindingService.Reader == null) return;
-                if (string.IsNullOrWhiteSpace(settings.Function)) return;
-
-                var binding = bindingService.Reader.GetBinding(settings.Function);
-                var keyboard = binding?.Keyboard;
-                if (string.IsNullOrWhiteSpace(keyboard)) return;
-
-                var converted = CommandTools.ConvertKeyString(keyboard);
-                if (string.IsNullOrWhiteSpace(converted)) return;
-
-                StreamDeckCommon.SendKeypress(converted, settings.KeypressDelayMs);
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.LogMessage(TracingLevel.ERROR, "StateMemory SendKeypress failed: " + ex);
-            }
+            if (!TryGetKeyBinding(settings.Function, out var keyInfo)) return;
+            StreamDeckCommon.SendKeypress(keyInfo, keypressDelayMs);
         }
 
-        // ============================================================
-        // REGION: Sound Management
-        // ============================================================
+        #endregion
+
+        #region Sound Management
+
         private void LoadSounds()
         {
             shortPressSound = TryLoadSound(settings.ShortPressSoundFilename, out var normalizedShort);
@@ -221,81 +229,19 @@ namespace starcitizen.Buttons
             settings.LongPressSoundFilename = normalizedLong;
         }
 
-        private CachedSound TryLoadSound(string filename, out string normalizedFilename)
-        {
-            normalizedFilename = filename;
+        #endregion
 
-            if (string.IsNullOrEmpty(filename) || !File.Exists(filename))
-            {
-                normalizedFilename = null;
-                return null;
-            }
+        #region Disposal
 
-            try
-            {
-                return new CachedSound(filename);
-            }
-            catch
-            {
-                normalizedFilename = null;
-                return null;
-            }
-        }
-
-        private void PlayShortPressSound() => PlaySound(shortPressSound);
-        private void PlayLongPressSound() => PlaySound(longPressSound ?? shortPressSound);
-
-        private void PlaySound(CachedSound sound)
-        {
-            if (sound == null) return;
-            try
-            {
-                AudioPlaybackEngine.Instance.PlaySound(sound);
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.LogMessage(TracingLevel.ERROR, "StateMemory PlaySound failed: " + ex);
-            }
-        }
-
-        // ============================================================
-        // REGION: Property Inspector
-        // ============================================================
-        private void Connection_OnPropertyInspectorDidAppear(object sender, EventArgs e) => UpdatePropertyInspector();
-
-        private void Connection_OnSendToPlugin(object sender, EventArgs e)
-        {
-            try
-            {
-                var payload = e.ExtractPayload();
-                if (payload?["property_inspector"]?.ToString() == "propertyInspectorConnected")
-                {
-                    UpdatePropertyInspector();
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.LogMessage(TracingLevel.WARN, $"Failed processing PI payload: {ex.Message}");
-            }
-        }
-
-        private void OnKeyBindingsLoaded(object sender, EventArgs e) => UpdatePropertyInspector();
-
-        private void UpdatePropertyInspector()
-        {
-            if (bindingService.Reader == null) return;
-            PropertyInspectorMessenger.SendFunctionsAsync(Connection);
-        }
-
-        // ============================================================
-        // REGION: Disposal
-        // ============================================================
         public override void Dispose()
         {
-            Connection.OnPropertyInspectorDidAppear -= Connection_OnPropertyInspectorDidAppear;
-            Connection.OnSendToPlugin -= Connection_OnSendToPlugin;
-            bindingService.KeyBindingsLoaded -= OnKeyBindingsLoaded;
+            // Clear sound references to help GC
+            shortPressSound = null;
+            longPressSound = null;
+            
             base.Dispose();
         }
+
+        #endregion
     }
 }

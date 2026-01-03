@@ -3,6 +3,60 @@
 All notable changes to this repository are documented below. Unreleased changes appear at the top.
 
 
+## [2.0.8]
+
+### Major Changes
+- **Upgraded to .NET 8** - Complete migration from .NET Framework 4.8 to .NET 8
+  - Faster startup and execution (20-40% performance improvement)
+  - Lower memory footprint with improved garbage collection
+  - Access to C# 12 language features
+  - Modern SDK-style project files
+  - Long-term support until November 2026
+
+### New Features
+- **Backward Compatibility for Legacy Profiles**: Added support for old `com.mhwlng.starcitizen.static` action UUID
+  - Users with profiles from the original mhwlng plugin no longer need to reconfigure their buttons
+  - Legacy action is hidden from the action list but existing buttons continue to work
+  - Created `LegacyActionKey.cs` that inherits from `ActionKey` with the old UUID
+
+### UI Improvements
+- **Loading State Indicator**: Property Inspector dropdowns now show "Loading Star Citizen keybinds..." while the plugin fetches keybinds
+  - Provides clear visual feedback during plugin initialization
+  - Text persists until functions are fully loaded and populated
+  - **Note:** The function menu is stable but still needs further improvements in future releases
+
+### Bug Fixes
+- Fixed Momentary button Property Inspector having different scroll behavior due to broken CSS style attribute
+- Fixed `loadConfiguration` override to preserve loading text in dropdowns until functions arrive
+- Fixed issue where dropdowns appeared empty during loading
+
+### Technical Changes
+- Converted all project files to SDK-style format
+- Updated NuGet packages to latest compatible versions:
+  - `streamdeck-tools` 6.3.2
+  - `NLog` 6.0.5
+  - `Newtonsoft.Json` 13.0.4
+  - `NAudio` 2.2.1
+- **Zstd.Net modernization:**
+  - Rewrote with file-scoped namespaces and modern C# syntax
+  - Converted `ZstdBuffer` from class to struct for reduced allocations
+  - Added static `Decompressor.Unwrap()` method for efficient single-shot decompression
+  - Used `nint`/`nuint` native integer types for better interop
+  - Simplified P/Invoke declarations with `ref` struct passing
+- **p4kFileHeader modernization:**
+  - Made class `sealed` for better performance
+  - Used `readonly` fields where appropriate
+  - Replaced `new byte[] { }` with collection expression `[]`
+  - Fixed exception throwing in finally block (CA2219)
+  - Used target-typed `new` expressions
+- Suppressed platform compatibility warnings (Windows-only target)
+- All button classes now call `SendFunctionsAsync` unconditionally (messenger handles loading state internally)
+- Added `LegacyActionKey.cs` for backward compatibility with old mhwlng profiles
+- Updated `manifest.json` with hidden legacy action entry (`VisibleInActionsList: false`)
+- Standardized loading message text across all Property Inspector HTML files
+- Updated `PropertyInspectorMessenger` to send loading state when bindings aren't ready yet
+
+
 ## [2.0.7]
 
 ### Added

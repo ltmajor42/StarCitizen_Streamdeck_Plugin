@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SCJMapper_V2.SC
+namespace starcitizen.SC
 {
   /// <summary>
   /// One SC asset file

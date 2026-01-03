@@ -4,7 +4,7 @@ using System.IO;
 using System.Threading;
 using BarRaider.SdTools;
 using p4ktest.SC;
-using SCJMapper_V2.SC;
+using starcitizen.SC;
 
 namespace starcitizen.Core
 {
@@ -30,8 +30,8 @@ namespace starcitizen.Core
         // ============================================================
         // REGION: Thread Safety and State
         // ============================================================
-        private readonly FifoExecution loadQueue = new FifoExecution();
-        private readonly object syncLock = new object();
+        private readonly FifoExecution loadQueue = new();
+        private readonly object syncLock = new();
 
         private KeyBindingWatcher watcher;
         private bool disposed;
@@ -61,6 +61,11 @@ namespace starcitizen.Core
             lock (syncLock)
             {
                 if (initialized) return;
+                if (disposed)
+                {
+                    PluginLog.Warn("KeyBindingService.Initialize called after disposal");
+                    return;
+                }
 
                 enableCsvExport = ReadCsvFlagFromConfig();
                 initialized = true;
@@ -74,6 +79,7 @@ namespace starcitizen.Core
         /// <summary>Queues a reload of bindings on a background thread.</summary>
         public void QueueReload()
         {
+            if (disposed) return;
             loadQueue.QueueUserWorkItem(_ => LoadBindings(), null);
         }
 
@@ -95,9 +101,36 @@ namespace starcitizen.Core
 
         public void Dispose()
         {
-            if (disposed) return;
-            disposed = true;
+            lock (syncLock)
+            {
+                if (disposed) return;
+                disposed = true;
+            }
+
+            PluginLog.Info("KeyBindingService.Dispose: Starting cleanup...");
+
+            // Stop watcher first to prevent new reload requests
             StopWatcher();
+            PluginLog.Info("KeyBindingService.Dispose: File watcher stopped");
+
+            // Clear event handlers to prevent memory leaks
+            KeyBindingsLoaded = null;
+            PluginLog.Info("KeyBindingService.Dispose: Event handlers cleared");
+
+            // Dispose the work queue
+            try
+            {
+                loadQueue.Dispose();
+                PluginLog.Info("KeyBindingService.Dispose: Load queue disposed");
+            }
+            catch (Exception ex)
+            {
+                PluginLog.Error($"KeyBindingService.Dispose: Error disposing load queue: {ex.Message}");
+            }
+
+            // Clear reader reference
+            Reader = null;
+            PluginLog.Info("KeyBindingService.Dispose: Cleanup complete");
         }
 
         // ============================================================
@@ -105,6 +138,8 @@ namespace starcitizen.Core
         // ============================================================
         private void LoadBindings()
         {
+            if (disposed) return;
+
             try
             {
                 PluginLog.Info("Loading Star Citizen key bindings...");
@@ -131,6 +166,7 @@ namespace starcitizen.Core
                 newReader.CreateCsv(enableCsvExport);
 
                 // Success => swap reader reference
+                if (disposed) return; // Check again before updating state
                 Reader = newReader;
 
                 Interlocked.Increment(ref bindingsVersion);
@@ -144,7 +180,10 @@ namespace starcitizen.Core
             finally
             {
                 // Ensure watcher stays active for automatic updates
-                MonitorProfileDirectory();
+                if (!disposed)
+                {
+                    MonitorProfileDirectory();
+                }
             }
         }
 
@@ -182,15 +221,19 @@ namespace starcitizen.Core
         // ============================================================
         private void MonitorProfileDirectory(bool forceRestart = false)
         {
+            if (disposed) return;
+
             var profilePath = SCPath.SCClientProfilePath;
             if (string.IsNullOrEmpty(profilePath) || !Directory.Exists(profilePath))
             {
-                PluginLog.Warn("Could not find profile directory to monitor for changes");
+                PluginLog.Warn($"Could not find profile directory to monitor for changes. SCClientProfilePath='{profilePath ?? "(null)"}'");
                 return;
             }
 
             lock (syncLock)
             {
+                if (disposed) return;
+
                 if (!forceRestart && watcher != null)
                 {
                     if (!watcher.EnableRaisingEvents) watcher.StartWatching();
@@ -199,21 +242,29 @@ namespace starcitizen.Core
 
                 StopWatcherInternal();
 
-                PluginLog.Info($"Monitoring key binding file at: {profilePath}\\actionmaps.xml");
+                var actionmapsPath = Path.Combine(profilePath, "actionmaps.xml");
+                PluginLog.Info($"Starting keybind file watcher: {actionmapsPath}");
+                PluginLog.Info($"  File exists: {File.Exists(actionmapsPath)}");
+                
                 watcher = new KeyBindingWatcher(profilePath, "actionmaps.xml");
                 watcher.KeyBindingUpdated += Watcher_KeyBindingUpdated;
                 watcher.Error += Watcher_OnError;
                 watcher.StartWatching();
+                
+                PluginLog.Info("Keybind file watcher started successfully");
             }
         }
 
         private void Watcher_KeyBindingUpdated(object sender, EventArgs e)
         {
+            if (disposed) return;
+            PluginLog.Info("Detected actionmaps.xml change - reloading keybinds");
             QueueReload();
         }
 
         private void Watcher_OnError(object sender, ErrorEventArgs e)
         {
+            if (disposed) return;
             PluginLog.Warn($"Key binding watcher error: {e.GetException()?.Message ?? "unknown"}. Restarting watcher.");
             MonitorProfileDirectory(forceRestart: true);
         }

@@ -5,10 +5,10 @@ using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
 using BarRaider.SdTools;
-using starcitizen;
+using starcitizen.Core;
 using TheUser = p4ktest.SC.TheUser;
 
-namespace SCJMapper_V2.SC
+namespace starcitizen.SC
 {
     /// <summary>
     /// Reads and parses Star Citizen default profile and actionmaps XML files.
@@ -59,16 +59,16 @@ namespace SCJMapper_V2.SC
             public string Name { get; set; }
             public string UILabel { get; set; }
             public string UICategory { get; set; }
-            public Dictionary<string, Action> Actions { get; set; } = new Dictionary<string, Action>(StringComparer.OrdinalIgnoreCase);
+            public Dictionary<string, Action> Actions { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         }
 
         // ============================================================
         // REGION: Internal State
         // ============================================================
-        private readonly Dictionary<string, ActionMap> maps = new Dictionary<string, ActionMap>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, Action> actions = new Dictionary<string, Action>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, ActivationMode> activationmodes = new Dictionary<string, ActivationMode>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, string> joysticks = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ActionMap> maps = new(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, Action> actions = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ActivationMode> activationmodes = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> joysticks = new(StringComparer.OrdinalIgnoreCase);
 
         // ============================================================
         // REGION: Binding Normalization
@@ -112,7 +112,7 @@ namespace SCJMapper_V2.SC
             };
         }
 
-        private void ApplyActivationModeOverrides(XElement action, ActivationMode activationMode)
+        private static void ApplyActivationModeOverrides(XElement action, ActivationMode activationMode)
         {
             if (activationMode == null) return;
 
@@ -199,11 +199,11 @@ namespace SCJMapper_V2.SC
         /// </summary>
         private void ProcessRebindInput(string input, Action currentAction)
         {
-            var underscoreIdx = input.IndexOf("_", StringComparison.Ordinal);
+            var underscoreIdx = input.IndexOf('_');
             if (underscoreIdx < 0) return;
 
-            var prefix = input.Substring(0, 2).ToLowerInvariant();
-            var value = input.Substring(underscoreIdx + 1).Trim();
+            var prefix = input[..2].ToLowerInvariant();
+            var value = input[(underscoreIdx + 1)..].Trim();
 
             switch (prefix)
             {
@@ -222,7 +222,7 @@ namespace SCJMapper_V2.SC
                     break;
 
                 case "js": // Joystick
-                    var jsInstance = input.Substring(2, underscoreIdx - 2);
+                    var jsInstance = input[2..underscoreIdx];
                     if (!string.IsNullOrEmpty(value))
                     {
                         currentAction.Joystick = value;
@@ -277,7 +277,7 @@ namespace SCJMapper_V2.SC
             var mapName = (string)actionmap.Attribute("name");
             if (string.IsNullOrEmpty(mapName)) return;
 
-            if (!maps.ContainsKey(mapName))
+            if (!maps.TryGetValue(mapName, out var map))
             {
                 // New map from defaultProfile
                 var uiLabel = SCUiText.Instance.Text((string)actionmap.Attribute("UILabel") ?? mapName, mapName);
@@ -295,8 +295,6 @@ namespace SCJMapper_V2.SC
             else
             {
                 // Existing map - apply actionmaps.xml overrides
-                var map = maps[mapName];
-
                 foreach (var action in actionmap.Elements().Where(x => x.Name == "action"))
                 {
                     var actionName = (string)action.Attribute("name");
@@ -348,18 +346,16 @@ namespace SCJMapper_V2.SC
         {
             var settings = new XmlReaderSettings { ConformanceLevel = ConformanceLevel.Fragment, IgnoreWhitespace = true, IgnoreComments = true };
 
-            using (var reader = XmlReader.Create(new StringReader(xml), settings))
+            using var reader = XmlReader.Create(new StringReader(xml), settings);
+            reader.MoveToContent();
+            if (XNode.ReadFrom(reader) is XElement el)
             {
-                reader.MoveToContent();
-                if (XNode.ReadFrom(reader) is XElement el)
+                foreach (var actionProfile in el.Elements().Where(x => x.Name == "ActionProfiles"))
                 {
-                    foreach (var actionProfile in el.Elements().Where(x => x.Name == "ActionProfiles"))
+                    if ((string)actionProfile.Attribute("profileName") == "default")
                     {
-                        if ((string)actionProfile.Attribute("profileName") == "default")
-                        {
-                            FromXML(actionProfile.ToString());
-                            break;
-                        }
+                        FromXML(actionProfile.ToString());
+                        break;
                     }
                 }
             }
@@ -372,40 +368,38 @@ namespace SCJMapper_V2.SC
         {
             var settings = new XmlReaderSettings { ConformanceLevel = ConformanceLevel.Fragment, IgnoreWhitespace = true, IgnoreComments = true };
 
-            using (var reader = XmlReader.Create(new StringReader(xml), settings))
+            using var reader = XmlReader.Create(new StringReader(xml), settings);
+            reader.MoveToContent();
+            if (XNode.ReadFrom(reader) is not XElement el) return;
+
+            // Parse activation modes
+            var ams = el.Elements().FirstOrDefault(x => x.Name == "ActivationModes");
+            if (ams != null)
             {
-                reader.MoveToContent();
-                if (!(XNode.ReadFrom(reader) is XElement el)) return;
-
-                // Parse activation modes
-                var ams = el.Elements().FirstOrDefault(x => x.Name == "ActivationModes");
-                if (ams != null)
+                foreach (var am in ams.Elements().Where(x => x.Name == "ActivationMode"))
                 {
-                    foreach (var am in ams.Elements().Where(x => x.Name == "ActivationMode"))
+                    ReadActivationMode(am);
+                }
+            }
+
+            // Parse joystick options
+            foreach (var option in el.Elements().Where(x => x.Name == "options"))
+            {
+                if ((string)option.Attribute("type") == "joystick")
+                {
+                    var instance = (string)option.Attribute("instance");
+                    var product = (string)option.Attribute("Product");
+                    if (!string.IsNullOrEmpty(instance) && !joysticks.ContainsKey(instance))
                     {
-                        ReadActivationMode(am);
+                        joysticks.Add(instance, product);
                     }
                 }
+            }
 
-                // Parse joystick options
-                foreach (var option in el.Elements().Where(x => x.Name == "options"))
-                {
-                    if ((string)option.Attribute("type") == "joystick")
-                    {
-                        var instance = (string)option.Attribute("instance");
-                        var product = (string)option.Attribute("Product");
-                        if (!string.IsNullOrEmpty(instance) && !joysticks.ContainsKey(instance))
-                        {
-                            joysticks.Add(instance, product);
-                        }
-                    }
-                }
-
-                // Parse action maps
-                foreach (var actionmap in el.Elements().Where(x => x.Name == "actionmap"))
-                {
-                    ReadActionmap(actionmap);
-                }
+            // Parse action maps
+            foreach (var actionmap in el.Elements().Where(x => x.Name == "actionmap"))
+            {
+                ReadActionmap(actionmap);
             }
         }
 
@@ -483,20 +477,18 @@ namespace SCJMapper_V2.SC
 
         private void ExportKeyboardBindingsCsv()
         {
-            using (var outputFile = new StreamWriter(Path.Combine(TheUser.FileStoreDir, "keybindings.csv")))
-            {
-                outputFile.WriteLine("sep=\t");
-                outputFile.WriteLine("map_UICategory\tmap_UILabel\tmap_Name\tUILabel\tUIDescription\tName\tKeyboard\tOverrule\t" +
-                    "Name\tOnPress\tOnHold\tOnRelease\tMultiTap\tMultiTapBlock\tPressTriggerThreshold\tReleaseTriggerThreshold\tReleaseTriggerDelay\tRetriggerable");
+            using var outputFile = new StreamWriter(Path.Combine(TheUser.FileStoreDir, "keybindings.csv"));
+            outputFile.WriteLine("sep=\t");
+            outputFile.WriteLine("map_UICategory\tmap_UILabel\tmap_Name\tUILabel\tUIDescription\tName\tKeyboard\tOverrule\t" +
+                "Name\tOnPress\tOnHold\tOnRelease\tMultiTap\tMultiTapBlock\tPressTriggerThreshold\tReleaseTriggerThreshold\tReleaseTriggerDelay\tRetriggerable");
 
-                foreach (var action in actions.Values.OrderBy(x => x.MapUILabel).ThenBy(x => x.UILabel))
-                {
-                    var am = action.ActivationMode;
-                    outputFile.WriteLine($"{action.MapUICategory}\t{action.MapUILabel}\t{action.MapName}\t" +
-                        $"{action.UILabel}\t{action.UIDescription}\t{action.Name}\t{action.Keyboard}\t{(action.KeyboardOverRule ? "YES" : "")}\t" +
-                        $"{am?.Name}\t{am?.OnPress}\t{am?.OnHold}\t{am?.OnRelease}\t{am?.MultiTap}\t{am?.MultiTapBlock}\t" +
-                        $"{am?.PressTriggerThreshold}\t{am?.ReleaseTriggerThreshold}\t{am?.ReleaseTriggerDelay}\t{am?.Retriggerable}");
-                }
+            foreach (var action in actions.Values.OrderBy(x => x.MapUILabel).ThenBy(x => x.UILabel))
+            {
+                var am = action.ActivationMode;
+                outputFile.WriteLine($"{action.MapUICategory}\t{action.MapUILabel}\t{action.MapName}\t" +
+                    $"{action.UILabel}\t{action.UIDescription}\t{action.Name}\t{action.Keyboard}\t{(action.KeyboardOverRule ? "YES" : "")}\t" +
+                    $"{am?.Name}\t{am?.OnPress}\t{am?.OnHold}\t{am?.OnRelease}\t{am?.MultiTap}\t{am?.MultiTapBlock}\t" +
+                    $"{am?.PressTriggerThreshold}\t{am?.ReleaseTriggerThreshold}\t{am?.ReleaseTriggerDelay}\t{am?.Retriggerable}");
             }
         }
 
@@ -506,16 +498,14 @@ namespace SCJMapper_V2.SC
                 .Where(x => !string.IsNullOrWhiteSpace(x.Mouse))
                 .ToDictionary(x => x.Name, x => x);
 
-            using (var outputFile = new StreamWriter(Path.Combine(TheUser.FileStoreDir, "mousebindings.csv")))
-            {
-                outputFile.WriteLine("sep=\t");
-                outputFile.WriteLine("map_UICategory\tmap_UILabel\tmap_Name\tUILabel\tUIDescription\tName\tMouse\tOverrule");
+            using var outputFile = new StreamWriter(Path.Combine(TheUser.FileStoreDir, "mousebindings.csv"));
+            outputFile.WriteLine("sep=\t");
+            outputFile.WriteLine("map_UICategory\tmap_UILabel\tmap_Name\tUILabel\tUIDescription\tName\tMouse\tOverrule");
 
-                foreach (var action in mouseActions.Values.OrderBy(x => x.MapUILabel).ThenBy(x => x.UILabel))
-                {
-                    outputFile.WriteLine($"{action.MapUICategory}\t{action.MapUILabel}\t{action.MapName}\t" +
-                        $"{action.UILabel}\t{action.UIDescription}\t{action.Name}\t{action.Mouse}\t{(action.MouseOverRule ? "YES" : "")}");
-                }
+            foreach (var action in mouseActions.Values.OrderBy(x => x.MapUILabel).ThenBy(x => x.UILabel))
+            {
+                outputFile.WriteLine($"{action.MapUICategory}\t{action.MapUILabel}\t{action.MapName}\t" +
+                    $"{action.UILabel}\t{action.UIDescription}\t{action.Name}\t{action.Mouse}\t{(action.MouseOverRule ? "YES" : "")}");
             }
         }
 
@@ -525,16 +515,14 @@ namespace SCJMapper_V2.SC
                 .Where(x => !string.IsNullOrWhiteSpace(x.Joystick))
                 .ToDictionary(x => x.Name, x => x);
 
-            using (var outputFile = new StreamWriter(Path.Combine(TheUser.FileStoreDir, "joystickbindings.csv")))
-            {
-                outputFile.WriteLine("sep=\t");
-                outputFile.WriteLine("map_UICategory\tmap_UILabel\tmap_Name\tUILabel\tUIDescription\tName\tJoystick\tOverrule");
+            using var outputFile = new StreamWriter(Path.Combine(TheUser.FileStoreDir, "joystickbindings.csv"));
+            outputFile.WriteLine("sep=\t");
+            outputFile.WriteLine("map_UICategory\tmap_UILabel\tmap_Name\tUILabel\tUIDescription\tName\tJoystick\tOverrule");
 
-                foreach (var action in joystickActions.Values.OrderBy(x => x.MapUILabel).ThenBy(x => x.UILabel))
-                {
-                    outputFile.WriteLine($"{action.MapUICategory}\t{action.MapUILabel}\t{action.MapName}\t" +
-                        $"{action.UILabel}\t{action.UIDescription}\t{action.Name}\t{action.Joystick}\t{action.JoystickOverRule}");
-                }
+            foreach (var action in joystickActions.Values.OrderBy(x => x.MapUILabel).ThenBy(x => x.UILabel))
+            {
+                outputFile.WriteLine($"{action.MapUICategory}\t{action.MapUILabel}\t{action.MapName}\t" +
+                    $"{action.UILabel}\t{action.UIDescription}\t{action.Name}\t{action.Joystick}\t{action.JoystickOverRule}");
             }
         }
 
@@ -542,16 +530,14 @@ namespace SCJMapper_V2.SC
         {
             var unboundActions = GetUnboundActions();
 
-            using (var outputFile = new StreamWriter(Path.Combine(TheUser.FileStoreDir, "unboundactions.csv")))
-            {
-                outputFile.WriteLine("sep=\t");
-                outputFile.WriteLine("map_UICategory\tmap_UILabel\tmap_Name\tUILabel\tUIDescription\tName");
+            using var outputFile = new StreamWriter(Path.Combine(TheUser.FileStoreDir, "unboundactions.csv"));
+            outputFile.WriteLine("sep=\t");
+            outputFile.WriteLine("map_UICategory\tmap_UILabel\tmap_Name\tUILabel\tUIDescription\tName");
 
-                foreach (var action in unboundActions.Values.OrderBy(x => x.MapUILabel).ThenBy(x => x.UILabel))
-                {
-                    outputFile.WriteLine($"{action.MapUICategory}\t{action.MapUILabel}\t{action.MapName}\t" +
-                        $"{action.UILabel}\t{action.UIDescription}\t{action.Name}");
-                }
+            foreach (var action in unboundActions.Values.OrderBy(x => x.MapUILabel).ThenBy(x => x.UILabel))
+            {
+                outputFile.WriteLine($"{action.MapUICategory}\t{action.MapUILabel}\t{action.MapName}\t" +
+                    $"{action.UILabel}\t{action.UIDescription}\t{action.Name}");
             }
         }
     }

@@ -113,9 +113,9 @@ namespace SCJMapper_V2.CryXMLlib
         CryXmlNodeRef n = pData.pBinaryNodes[0];
         return n;
 
-      } catch {
+      } catch (Exception ex) {
         result = EResult.NotBinXml;
-        SetErrorDescription( "Exception in buffer reader" );
+        SetErrorDescription( $"Exception in buffer reader: {ex.GetType().Name}: {ex.Message}" );
         return null;
       }
     }
@@ -182,9 +182,12 @@ namespace SCJMapper_V2.CryXMLlib
 
       try {
         pData.pChildIndices = ( CryXMLNodeIndex[] )Array.CreateInstance( typeof( CryXMLNodeIndex ), header.nChildCount ); // alloc enough
-        UInt32 incr = CryXMLNodeIndex.MySize( ); // size of one element to read
+        UInt32 incr = sizeof(UInt32); // CryXMLNodeIndex is just a UInt32 wrapper
         for ( UInt32 aIdx = 0; aIdx < header.nChildCount; aIdx++ ) {
-          pData.pChildIndices[aIdx] = Conversions.ByteToType<CryXMLNodeIndex>( fileContents, header.nChildTablePosition + aIdx * incr );
+          // Read UInt32 directly and let implicit conversion handle it
+          UInt32 offset = header.nChildTablePosition + aIdx * incr;
+          UInt32 val = BitConverter.ToUInt32(fileContents, (int)offset);
+          pData.pChildIndices[aIdx] = val;
         }
       } catch ( Exception e ) {
         SetErrorDescription( string.Format( "EXC ChildIndices: {0}", e.Message ) );

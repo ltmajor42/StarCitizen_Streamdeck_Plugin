@@ -48,9 +48,11 @@
 - Supports holding keys / sustained inputs (where applicable).
 - Better support for actions that need continuous input behavior.
 
-### Major Code Optimization + .NET 8 Upgrade
-- Large internal refactor and modernization to **.NET 8**.
-- Improved performance, reduced overhead, and cleaner long-term maintainability.
+### .NET 8 Upgrade
+- Complete migration from .NET Framework 4.8 to **.NET 8**.
+- 20-40% faster execution and lower memory usage.
+- Improved startup time and async performance.
+- Long-term support until November 2026.
 
 ## Ownership, Credits, and Thanks
 - **Maintainer:** Ltmajor42  

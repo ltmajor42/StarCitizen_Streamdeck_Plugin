@@ -2,7 +2,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using BarRaider.SdTools;
-using BarRaider.SdTools.Events;
 using BarRaider.SdTools.Wrappers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -14,39 +13,48 @@ namespace starcitizen.Buttons
     /// Repeat Action button - repeatedly sends a keybind while held.
     /// Useful for actions that need rapid repeated input.
     /// </summary>
+    /// <remarks>
+    /// Use this for power management or other actions that benefit
+    /// from rapid repeated input while the button is held.
+    /// </remarks>
     [PluginActionId("com.ltmajor42.starcitizen.holdrepeat")]
     public class Repeataction : StarCitizenKeypadBase
     {
-        // ============================================================
-        // REGION: Settings
-        // ============================================================
-        protected class PluginSettings
-        {
-            public static PluginSettings CreateDefaultSettings() => new PluginSettings
-            {
-                Function = string.Empty,
-                RepeatRate = 100
-            };
+        #region Settings
 
-            [JsonProperty(PropertyName = "function")]
-            public string Function { get; set; }
+        /// <summary>
+        /// Settings for Repeataction with configurable repeat rate.
+        /// Stored as string to handle empty values from PI gracefully.
+        /// </summary>
+        protected class PluginSettings : PluginSettingsBase
+        {
+            public static PluginSettings CreateDefaultSettings() => new PluginSettings();
 
             [JsonProperty(PropertyName = "repeatRate")]
-            public int RepeatRate { get; set; }
+            public string RepeatRate { get; set; } = "100";
         }
 
-        // ============================================================
-        // REGION: State
-        // ============================================================
+        #endregion
+
+        #region Constants
+
+        private const int MinRepeatRate = 1;
+        private const int DefaultRepeatRate = 100;
+        private const int DefaultKeypressDelay = 40;
+
+        #endregion
+
+        #region State
+
         private readonly PluginSettings settings;
         private CancellationTokenSource repeatToken;
-        private int currentRepeatRate = 100;
+        private int currentRepeatRate = DefaultRepeatRate;
         private bool isRepeating;
-        private readonly KeyBindingService bindingService = KeyBindingService.Instance;
 
-        // ============================================================
-        // REGION: Initialization
-        // ============================================================
+        #endregion
+
+        #region Initialization
+
         public Repeataction(SDConnection connection, InitialPayload payload) : base(connection, payload)
         {
             settings = PluginSettings.CreateDefaultSettings();
@@ -54,39 +62,26 @@ namespace starcitizen.Buttons
             if (payload.Settings != null && payload.Settings.Count > 0)
             {
                 Tools.AutoPopulateSettings(settings, payload.Settings);
-                ParseRepeatRate(payload.Settings);
+                ParseRepeatRate();
             }
             else
             {
                 _ = Connection.SetSettingsAsync(JObject.FromObject(settings));
             }
 
-            Connection.OnPropertyInspectorDidAppear += Connection_OnPropertyInspectorDidAppear;
-            Connection.OnSendToPlugin += Connection_OnSendToPlugin;
-            bindingService.KeyBindingsLoaded += OnKeyBindingsLoaded;
-
-            UpdatePropertyInspector();
+            WirePropertyInspectorEvents();
+            SendFunctionsToPropertyInspector();
         }
 
-        // ============================================================
-        // REGION: Key Events
-        // ============================================================
+        #endregion
+
+        #region Key Events
+
         public override void KeyPressed(KeyPayload payload)
         {
-            if (bindingService.Reader == null)
-            {
-                StreamDeckCommon.ForceStop = true;
-                return;
-            }
+            if (!EnsureBindingsReady()) return;
 
-            StreamDeckCommon.ForceStop = false;
-
-            if (payload?.Settings != null) ParseRepeatRate(payload.Settings);
-
-            if (!bindingService.TryGetBinding(settings.Function, out var action)) return;
-
-            var keyInfo = CommandTools.ConvertKeyString(action.Keyboard);
-            if (string.IsNullOrWhiteSpace(keyInfo)) return;
+            if (!TryGetKeyBinding(settings.Function, out var keyInfo)) return;
 
             StopRepeater();
             repeatToken = new CancellationTokenSource();
@@ -104,9 +99,10 @@ namespace starcitizen.Buttons
             _ = Connection.SetStateAsync(0);
         }
 
-        // ============================================================
-        // REGION: Repeat Logic
-        // ============================================================
+        #endregion
+
+        #region Repeat Logic
+
         private async Task RepeatWhileHeldAsync(string keyInfo, int repeatRate, CancellationToken token)
         {
             SendSingleKeypress(keyInfo);
@@ -115,7 +111,7 @@ namespace starcitizen.Buttons
             {
                 try
                 {
-                    await Task.Delay(Math.Max(1, repeatRate), token);
+                    await Task.Delay(Math.Max(MinRepeatRate, repeatRate), token);
                 }
                 catch (TaskCanceledException) { break; }
 
@@ -129,11 +125,11 @@ namespace starcitizen.Buttons
         {
             try
             {
-                StreamDeckCommon.SendKeypress(keyInfo, 40);
+                StreamDeckCommon.SendKeypress(keyInfo, DefaultKeypressDelay);
             }
             catch (Exception ex)
             {
-                Logger.Instance.LogMessage(TracingLevel.ERROR, $"Failed to send repeat keypress: {ex}");
+                PluginLog.Error($"Failed to send repeat keypress: {ex}");
             }
         }
 
@@ -148,69 +144,43 @@ namespace starcitizen.Buttons
             isRepeating = false;
         }
 
-        // ============================================================
-        // REGION: Settings Management
-        // ============================================================
+        #endregion
+
+        #region Settings Management
+
         public override void ReceivedSettings(ReceivedSettingsPayload payload)
         {
             if (payload.Settings != null)
             {
                 Tools.AutoPopulateSettings(settings, payload.Settings);
-                ParseRepeatRate(payload.Settings);
+                ParseRepeatRate();
             }
         }
 
-        private void ParseRepeatRate(JObject settingsObj)
+        private void ParseRepeatRate()
         {
-            if (settingsObj != null &&
-                settingsObj.TryGetValue("repeatRate", out var rateToken) &&
-                int.TryParse(rateToken.ToString(), out var parsedRate))
+            if (!string.IsNullOrWhiteSpace(settings.RepeatRate) && 
+                int.TryParse(settings.RepeatRate, out var parsedRate) &&
+                parsedRate >= MinRepeatRate)
             {
-                currentRepeatRate = Math.Max(1, parsedRate);
+                currentRepeatRate = parsedRate;
             }
             else
             {
-                currentRepeatRate = Math.Max(1, settings.RepeatRate);
+                currentRepeatRate = DefaultRepeatRate;
             }
         }
 
-        // ============================================================
-        // REGION: Property Inspector
-        // ============================================================
-        private void Connection_OnPropertyInspectorDidAppear(object sender, EventArgs e) => UpdatePropertyInspector();
+        #endregion
 
-        private void Connection_OnSendToPlugin(object sender, EventArgs e)
-        {
-            try
-            {
-                var payload = e.ExtractPayload();
-                if (payload?["property_inspector"]?.ToString() == "propertyInspectorConnected")
-                    UpdatePropertyInspector();
-            }
-            catch (Exception ex)
-            {
-                Logger.Instance.LogMessage(TracingLevel.WARN, $"Failed processing PI payload: {ex.Message}");
-            }
-        }
+        #region Disposal
 
-        private void OnKeyBindingsLoaded(object sender, EventArgs e) => UpdatePropertyInspector();
-
-        private void UpdatePropertyInspector()
-        {
-            if (bindingService.Reader == null) return;
-            PropertyInspectorMessenger.SendFunctionsAsync(Connection);
-        }
-
-        // ============================================================
-        // REGION: Disposal
-        // ============================================================
         public override void Dispose()
         {
-            repeatToken?.Cancel();
-            Connection.OnPropertyInspectorDidAppear -= Connection_OnPropertyInspectorDidAppear;
-            Connection.OnSendToPlugin -= Connection_OnSendToPlugin;
-            bindingService.KeyBindingsLoaded -= OnKeyBindingsLoaded;
+            StopRepeater();
             base.Dispose();
         }
+
+        #endregion
     }
 }

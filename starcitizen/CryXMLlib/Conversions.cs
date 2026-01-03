@@ -1,103 +1,75 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace SCJMapper_V2.CryXMLlib
 {
-  internal static class Extensions
-  {
-    /// <summary>
-    /// Get the array slice between the two indexes.
-    /// ... Inclusive for start index, exclusive end
-    /// </summary>
-    public static T[] SliceE<T>( this T[] source, UInt32 start, UInt32 end )
+    internal static class Extensions
     {
-      // Handles negative ends.
-      if ( end < 0 ) {
-        end = ( UInt32 )source.Length + end;
-      }
-      UInt32 len = end - start;
+        /// <summary>
+        /// Get a span slice of the array (zero-allocation).
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<T> SliceSpan<T>(this T[] source, int offset, int length)
+            => source.AsSpan(offset, length);
 
-      // Return new array.
-      T[] res = new T[len];
-      /*
-      for ( int i = 0; i < len; i++ ) {
-        resOLD[i] = source[i + start];
-      }
-      */
-      Array.ConstrainedCopy( source, ( int )start, res, 0, ( int )len );
-      return res;
+        /// <summary>
+        /// Get the array slice between the two indexes.
+        /// Inclusive for start index, exclusive end.
+        /// </summary>
+        public static T[] SliceE<T>(this T[] source, uint start, uint end)
+        {
+            var len = (int)(end - start);
+            var res = new T[len];
+            Array.Copy(source, (int)start, res, 0, len);
+            return res;
+        }
+
+        /// <summary>
+        /// Get the array slice with offset and length.
+        /// </summary>
+        public static T[] SliceL<T>(this T[] source, uint offset, uint length)
+        {
+            var res = new T[(int)length];
+            Array.Copy(source, (int)offset, res, 0, (int)length);
+            return res;
+        }
     }
 
-    /// <summary>
-    /// Get the array slice between the two indexes.
-    /// ... Inclusive for start index, length.
-    /// </summary>
-    public static T[] SliceL<T>( this T[] source, UInt32 offset, UInt32 length )
+    internal static class Conversions
     {
-      UInt32 end = offset + length;
-      // Handles negative ends.
-      if ( end < 0 ) {
-        end = ( UInt32 )source.Length + end;
-      }
-      UInt32 len = end - offset;
+        /// <summary>
+        /// Converts ASCII bytes to string, stopping at null terminator.
+        /// Uses Span for efficiency.
+        /// </summary>
+        public static string ToString(byte[] byteArr, uint size = 999)
+        {
+            var span = byteArr.AsSpan(0, (int)Math.Min(size, byteArr.Length));
+            var nullIndex = span.IndexOf((byte)0);
+            var length = nullIndex >= 0 ? nullIndex : span.Length;
+            return Encoding.ASCII.GetString(span[..length]);
+        }
 
-      // Return new array.
-      T[] res = new T[len];
-      /*
-      for ( int i = 0; i < len; i++ ) {
-        res[i] = source[i + offset];
-      }
-      */
-      Array.ConstrainedCopy( source, ( int )offset, res, 0, ( int )len );
-      return res;
+        /// <summary>
+        /// Read a struct from a byte array at the specified offset.
+        /// Uses GCHandle for structs with managed fields (like byte[] arrays).
+        /// </summary>
+        public static T ByteToType<T>(byte[] bytes, uint offset = 0)
+        {
+            var size = Marshal.SizeOf(typeof(T));
+            var slice = new byte[size];
+            Array.Copy(bytes, (int)offset, slice, 0, size);
+
+            var handle = GCHandle.Alloc(slice, GCHandleType.Pinned);
+            try
+            {
+                return (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T));
+            }
+            finally
+            {
+                handle.Free();
+            }
+        }
     }
-  }
-
-
-
-  internal class Conversions
-  {
-
-    /// <summary>
-    /// Converts a number of ASCII chars into a string
-    /// </summary>
-    /// <param name="bPtr">Mem Location of the ASCII Chars</param>
-    /// <param name="size">Max number of ASCII chars to convert, stops at \0 however</param>
-    /// <returns>The converted string</returns>
-    static public string ToString( byte[] byteArr, uint size = 999 )
-    {
-      string s = "";
-      for ( uint i = 0; i < size; i++ ) {
-        if ( byteArr[i] != 0 )
-          s += Char.ConvertFromUtf32( byteArr[i] );
-        else
-          break; // stop at char 0
-      }
-      return s;
-    }
-
-    /// <summary>
-    /// Allocates and reads bytes of the size of one record 
-    /// and returns the allocated bytes are structure - allowing structured access to binary data 
-    /// Note: there is no error checking whatsoever here - so better make sure everything is OK
-    /// </summary>
-    /// <typeparam name="T">The record type to read</typeparam>
-    /// <param name="reader">A binary reader</param>
-    /// <returns>The read record</returns>
-    public static T ByteToType<T>( byte[] bytes, UInt32 offset = 0 )
-    {
-      byte[] _bytes = bytes.SliceL( offset, ( UInt32 )Marshal.SizeOf( typeof( T ) ) ); // lets see if this works with Alloc below..
-
-      GCHandle handle = GCHandle.Alloc( _bytes, GCHandleType.Pinned );
-      T theStructure = ( T )Marshal.PtrToStructure( handle.AddrOfPinnedObject( ), typeof( T ) );
-      handle.Free( );
-
-      return theStructure;
-    }
-
-
-  }
 }

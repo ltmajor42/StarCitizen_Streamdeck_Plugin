@@ -74,10 +74,9 @@ namespace SCJMapper_V2.CryXMLlib
       }
 
       // Return true if the fields match:
-      return p1 == p2;
-
+      return System.Object.ReferenceEquals( p1.p, p2.p );
     }
-    public static bool operator !=( CryXmlNodeRef p1, CryXmlNodeRef p2 ) { return p1 != p2; }
+    public static bool operator !=( CryXmlNodeRef p1, CryXmlNodeRef p2 ) { return !( p1 == p2 ); }
 
     public override bool Equals( System.Object obj )
     {
@@ -86,14 +85,14 @@ namespace SCJMapper_V2.CryXMLlib
         return false;
       }
 
-      // If parameter cannot be cast to Point return false.
+      // If parameter cannot be cast to CryXmlNodeRef return false.
       CryXmlNodeRef objP = obj as CryXmlNodeRef;
-      if ( ( System.Object )p == null ) {
+      if ( objP == null ) {
         return false;
       }
 
       // Return true if the fields match:
-      return ( p == objP.p );
+      return System.Object.ReferenceEquals( p, objP.p );
     }
 
     public bool Equals( CryXmlNodeRef objP )
@@ -104,12 +103,12 @@ namespace SCJMapper_V2.CryXMLlib
       }
 
       // Return true if the fields match:
-      return ( p == objP.p );
+      return System.Object.ReferenceEquals( p, objP.p );
     }
 
     public override int GetHashCode( )
     {
-      return base.GetHashCode( ) ^ p.GetHashCode( );
+      return base.GetHashCode( ) ^ ( p?.GetHashCode( ) ?? 0 );
     }
   }
 

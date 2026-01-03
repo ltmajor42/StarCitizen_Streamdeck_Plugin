@@ -67,7 +67,7 @@
                         id="function"
                         oninput="setSettings()"
                         onchange="setSettings()">
-                    <option value="">Loading Star Citizen functions…</option>
+                    <option value="">Loading Star Citizen keybinds...</option>
                 </select>
             </div>
         </div>
@@ -232,7 +232,14 @@
 
         originalLoadConfiguration(payload);
 
-        if (functionsLoaded && savedFunctionValue) {
+        // If functions aren't loaded yet, restore the loading text
+        if (!functionsLoaded) {
+            const select = document.getElementById('function');
+            if (select && select.options.length === 1 && select.options[0].value === '') {
+                select.options[0].textContent = 'Loading Star Citizen keybinds...';
+                select.value = '';
+            }
+        } else if (savedFunctionValue) {
             const sel = document.getElementById('function');
             if (sel) sel.value = savedFunctionValue;
         }
@@ -325,11 +332,18 @@
         websocket.onmessage = function (evt) {
             const jsonObj = JSON.parse(evt.data);
 
-            if (jsonObj.event === 'sendToPropertyInspector'
-                && jsonObj.payload
-                && jsonObj.payload.functionsLoaded) {
-
-                populateDropdown(jsonObj.payload.functions);
+            if (jsonObj.event === 'sendToPropertyInspector' && jsonObj.payload) {
+                // Handle loading state
+                if (jsonObj.payload.loading && !jsonObj.payload.functionsLoaded) {
+                    const select = document.getElementById('function');
+                    if (select && select.options.length <= 1) {
+                        select.options[0].textContent = jsonObj.payload.message || 'Loading Star Citizen keybinds...';
+                    }
+                }
+                // Handle functions loaded
+                else if (jsonObj.payload.functionsLoaded) {
+                    populateDropdown(jsonObj.payload.functions);
+                }
             }
 
             if (originalOnMessage) {
