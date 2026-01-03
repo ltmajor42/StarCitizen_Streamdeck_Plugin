@@ -74,27 +74,18 @@ namespace starcitizen.Buttons
             {
                 var culture = GetCurrentCulture();
 
-                // Build main action groups (executable keyboard bindings)
-                var executableActions = bindingService.Reader.GetAllActions().Values
-                    .Where(x => !string.IsNullOrWhiteSpace(x.Keyboard))
-                    .Where(x => IsExecutableKeyboardBinding(x.Keyboard))
-                    .OrderBy(x => x.MapUILabel)
+                // Get all actions grouped by MapUILabel
+                var allActions = bindingService.Reader.GetAllActions().Values
+                    .Where(x => !string.IsNullOrWhiteSpace(x.UILabel))
                     .GroupBy(x => x.MapUILabel);
 
-                foreach (var group in executableActions)
+                foreach (var group in allActions)
                 {
-                    var groupObj = BuildActionGroup(group, culture);
+                    var groupObj = BuildFullActionGroup(group, culture, includeUnboundActions);
                     if (((JArray)groupObj["options"]).Count > 0)
                     {
                         result.Add(groupObj);
                     }
-                }
-
-                // Add unbound actions group
-                if (includeUnboundActions)
-                {
-                    var unboundGroup = BuildUnboundActionsGroup(bindingService);
-                    if (unboundGroup != null) result.Add(unboundGroup);
                 }
 
                 // Add unknown token groups (for visibility)
@@ -108,12 +99,9 @@ namespace starcitizen.Buttons
             return result;
         }
 
-        // ============================================================
-        // REGION: Group Builders
-        // ============================================================
-        private static JObject BuildActionGroup(IGrouping<string, DProfileReader.Action> group, CultureInfo culture)
+        // New: Build group with both bound and unbound actions
+        private static JObject BuildFullActionGroup(IGrouping<string, DProfileReader.Action> group, CultureInfo culture, bool includeUnboundActions)
         {
-            // Pre-compute duplicates for this group
             var duplicateKeys = ComputeDuplicateKeys(group, culture.Name);
             var seenOptionKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -125,50 +113,41 @@ namespace starcitizen.Buttons
 
             foreach (var action in group.OrderBy(x => x.MapUICategory).ThenBy(x => x.UILabel))
             {
-                var bindingInfo = GetBindingInfo(action.Keyboard, culture.Name);
-                var optionKey = $"{action.UILabel}||{bindingInfo.PrimaryBinding}||{bindingInfo.BindingType}";
+                if (string.IsNullOrWhiteSpace(action.UILabel)) continue;
 
-                // Skip duplicates
-                if (seenOptionKeys.Contains(optionKey)) continue;
-                seenOptionKeys.Add(optionKey);
-
-                var optionText = FormatOptionText(action, bindingInfo, duplicateKeys.Contains(optionKey));
-
-                ((JArray)groupObj["options"]).Add(new JObject
+                // Bound action
+                if (!string.IsNullOrWhiteSpace(action.Keyboard) && IsExecutableKeyboardBinding(action.Keyboard))
                 {
-                    ["value"] = action.Name,
-                    ["text"] = optionText,
-                    ["bindingType"] = bindingInfo.BindingType,
-                    ["searchText"] = BuildSearchText(action, bindingInfo.PrimaryBinding)
-                });
+                    var bindingInfo = GetBindingInfo(action.Keyboard, culture.Name);
+                    var optionKey = $"{action.UILabel}||{bindingInfo.PrimaryBinding}||{bindingInfo.BindingType}";
+                    if (seenOptionKeys.Contains(optionKey)) continue;
+                    seenOptionKeys.Add(optionKey);
+                    var optionText = FormatOptionText(action, bindingInfo, duplicateKeys.Contains(optionKey));
+                    ((JArray)groupObj["options"]).Add(new JObject
+                    {
+                        ["value"] = action.Name,
+                        ["text"] = optionText,
+                        ["bindingType"] = bindingInfo.BindingType,
+                        ["searchText"] = BuildSearchText(action, bindingInfo.PrimaryBinding)
+                    });
+                }
+                // Unbound action
+                else if (includeUnboundActions)
+                {
+                    var optionKey = $"{action.UILabel}||unbound";
+                    if (seenOptionKeys.Contains(optionKey)) continue;
+                    seenOptionKeys.Add(optionKey);
+                    ((JArray)groupObj["options"]).Add(new JObject
+                    {
+                        ["value"] = action.Name,
+                        ["text"] = $"{action.UILabel} (unbound)",
+                        ["bindingType"] = "unbound",
+                        ["searchText"] = $"{action.UILabel.ToLower()} {action.UIDescription?.ToLower() ?? ""}"
+                    });
+                }
             }
 
             return groupObj;
-        }
-
-        private static JObject BuildUnboundActionsGroup(KeyBindingService bindingService)
-        {
-            var unboundActions = bindingService.Reader.GetUnboundActions();
-            if (unboundActions.Count == 0) return null;
-
-            var unboundGroup = new JObject
-            {
-                ["label"] = "Unbound Actions",
-                ["options"] = new JArray()
-            };
-
-            foreach (var action in unboundActions.OrderBy(x => x.Value.MapUILabel).ThenBy(x => x.Value.UILabel))
-            {
-                ((JArray)unboundGroup["options"]).Add(new JObject
-                {
-                    ["value"] = action.Value.Name,
-                    ["text"] = $"{action.Value.UILabel} (unbound)",
-                    ["bindingType"] = "unbound",
-                    ["searchText"] = $"{action.Value.UILabel.ToLower()} {action.Value.UIDescription?.ToLower() ?? ""}"
-                });
-            }
-
-            return unboundGroup;
         }
 
         private static void AddUnknownTokenGroups(JArray result, KeyBindingService bindingService)
@@ -352,51 +331,54 @@ namespace starcitizen.Buttons
             if (string.IsNullOrWhiteSpace(keyboard)) return false;
 
             var tokens = keyboard.Split(PlusSeparator, StringSplitOptions.RemoveEmptyEntries);
-            if (tokens.Length == 0) return false;
+            if (tokens.Length <= 0) return false;
 
-            var foundValidToken = false;
-            foreach (var raw in tokens)
+            // Check each token for validity
+            foreach (var rawToken in tokens)
             {
-                var token = raw?.Trim();
+                var token = rawToken?.Trim();
                 if (string.IsNullOrWhiteSpace(token)) continue;
 
-                if (IsMouseToken(token))
+                // Mouse tokens are allowed as long as they can be normalized
+                if (MouseTokenHelper.IsMouseLike(token) && !MouseTokenHelper.TryNormalize(token, out _))
                 {
-                    foundValidToken = true;
-                    continue;
+                    return false;
                 }
 
-                if (!CommandTools.TryFromSCKeyboardCmd(token, out _)) return false;
-                foundValidToken = true;
+                // Check if it's a valid keyboard command
+                if (!CommandTools.TryFromSCKeyboardCmd(token, out _))
+                {
+                    return false;
+                }
             }
 
-            return foundValidToken;
-        }
-
-        private static bool IsMouseToken(string token) =>
-            MouseTokenHelper.TryNormalize(token, out _) || MouseTokenHelper.IsMouseLike(token);
-
-        private static bool ContainsMouseToken(string binding)
-        {
-            if (string.IsNullOrWhiteSpace(binding)) return false;
-
-            return binding.Split(PlusSeparator, StringSplitOptions.RemoveEmptyEntries)
-                .Any(IsMouseToken);
+            return true;
         }
 
         private static string DescribeUnknownTokens(string keyboard)
         {
-            if (string.IsNullOrWhiteSpace(keyboard)) return "unknown";
+            if (string.IsNullOrWhiteSpace(keyboard)) return "";
 
-            var unknowns = keyboard.Split(PlusSeparator, StringSplitOptions.RemoveEmptyEntries)
-                .Select(t => t?.Trim())
-                .Where(t => !string.IsNullOrWhiteSpace(t))
-                .Where(t => !MouseTokenHelper.IsMouseLike(t))
-                .Where(t => !CommandTools.TryFromSCKeyboardCmd(t, out _))
-                .Distinct()
-                .ToArray();
+            var tokens = keyboard.Split(PlusSeparator, StringSplitOptions.RemoveEmptyEntries);
+            var unknownTokens = new List<string>();
 
-            return unknowns.Length == 0 ? "unknown" : string.Join(", ", unknowns);
+            foreach (var rawToken in tokens)
+            {
+                var token = rawToken?.Trim();
+                if (string.IsNullOrWhiteSpace(token)) continue;
+
+                // Mouse tokens are ignored here - they are either normalized or considered valid by default
+                if (MouseTokenHelper.IsMouseLike(token)) continue;
+
+                // Unknown keyboard command - add to list
+                if (!CommandTools.TryFromSCKeyboardCmd(token, out _))
+                {
+                    unknownTokens.Add(token);
+                }
+            }
+
+            // Join unknown tokens with commas for display
+            return string.Join(", ", unknownTokens);
         }
     }
 }
