@@ -1,21 +1,32 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net48</TargetFrameworks>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <PackageId>zstd.net</PackageId>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <SignAssembly>False</SignAssembly>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <Version>1.0.0</Version>
     <RepositoryUrl>https://github.com/dolkensp/zstd.net</RepositoryUrl>
-    <PackageReleaseNotes>This is a multi-platform wrapper for libzstd.</PackageReleaseNotes>
+    <PackageReleaseNotes>Modernized Zstd wrapper for .NET 8 with LibraryImport.</PackageReleaseNotes>
+    
+    <!-- CA1416: Platform compatibility warnings (we target Windows only) -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>
 
+  <!-- Native library files - copy to output -->
   <ItemGroup>
-    <None Update="x64\libzstd.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="x86\libzstd.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <Content Include="x64\libzstd.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>x64\libzstd.dll</Link>
+    </Content>
+    <Content Include="x86\libzstd.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>x86\libzstd.dll</Link>
+    </Content>
   </ItemGroup>
+
 </Project>

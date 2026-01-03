@@ -181,8 +181,8 @@
   "Name": "Star Citizen",
   "Icon": "Images/pluginIcon",
   "URL": "https://github.com/ltmajor42/streamdeck-starcitizen",
-  "Version": "2.0",
-  "CodePath": "com.ltmajor42.starcitizen",
+  "Version": "2.0.8",
+  "CodePath": "com.ltmajor42.starcitizen.exe",
   "Category": "Star Citizen",
   "CategoryIcon": "Images/categoryIcon",
   "OS": [
