@@ -9,10 +9,27 @@ All notable changes to this repository are documented below. Unreleased changes 
 - Clear-search UI for function search fields across Property Inspectors (explicit × button to clear queries).
 - `clearSearch()` and `updateClearSearchButton()` helpers to manage clear-button behavior and visibility.
 - Dropdown refresh on select interactions (mousedown / click / focus) so opening a select with an empty search reliably shows the full list.
+- **Documentation:**
+  - `docs/ARCHITECTURE.md` - Comprehensive technical architecture guide with component diagrams, data flow, and code examples.
+  - `CONTRIBUTING.md` - Developer guide with setup instructions, code style guidelines, and step-by-step guide for adding new actions.
+  - Folder-level README files for `Core/`, `Buttons/`, and `SC/` directories explaining each component.
+  - Quick Start section and documentation links table added to main README.md.
 
 ### Changed
 - Preserve user search text when a function is selected; users must clear explicitly (via × or editing).
 - Use HTML entity `&times;` for the clear glyph to improve cross-host rendering.
+- **Code Quality Improvements:**
+  - Renamed `fromXML()` and `fromActionProfile()` to `FromXML()` and `FromActionProfile()` for consistent PascalCase naming (IDE1006).
+  - Made settings fields readonly in `DualAction`, `Momentary`, `Repeataction`, and `StateMemory` classes (IDE0044).
+  - Used compound assignment operator (`??=`) in `StateMemory.NormalizeDefaults()` (IDE0074).
+  - Used tuple deconstruction in `FunctionListBuilder.ComputeDuplicateKeys()` (IDE0042).
+  - Removed unnecessary `#pragma warning` suppressions in `SCfiles.cs` (IDE0079).
+- **Code Organization:**
+  - Added XML documentation comments and region markers to core classes: `KeyBindingService`, `KeyBindingWatcher`, `CommandTools`, `StreamDeckCommon`, `DProfileReader`, `MouseTokenHelper`, and all button action classes.
+  - Removed unused methods from `KeyboardLayouts.cs` (5+ methods removed).
+  - Consolidated duplicate mouse handling code in `StreamDeckCommon.cs` (~200 lines reduced).
+  - Extracted helper methods in `DProfileReader.cs` for rebind processing and CSV export.
+  - Refactored `FunctionListBuilder.cs` with extracted helper methods and simplified duplicate detection.
 
 ### Fixed
 - Repaired truncated / broken `DOMContentLoaded` handler in `Repeataction.html` that prevented the function list from being populated.
