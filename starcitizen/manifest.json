@@ -34,6 +34,91 @@
       "VisibleInActionsList": false
     },
     {
+      "Icon": "Images/Momentary0",
+      "Name": "Momentary Button (Legacy)",
+      "Controllers": ["Keypad"],
+      "States": [
+        {
+          "Image": "Images/Momentary0",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        },
+        {
+          "Image": "Images/Momentary1",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "Momentary Button (Legacy - for old mhwlng profiles)",
+      "UUID": "com.mhwlng.starcitizen.momentary",
+      "PropertyInspectorPath": "PropertyInspector/StarCitizen/Momentary.html",
+      "VisibleInActionsList": false
+    },
+    {
+      "Icon": "Images/Dualaction0",
+      "Name": "Dual Action Button (Legacy)",
+      "Controllers": ["Keypad"],
+      "States": [
+        {
+          "Image": "Images/Dualaction0",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        },
+        {
+          "Image": "Images/Dualaction1",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "Dual Action Button (Legacy - for old mhwlng profiles)",
+      "UUID": "com.mhwlng.starcitizen.dualaction",
+      "PropertyInspectorPath": "PropertyInspector/StarCitizen/DualAction.html",
+      "VisibleInActionsList": false
+    },
+    {
+      "Icon": "Images/Repeataction0",
+      "Name": "Repeat Action (Legacy)",
+      "Controllers": ["Keypad"],
+      "States": [
+        {
+          "Image": "Images/Repeataction0",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        },
+        {
+          "Image": "Images/Repeataction1",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "Repeat Action (Legacy - for old mhwlng profiles)",
+      "UUID": "com.mhwlng.starcitizen.holdrepeat",
+      "PropertyInspectorPath": "PropertyInspector/StarCitizen/Repeataction.html",
+      "VisibleInActionsList": false
+    },
+    {
+      "Icon": "Images/pluginDialIcon",
+      "Name": "Dial Button (Legacy)",
+      "Controllers": ["Encoder"],
+      "States": [
+        {
+          "Image": "Images/pluginDialIcon"
+        }
+      ],
+      "Encoder": {
+        "Icon": "Images/pluginDialIcon",
+        "layout": "./layout2.json"
+      },
+      "SupportedInMultiActions": false,
+      "Tooltip": "Star Citizen Dial Button (Legacy - for old mhwlng profiles)",
+      "UUID": "com.mhwlng.starcitizen.dial",
+      "PropertyInspectorPath": "PropertyInspector/StarCitizen/Dial.html",
+      "VisibleInActionsList": false
+    },
+    {
       "Icon": "Images/pluginDialIcon",
       "Name": "Dial Button",
       "Controllers": ["Encoder"],
@@ -189,16 +274,38 @@
       ],
       "SupportedInMultiActions": true,
       "Tooltip": "Star Citizen State Memory (Soft Sync Toggle)",
+      "UUID": "com.mhwlng.starcitizen.statememory",
+      "PropertyInspectorPath": "PropertyInspector/StarCitizen/StateMemory.html",
+      "VisibleInActionsList": false
+    },
+    {
+      "Icon": "Images/Statememory0",
+      "Name": "State Memory (Soft Sync Toggle)",
+      "Controllers": ["Keypad"],
+      "States": [
+        {
+          "Image": "Images/Statememory0",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        },
+        {
+          "Image": "Images/Statememory1",
+          "TitleAlignment": "bottom",
+          "FontSize": "8"
+        }
+      ],
+      "SupportedInMultiActions": true,
+      "Tooltip": "Star Citizen State Memory (Soft Sync Toggle)",
       "UUID": "com.ltmajor42.starcitizen.statememory",
       "PropertyInspectorPath": "PropertyInspector/StarCitizen/StateMemory.html"
     }
   ],
   "Author": "Ltmajor42",
-  "Description": "Star Citizen Buttons - v2.0.9: PI dropdowns now reflect in-game function list",
+  "Description": "Star Citizen Plugin",
   "Name": "Star Citizen",
   "Icon": "Images/pluginIcon",
   "URL": "https://github.com/ltmajor42/StarCitizen_Streamdeck_Plugin",
-  "Version": "2.0.9",
+  "Version": "2.1.0",
   "CodePath": "com.ltmajor42.starcitizen.exe",
   "Category": "Star Citizen",
   "CategoryIcon": "Images/categoryIcon",

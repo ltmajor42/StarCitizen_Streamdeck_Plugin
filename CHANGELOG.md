@@ -3,6 +3,23 @@
 All notable changes to this repository are documented below. Unreleased changes appear at the top.
 
 
+## [2.1.0] - Unreleased
+
+### Added
+- Added hidden legacy action wrappers and manifest entries to support older `mhwlng` action UUIDs:
+  - `com.mhwlng.starcitizen.static` (Action Key)
+  - `com.mhwlng.starcitizen.momentary` (Momentary)
+  - `com.mhwlng.starcitizen.dualaction` (Dual Action)
+  - `com.mhwlng.starcitizen.holdrepeat` (Repeat Action)
+  - `com.mhwlng.starcitizen.dial` (Dial)
+  - `com.mhwlng.starcitizen.statememory` (State Memory)
+
+### Changed
+- Removed legacy `holdmacro` manifest entry and wrapper for `com.mhwlng.starcitizen.holdmacro`.
+- Converted small legacy wrapper classes to use C# 12 primary constructors (IDE0290 cleanup).
+
+---
+
 ## [2.0.9]
 
 ### Fixes & Improvements
